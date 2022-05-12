@@ -5,21 +5,22 @@ from .typing import DistributionOrBuilder
 from abc import ABC
 
 
-class DistributionBuilder(torch.nn.Module, ABC):
+class _DistributionModule(torch.nn.Module, ABC):
     """
-    Base class for "modulizing" distributions, i.e. representing a ``torch.distributions.Distribution`` object as a
-    ``torch.nn.Module``.
+    Abstract base class for "modulizing" distributions, i.e. for wrapping ``torch.distributions.Distribution`` objects
+    in a ``torch.nn.Module``.
     """
 
     def __init__(self, base_dist: DistributionOrBuilder, reinterpreted_batch_ndims=None):
         """
-        Initializes the ``DistributionBuilder`` class.
+        Initializes the ``_DistributionModule`` class.
 
         Args:
+            base_dist: The base distribution, or distribution builder.
             reinterpreted_batch_ndims: See ``torch.distributions.Independent``.
         """
 
-        super(DistributionBuilder, self).__init__()
+        super(_DistributionModule, self).__init__()
 
         self.base_dist = base_dist
         self._reinterpreted_batch_ndims = reinterpreted_batch_ndims

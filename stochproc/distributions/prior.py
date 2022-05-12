@@ -1,31 +1,28 @@
 from torch.distributions import TransformedDistribution, biject_to, Transform
 import torch
 from typing import Tuple
-from torch.distributions import Distribution
 from .typing import HyperParameter, DistributionOrBuilder
-from .base import DistributionBuilder
+from .base import _DistributionModule
 
 
-class Prior(DistributionBuilder):
+class Prior(_DistributionModule):
     """
-    Class representing a Bayesian prior on a parameter. Inherits from ``pytorch.nn.Module``.
+    Class representing a Bayesian prior on a parameter.
 
     Examples:
         The following example defines a prior using a normal distribution:
 
             >>> from torch.distributions import Normal
-            >>> from pyfilter.distributions import Prior
+            >>> from stochproc.distributions import Prior
             >>>
             >>> normal_prior = Prior(Normal, loc=0.0, scale=1.0)
             >>> normal_dist = normal_prior.build_distribution()
-
-        Note that since ``Prior`` implements ``pytorch.nn.Module``, we might as well just call ``normal_prior``.
 
         The next examples shows how to construct a sligthly more complicated distribution, the inverse gamma
         distribution:
 
             >>> from torch.distributions import Gamma, TransformedDistribution, PowerTransform
-            >>> from pyfilter.distributions import Prior
+            >>> from stochproc.distributions import Prior
             >>>
             >>> def inverse_gamma(concentration, rate, power):
             >>>     gamma = Gamma(concentration, rate)
@@ -48,7 +45,6 @@ class Prior(DistributionBuilder):
         """
 
         super().__init__(distribution, reinterpreted_batch_ndims=reinterpreted_batch_ndims)
-        parameters["validate_args"] = parameters.pop("validate_args", False)
 
         for k, v in parameters.items():
             self.register_buffer(k, v if isinstance(v, torch.Tensor) else torch.tensor(v))
@@ -77,10 +73,10 @@ class Prior(DistributionBuilder):
             unconstrained space (i.e. perform the mapping ``log``):
 
                 >>> from torch.distributions import Exponential
-                >>> from pyfilter.distributions import Prior
+                >>> from stochproc.distributions import Prior
                 >>>
                 >>> exponential_prior = Prior(Exponential, rate=1.0)
-                >>> samples = exponential_prior.build_distribution().sample((1000,))
+                >>> samples = exponential_prior.build_distribution().sample(torch.Size([1000]))
                 >>>
                 >>> unconstrained = exponential_prior.get_unconstrained(samples)  # there should now be negative values
         """
@@ -99,10 +95,10 @@ class Prior(DistributionBuilder):
             normal and then map to the constrained space (i.e. perform the mapping ``exp``):
 
                 >>> from torch.distributions import Normal, Exponential
-                >>> from pyfilter.distributions import Prior
+                >>> from stochproc.distributions import Prior
                 >>>
                 >>> exponential_prior = Prior(Exponential, rate=1.0)
-                >>> samples = Normal(0.0, 1.0).sample((1000,))
+                >>> samples = Normal(0.0, 1.0).sample(torch.Size([1000]))
                 >>>
                 >>> constrained = exponential_prior.get_unconstrained(samples)  # all should be positive
 

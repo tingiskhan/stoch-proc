@@ -98,7 +98,7 @@ class JointDistribution(Distribution):
         Example:
             >>> from torch.distributions import Normal, Exponential
             >>> import torch
-            >>> from pyfilter.distributions import JointDistribution
+            >>> from stochproc.distributions import JointDistribution
             >>>
             >>> distributions = Normal(0.0, 1.0), Exponential(1.0)
             >>> y = torch.stack([d.sample((1000,)) for d in distributions], dim=-1)
