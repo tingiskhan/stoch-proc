@@ -3,7 +3,7 @@ from torch.nn import Module, ModuleDict, ParameterDict
 from abc import ABC
 import torch
 from typing import Iterator, Tuple, Dict, Union
-from ..parameter import PriorBoundParameter
+from .parameter import PriorBoundParameter
 from ..container import BufferDict
 from .prior import Prior
 
@@ -172,5 +172,5 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
         for p, prior in self.parameters_and_priors():
             right_index = left_index + prior.get_numel(constrained=constrained)
 
-            p.update_values(x[..., left_index:right_index], prior, constrained=constrained)
+            p.update_values_(x[..., left_index:right_index], prior, constrained=constrained)
             left_index = right_index

@@ -1,6 +1,7 @@
 from torch.nn import Parameter
 import torch
 from collections import OrderedDict
+from .prior import Prior
 
 
 def _rebuild_parameter(data, requires_grad, backward_hooks):
@@ -16,7 +17,7 @@ class PriorBoundParameter(Parameter):
     its bound prior.
     """
 
-    def sample_(self, prior: "Prior", shape: torch.Size = None):
+    def sample_(self, prior: Prior, shape: torch.Size = None):
         """
         Given a prior, sample from it inplace.
 
@@ -27,9 +28,9 @@ class PriorBoundParameter(Parameter):
 
         self.data = prior.build_distribution().sample(shape or ())
 
-    def update_values(self, x: torch.Tensor, prior: "Prior", constrained=True):
+    def update_values_(self, x: torch.Tensor, prior: Prior, constrained=True):
         """
-        Update the values of ``self`` with those of ``x``.
+        Update the values of ``self`` with those of ``x`` inplace.
 
         Args:
             x: The values to update ``self`` with.
