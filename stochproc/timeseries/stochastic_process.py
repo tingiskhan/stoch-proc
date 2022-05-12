@@ -1,15 +1,12 @@
 from torch.distributions import Distribution
 import torch
 from copy import deepcopy
-from typing import TypeVar, Callable, Union, Tuple, Sequence
+from typing import TypeVar, Callable, Union, Tuple, Sequence, NamedTuple, Iterable
 from torch.nn import Module, Parameter
 from abc import ABC
-from functools import lru_cache
-from .state import NewState
-from ..distributions import DistributionWrapper
-from ..typing import ShapeLike, ArrayType
-from ..utils import size_getter
-from ..prior_module import HasPriorsModule
+from numbers import Number
+from .state import TimeseriesState
+from ..distributions import DistributionModule, _HasPriorsModule, Prior
 from ..container import BufferIterable
 
 
@@ -24,19 +21,21 @@ class StochasticProcess(Module, ABC):
     :math:`\\{X_j\\}_{j \\leq t}`.
     """
 
+    _EXOGENOUS = "exogenous"
+
     def __init__(
         self,
-        initial_dist: DistributionWrapper,
+        initial_dist: DistributionModule,
         initial_transform: Union[Callable[["StochasticProcess", Distribution], Distribution], None] = None,
         num_steps: int = 1,
-        exog: Sequence[torch.Tensor] = None,
+        exogenous: Sequence[torch.Tensor] = None,
     ):
         """
         Initializes the ``StochasticProcess`` class.
 
         Args:
             initial_dist: The initial distribution of the process. Corresponds to a
-                ``pyfilter.distributions.DistributionWrapper`` rather than a ``pytorch`` distribution as we require
+                ``pyfilter.distributions.DistributionModule`` rather than a ``pytorch`` distribution as we require
                 being able to move the distribution between devices.
             initial_transform: Optional parameter allowing for re-parameterizing the initial distribution with
                 parameters of the ``StochasticProcess`` object. One example is the Ornstein-Uhlenbeck process, where
@@ -44,7 +43,7 @@ class StochasticProcess(Module, ABC):
                 is defined by the three parameters governing the process.
             num_steps: Optional parameter allowing to skip time steps when sampling. E.g. if we set ``num_steps`` to 5,
                 we only return every fifth sample when propagating the process.
-            exog: Optional parameter specifying whether to include exogenous data.
+            exogenous: Optional parameter specifying exogenous data to include.
         """
 
         super().__init__()
@@ -52,32 +51,28 @@ class StochasticProcess(Module, ABC):
         self._init_transform = initial_transform
         self.num_steps = num_steps
 
-        self._tensor_tuples = BufferIterable(exog=tuple(exog) if isinstance(exog, torch.Tensor) else (exog or ()))
+        self._tensor_tuples = BufferIterable(**{
+            self._EXOGENOUS: tuple(exogenous) if isinstance(exogenous, torch.Tensor) else (exogenous or ())
+        })
 
     @property
-    def exog(self) -> torch.Tensor:
+    def exogenous(self) -> torch.Tensor:
         """
         The exogenous variables.
         """
 
-        return self._tensor_tuples.get_as_tensor("exog")
-
-    @exog.setter
-    def exog(self, x: torch.Tensor):
-        self._tensor_tuples["exog"] = tuple(x)
+        return self._tensor_tuples.get_as_tensor(self._EXOGENOUS)
 
     @property
-    @lru_cache(maxsize=None)
     def n_dim(self) -> int:
         """
         Returns the dimension of the process. If it's univariate it returns a 0, 1 for a vector etc, just like
-        ``pytorch``.
+        ``torch``.
         """
 
         return len(self.initial_dist.event_shape)
 
     @property
-    @lru_cache(maxsize=None)
     def num_vars(self) -> int:
         """
         Returns the number of variables of the stochastic process. E.g. if it's a univariate process it returns 1, and
@@ -98,7 +93,7 @@ class StochasticProcess(Module, ABC):
 
         return dist
 
-    def initial_sample(self, shape: ShapeLike = None) -> NewState:
+    def initial_sample(self, shape: torch.Size = torch.Size([])) -> TimeseriesState:
         """
         Samples a state from the initial distribution.
 
@@ -109,11 +104,9 @@ class StochasticProcess(Module, ABC):
             Returns an initial sample of the process wrapped in a ``NewState`` object.
         """
 
-        dist = self.initial_dist
+        return TimeseriesState(0.0, self.initial_dist.expand(shape))
 
-        return NewState(0.0, dist.expand(size_getter(shape)))
-
-    def build_density(self, x: NewState) -> Distribution:
+    def build_density(self, x: TimeseriesState) -> Distribution:
         """
         Method to be overridden by derived classes. Defines how to construct the transition density to :math:`X_{t+1}`
         given the state at :math:`t`, i.e. this method corresponds to building the density:
@@ -129,11 +122,11 @@ class StochasticProcess(Module, ABC):
 
         raise NotImplementedError()
 
-    def _add_exog_to_state(self, x: NewState):
-        if any(self._tensor_tuples["exog"]):
+    def _add_exog_to_state(self, x: TimeseriesState):
+        if any(self._tensor_tuples[self._EXOGENOUS]):
             x.add_exog(self.exog[x.time_index.int()])
 
-    def forward(self, x: NewState, time_increment=1.0) -> NewState:
+    def forward(self, x: TimeseriesState, time_increment=1.0) -> TimeseriesState:
         self._add_exog_to_state(x)
 
         for _ in range(self.num_steps):
@@ -142,7 +135,7 @@ class StochasticProcess(Module, ABC):
 
         return x
 
-    def propagate(self, x: NewState, time_increment=1.0) -> NewState:
+    def propagate(self, x: TimeseriesState, time_increment=1.0) -> TimeseriesState:
         """
         Propagates the process from a previous state to a new state. Wraps around the ``__call__`` method of
         ``pytorch.nn.Module`` to allow registering forward hooks etc.
@@ -157,7 +150,7 @@ class StochasticProcess(Module, ABC):
 
         return self.__call__(x, time_increment=time_increment)
 
-    def sample_path(self, steps: int, samples: ShapeLike = None, x_s: NewState = None) -> torch.Tensor:
+    def sample_path(self, steps: int, samples: torch.Size = torch.Size([]), x_s: TimeseriesState = None) -> torch.Tensor:
         """
         Samples a trajectory from the stochastic process, i.e. samples the collection :math:`\\{X_j\\}_{j \\leq T}`,
         where :math:`T` corresponds to ``steps``.
@@ -187,7 +180,9 @@ class StochasticProcess(Module, ABC):
 
         return deepcopy(self)
 
-    def propagate_conditional(self, x: NewState, u: torch.Tensor, parameters=None, time_increment=1.0) -> NewState:
+    def propagate_conditional(
+            self, x: TimeseriesState, u: torch.Tensor, parameters=None, time_increment=1.0
+    ) -> TimeseriesState:
         """
         Propagate the process conditional on both state and draws from an incremental distribution. This method assumes
         that we may perform the following parameterization:
@@ -220,18 +215,25 @@ class StochasticProcess(Module, ABC):
             exog: The new exogenous variable to add.
         """
 
-        self._tensor_tuples["exog"] += (exog,)
+        self._tensor_tuples[self._EXOGENOUS] += (exog,)
 
 
-class StructuralStochasticProcess(StochasticProcess, HasPriorsModule, ABC):
+# TODO: Move this to a common place instead?
+_ParameterType = Union[Number, torch.Tensor, torch.nn.Parameter, Prior]
+NamedParameter = NamedTuple("NamedParameter", name=str, value=_ParameterType)
+
+_Parameters = Union[Iterable[_ParameterType], Iterable[NamedParameter]]
+
+
+class StructuralStochasticProcess(StochasticProcess, _HasPriorsModule, ABC):
     """
     While ``StochasticProcess`` allows for any type of parameterization of ``.build_density(...)`` this derived class
-    implements the special case of "classical" timeseries modelling. I.e. in which there is an analytical expression for
+    implements the special case of structural timeseries modelling. I.e. in which there is an analytical expression for
     the density of the next state, where the parameters comprise of the previous state and any parameters governing the
     process. An example would be the auto regressive process.
     """
 
-    def __init__(self, parameters: Tuple[ArrayType, ...], **kwargs):
+    def __init__(self, parameters: _Parameters, initial_dist, **kwargs):
         """
         Initializes the ``StructuralStochasticProcess`` class.
 
@@ -240,14 +242,14 @@ class StructuralStochasticProcess(StochasticProcess, HasPriorsModule, ABC):
             kwargs: See base.
         """
 
-        super().__init__(**kwargs)
+        super().__init__(initial_dist=initial_dist, **kwargs)
 
         for i, p in enumerate(parameters):
             self._register_parameter_or_prior(f"parameter_{i}", p)
 
     def functional_parameters(self, f: Callable[[torch.Tensor], torch.Tensor] = None) -> Tuple[Parameter, ...]:
         """
-        Returns the functional parameters of the process, i.e. the input parameter ``parameters`` of ``.__init__(...)``.
+        Returns the functional parameters of the process.
 
         Args:
             f: Optional parameter, whether to apply some sort of transformation to the parameters prior to returning.
