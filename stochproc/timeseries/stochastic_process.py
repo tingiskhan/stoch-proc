@@ -1,13 +1,13 @@
 from torch.distributions import Distribution
 import torch
 from copy import deepcopy
-from typing import TypeVar, Callable, Union, Tuple, Sequence, NamedTuple, Iterable
+from typing import TypeVar, Callable, Union, Tuple, Sequence, Iterable
 from torch.nn import Module, Parameter
 from abc import ABC
-from numbers import Number
 from .state import TimeseriesState
-from ..distributions import DistributionModule, _HasPriorsModule, Prior
+from ..distributions import DistributionModule, _HasPriorsModule
 from ..container import BufferIterable
+from ..typing import NamedParameter, _ParameterType
 
 
 T = TypeVar("T")
@@ -207,20 +207,16 @@ class StochasticProcess(Module, ABC):
 
         return
 
-    def append_exog(self, exog: torch.Tensor):
+    def append_exog(self, exogenous: torch.Tensor):
         """
         Appends and exogenous variable.
 
         Args:
-            exog: The new exogenous variable to add.
+            exogenous: The new exogenous variable to add.
         """
 
-        self._tensor_tuples[self._EXOGENOUS] += (exog,)
+        self._tensor_tuples[self._EXOGENOUS] += (exogenous,)
 
-
-# TODO: Move this to a common place instead?
-_ParameterType = Union[Number, torch.Tensor, torch.nn.Parameter, Prior]
-NamedParameter = NamedTuple("NamedParameter", name=str, value=_ParameterType)
 
 _Parameters = Union[Iterable[_ParameterType], Iterable[NamedParameter]]
 

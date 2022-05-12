@@ -1,8 +1,7 @@
-from typing import Union
 from .base import _DistributionModule
-from .prior import Prior
 from stochproc.distributions.prior_module import _HasPriorsModule
-from .typing import DistributionOrBuilder, HyperParameter
+from .typing import DistributionOrBuilder
+from ..typing import _ParameterType
 
 
 class DistributionModule(_DistributionModule, _HasPriorsModule):
@@ -26,7 +25,7 @@ class DistributionModule(_DistributionModule, _HasPriorsModule):
         self,
         base_dist: DistributionOrBuilder,
         reinterpreted_batch_ndims=None,
-        **parameters: Union[HyperParameter, Prior]
+        **parameters: _ParameterType
     ):
         """
         Initializes the ``DistributionModule`` class.
