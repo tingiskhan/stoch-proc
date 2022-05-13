@@ -36,9 +36,9 @@ class LinearModel(AffineProcess):
         Initializes the ``LinearModel`` class.
 
         Args:
-            a: See docs of class.
-            sigma: See docs of class.
-            b: See docs of class.
+            a: The ``A`` matrix in the class docs.
+            sigma: The ``sigma`` vector in the class docs.
+            b: The ``b`` vector in the class docs.
         """
 
         a = broadcast_all(a)[0]
