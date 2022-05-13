@@ -6,3 +6,4 @@ Distribution.set_default_validate_args(False)
 
 from . import distributions
 from . import timeseries
+from .typing import NamedParameter
