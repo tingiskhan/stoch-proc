@@ -13,13 +13,13 @@ from ..typing import NamedParameter, _ParameterType
 T = TypeVar("T")
 
 
-class StochasticProcess(Module, ABC):
+class StochasticProcess(Module):
     r"""
     Abstract base class for stochastic processes. By "stochastic process" we mean a sequence of random variables,
     :math:`\{X_t\}_{t \in T}`, defined on a common probability space
     :math:`\{ \Omega, \mathcal{F}, \{\mathcal{F\}_t \}`, with joint distribution
         .. math::
-            p(x_1, ..., x_t) = p(x_1) \prod^t_{k=2} p(x_k \mid | x_{1:k-1})
+            p(x_1, ..., x_t) = p(x_1) \prod^t_{k=2} p(x_k \mid x_{1:k-1})
 
     Derived classes should override the ``.build_distribution(...)`` method, which builds the distribution of
     :math:`X_{t+1}` given :math:`\{X_j\\}_{j \leq t}`.
@@ -225,12 +225,13 @@ class StochasticProcess(Module, ABC):
 _Parameters = Union[Iterable[_ParameterType], Iterable[NamedParameter]]
 
 
-class StructuralStochasticProcess(StochasticProcess, _HasPriorsModule, ABC):
-    """
-    While ``StochasticProcess`` allows for any type of parameterization of ``.build_density(...)`` this derived class
-    implements the special case of structural timeseries modelling. I.e. in which there is an analytical expression for
-    the density of the next state, where the parameters comprise of the previous state and any parameters governing the
-    process. An example would be the auto regressive process.
+class StructuralStochasticProcess(StochasticProcess, _HasPriorsModule):
+    r"""
+    Similar to ``StochasticProcess``, but where we assume that the conditional distribution
+    :math:`p(x_k \mid  x_{1:k-1})` is further parameterized by a collection of parameters :math:`\theta`, s.t.
+        .. math::
+            p_{\theta}(x_k \mid x_{1:k-1}) = p(x_k \mid x_{1:k-1}, \theta).
+
     """
 
     def __init__(self, parameters: _Parameters, initial_dist, **kwargs):
