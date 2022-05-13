@@ -276,4 +276,4 @@ class StructuralStochasticProcess(StochasticProcess, _HasPriorsModule, ABC):
 
         res = self.parameters_and_buffers()
 
-        return tuple(f(v) if f is not None else v for _, v in sorted(res.items(), key=lambda k: k[0]))
+        return tuple(f(v) if f is not None else v for v in res.values())
