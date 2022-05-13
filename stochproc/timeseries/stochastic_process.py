@@ -155,8 +155,26 @@ class StochasticProcess(Module, ABC):
         return self.__call__(x, time_increment=time_increment)
 
     def sample_path(self, steps: int, samples: torch.Size = torch.Size([]), x_s: TimeseriesState = None) -> torch.Tensor:
+        r"""
+        Same as ``.sample_states(...)`` but combines the values of the states into a single tensor instead, does not
+        include the zeroth sample.
+
+        Args:
+            steps: The number of steps to sample.
+            samples: Optional parameter, corresponds to the batch size to sample.
+            x_s: Optional parameter, whether to use a pre-defined initial state or sample a new one. If ``None`` samples
+                an initial state, else uses ``x_s``.
+
+        Returns:
+            Returns a tensor of shape ``(steps, [samples], [.n_dim])``.
         """
-        Samples a trajectory from the stochastic process, i.e. samples the collection :math:`\\{X_j\\}_{j \\leq T}`,
+
+        states = self.sample_states(steps, samples, x_s)
+        return torch.stack(tuple(r.values for r in states[1:]), dim=0)
+
+    def sample_states(self, steps: int, samples: torch.Size = torch.Size([]), x_s: TimeseriesState = None) -> Tuple[TimeseriesState, ...]:
+        r"""
+        Samples a trajectory from the stochastic process, i.e. samples the collection :math:`\{X_j\}^T_{j = 0}`,
         where :math:`T` corresponds to ``steps``.
 
         Args:
@@ -172,12 +190,10 @@ class StochasticProcess(Module, ABC):
         x_s = self.initial_sample(samples) if x_s is None else x_s
 
         res = (x_s,)
-        for i in range(1, steps):
+        for i in range(1, steps + 1):
             res += (self.propagate(res[-1]),)
 
-        return torch.stack(tuple(r.values for r in res), dim=0)
-
-    # TODO: Add sample_path_state?
+        return res
 
     def copy(self) -> "StochasticProcess":
         """
