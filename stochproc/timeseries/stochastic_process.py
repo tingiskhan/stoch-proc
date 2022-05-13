@@ -135,7 +135,7 @@ class StochasticProcess(Module, ABC):
 
         for _ in range(self.num_steps):
             density = self.build_density(x)
-            x = x.propagate_from(dist=density, time_increment=time_increment)
+            x = x.propagate_from(distribution=density, time_increment=time_increment)
 
         return x
 
