@@ -84,4 +84,4 @@ class TimeseriesState(dict):
         self.exogenous = x
 
     def __repr__(self):
-        return f"TimeseriesState at t={self.time_index} containing: {self.values}"
+        return f"TimeseriesState at t={self.time_index} containing: {self.values.__repr__()}"
