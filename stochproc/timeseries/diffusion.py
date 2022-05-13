@@ -1,14 +1,17 @@
 import torch
 from abc import ABC
-from typing import Tuple
 from torch.distributions import Normal, Independent
 import math
-from .affine import AffineProcess, MeanOrScaleFun
+from numbers import Number
+from .affine import AffineProcess, MeanScaleFun
 from .stochastic_process import StructuralStochasticProcess
-from .typing import DiffusionFunction
-from ..distributions import DistributionWrapper
-from ..typing import ArrayType
-from ..constants import EPS
+from .typing import DiffusionFunction, Drift
+from ..distributions import DistributionModule
+from ..typing import ParameterType
+
+
+_info = torch.finfo(torch.get_default_dtype())
+EPS = math.sqrt(_info.eps)
 
 
 class OneStepEulerMaruyma(AffineProcess):
@@ -19,20 +22,20 @@ class OneStepEulerMaruyma(AffineProcess):
             X_{t+1} = X_t + a(X_t) \\Delta t + b(X_t) \\cdot \\Delta W_t
     """
 
-    def __init__(self, funcs, parameters, initial_dist, increment_dist, dt: float, **kwargs):
+    def __init__(self, mean_scale, parameters, initial_dist, increment_dist, dt: float, **kwargs):
         """
         Initializes the ``OneStepEulerMaruyma`` class.
 
         Args:
-            funcs: See base.
+            mean_scale: See base.
             parameters: See base.
             initial_dist: See base.
             increment_dist: See base. However, do not that you need to include the :math:`\\Delta t` term yourself in
-               the ``DistributionWrapper`` class.
+               the ``DistributionModule`` class.
             dt: The time delta to use.
         """
 
-        super().__init__(funcs, parameters, initial_dist, increment_dist, **kwargs)
+        super().__init__(mean_scale, parameters, initial_dist, increment_dist, **kwargs)
         self.dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
 
     def mean_scale(self, x, parameters=None):
@@ -54,7 +57,7 @@ class StochasticDifferentialEquation(StructuralStochasticProcess, ABC):
     where :math:`\\theta` is the parameter set, and :math:`h` the dynamics of the SDE.
     """
 
-    def __init__(self, parameters, initial_dist: DistributionWrapper, dt: float, **kwargs):
+    def __init__(self, parameters, initial_dist: DistributionModule, dt: float, **kwargs):
         """
         Initializes the ``StochasticDifferentialEquation``.
 
@@ -83,7 +86,7 @@ class DiscretizedStochasticDifferentialEquation(StochasticDifferentialEquation):
     This e.g. encompasses the Euler-Maruyama and Milstein schemes.
     """
 
-    def __init__(self, prop_state: DiffusionFunction, parameters, initial_dist: DistributionWrapper, dt, **kwargs):
+    def __init__(self, prop_state: DiffusionFunction, parameters, initial_dist: DistributionModule, dt, **kwargs):
         """
         Initializes the ``DiscretizedStochasticDifferentialEquation`` class.
 
@@ -114,10 +117,10 @@ class AffineEulerMaruyama(AffineProcess, StochasticDifferentialEquation):
 
     def __init__(
         self,
-        dynamics: Tuple[MeanOrScaleFun, ...],
+        dynamics: MeanScaleFun,
         parameters,
         initial_dist,
-        increment_dist: DistributionWrapper,
+        increment_dist: DistributionModule,
         dt,
         **kwargs
     ):
@@ -125,10 +128,10 @@ class AffineEulerMaruyama(AffineProcess, StochasticDifferentialEquation):
         Initializes the ``AffineEulerMaruyama`` class.
 
         Args:
-            dynamics: Tuple of callables that define the drift and diffusion respectively.
+            dynamics: Callable returning the drift and diffusion.
             parameters: See base.
             initial_dist: See base.
-            increment_dist: See ``AffineProcess``.
+            increment_dist: See base.
             dt: See base.
             kwargs: See base.
         """
@@ -138,8 +141,8 @@ class AffineEulerMaruyama(AffineProcess, StochasticDifferentialEquation):
         )
 
     def mean_scale(self, x, parameters=None):
-        params = parameters or self.functional_parameters()
-        return x.values + self.f(x, *params) * self.dt, self.g(x, *params)
+        drift, diffusion = self.mean_scale_fun(x, *(parameters or self.functional_parameters()))
+        return x.values + drift, diffusion
 
 
 class Euler(AffineEulerMaruyama):
@@ -161,7 +164,7 @@ class Euler(AffineEulerMaruyama):
     """
 
     def __init__(
-        self, dynamics: MeanOrScaleFun, parameters, initial_values: ArrayType, dt, tuning_std: float = 1.0, **kwargs
+        self, dynamics: Drift, parameters, initial_values: ParameterType, dt, tuning_std: float = 1.0, **kwargs
     ):
         """
         Initializes the ``Euler`` class.
@@ -177,22 +180,24 @@ class Euler(AffineEulerMaruyama):
 
         scale = 1.0 if isinstance(initial_values, float) else torch.ones(initial_values.shape)
 
-        if isinstance(scale, float):
-            dist = DistributionWrapper(Normal, loc=0.0, scale=math.sqrt(dt) * tuning_std)
-            iv = DistributionWrapper(Normal, loc=initial_values, scale=EPS * scale)
+        if isinstance(scale, Number):
+            dist = DistributionModule(Normal, loc=0.0, scale=math.sqrt(dt) * tuning_std)
+            iv = DistributionModule(Normal, loc=initial_values, scale=EPS * scale)
         else:
-            iv = DistributionWrapper(lambda **u: Independent(Normal(**u), 1), loc=initial_values, scale=EPS * scale,)
+            def _indep_builder(**u):
+                return Independent(Normal(**u), 1)
 
-            dist = DistributionWrapper(
-                lambda **u: Independent(Normal(**u), 1),
+            iv = DistributionModule(_indep_builder, loc=initial_values, scale=EPS * scale, )
+            dist = DistributionModule(
+                _indep_builder,
                 loc=torch.zeros(scale.shape),
                 scale=tuning_std * math.sqrt(dt) * torch.ones(scale.shape),
             )
 
-        def g(x, *args):
-            return torch.ones_like(x.values)
+        def _mean_scale(x, *params):
+            return dynamics(x, *params), torch.ones_like(x.values)
 
-        super().__init__((dynamics, g), parameters, iv, dist, dt, **kwargs)
+        super().__init__(_mean_scale, parameters, iv, dist, dt, **kwargs)
 
 
 class RungeKutta(Euler):
