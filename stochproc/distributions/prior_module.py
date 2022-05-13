@@ -2,6 +2,7 @@ import warnings
 from torch.nn import Module, ModuleDict, ParameterDict
 from abc import ABC
 import torch
+from collections import OrderedDict
 from typing import Iterator, Tuple, Dict, Union
 from .parameter import PriorBoundParameter
 from ..container import BufferDict
@@ -82,6 +83,7 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
         super().__init__()
 
         self.prior_dict = ModuleDict()
+        self._parameter_order = list()
 
         # Bug for ``torch.nn.ParameterDict`` as ``__setitem__`` is disallowed, but ``Module`` initializes training
         with warnings.catch_warnings():
@@ -113,28 +115,38 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
         else:
             self.buffer_dict[name] = p if (isinstance(p, torch.Tensor) or p is None) else torch.tensor(p)
 
+        self._parameter_order.append(name)
+
     def parameters_and_buffers(self) -> Dict[str, Union[torch.Tensor, torch.nn.Parameter]]:
         """
         Returns the union of the parameters and buffers of the module.
         """
 
-        res = dict()
-        res.update(self.parameter_dict)
-        res.update(self.buffer_dict)
+        # TODO: Do this better
+        res = OrderedDict()
+        for name in self._parameter_order:
+            res[name] = self.buffer_dict[name] if name in self.buffer_dict else self.parameter_dict[name]
 
         return res
 
     def register_prior(self, name: str, prior: Prior):
         """
-        Registers a ``pyfilter.distributions.Prior`` object together with a ``pyfilter.PriorBoundParameter`` on self.
+        Registers a ``pyfilter.distributions.Prior`` object together with a ``pyfilter.PriorBoundParameter`` on self. If
+        the same prior object already exists on the object, it's assumed that the corresponding parameter should be the
+        same object.
 
         Args:
             name: The name to use for the prior.
             prior: The prior of the parameter.
         """
 
+        parameter = next(
+            (prm for (prm, p) in self.parameters_and_priors() if p is prior),
+            PriorBoundParameter(prior().sample(), requires_grad=False)
+        )
+
         self.prior_dict[name] = prior
-        self.parameter_dict[name] = PriorBoundParameter(prior().sample(), requires_grad=False)
+        self.parameter_dict[name] = parameter
 
     def parameters_and_priors(self) -> Iterator[Tuple[PriorBoundParameter, Prior]]:
         """
@@ -142,11 +154,19 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
             [(parameter_0, prior_parameter_0), ..., (parameter_n, prior_parameter_n)]
         """
 
-        for prior, parameter in zip(self.prior_dict.values(), self.parameter_dict.values()):
+        prior_memo = set()
+
+        for name, prior in self.prior_dict.items():
+            prior_memo.add(prior)
+            parameter = self.parameter_dict[name]
+
             yield parameter, prior
 
         for module in filter(lambda u: isinstance(u, _HasPriorsModule), self.children()):
             for parameter, prior in module.parameters_and_priors():
+                if prior in prior_memo:
+                    continue
+
                 yield parameter, prior
 
     def sample_params_(self, shape: torch.Size = torch.Size([])):
