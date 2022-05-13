@@ -6,6 +6,7 @@ from typing import Iterator, Tuple, Dict, Union
 from .parameter import PriorBoundParameter
 from ..container import BufferDict
 from .prior import Prior
+from ..typing import NamedParameter, _ParameterType
 
 
 class UpdateParametersMixin(ABC):
@@ -89,7 +90,7 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
             self.parameter_dict = ParameterDict()
             self.buffer_dict = BufferDict()
 
-    def _register_parameter_or_prior(self, name: str, p):
+    def _register_parameter_or_prior(self, name: str, p: Union[_ParameterType, NamedParameter]):
         """
         Helper method for registering either a:
             - ``pyfilter.distributions.Prior``
@@ -100,6 +101,10 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
             name: The name to use for the object.
             p: The object to register.
         """
+
+        if isinstance(p, NamedParameter):
+            name = p.name
+            p = p.value
 
         if isinstance(p, Prior):
             self.register_prior(name, p)
