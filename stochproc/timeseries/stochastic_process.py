@@ -177,6 +177,8 @@ class StochasticProcess(Module, ABC):
 
         return torch.stack(tuple(r.values for r in res), dim=0)
 
+    # TODO: Add sample_path_state?
+
     def copy(self) -> "StochasticProcess":
         """
         Returns a deep copy of the object.
