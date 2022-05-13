@@ -2,10 +2,9 @@ from torch.distributions import Distribution, AffineTransform, TransformedDistri
 import torch
 from typing import Tuple
 from .stochastic_process import StructuralStochasticProcess
-from ..distributions import DistributionWrapper
-from .typing import MeanOrScaleFun
-from .state import NewState
-from ..typing import ArrayType
+from ..distributions import DistributionModule
+from .typing import MeanScaleFun
+from .state import TimeseriesState
 
 
 def _define_transdist(
@@ -25,18 +24,17 @@ def _define_transdist(
     """
 
     loc, scale = torch.broadcast_tensors(loc, scale)
-
-    shape = loc.shape[:-n_dim] if n_dim > 0 else loc.shape
+    batch_shape = loc.shape[:loc.dim() - n_dim]
 
     return TransformedDistribution(
-        dist.expand(shape), AffineTransform(loc, scale, event_dim=n_dim), validate_args=False
+        dist.expand(batch_shape), AffineTransform(loc, scale, event_dim=n_dim), validate_args=False
     )
 
 
 class AffineProcess(StructuralStochasticProcess):
     """
     Class for defining stochastic processes of affine nature, i.e. where we can express the next state :math:`X_{t+1}`
-    given the previous state (assuming Markovian) :math:`X_t` as:
+    given the previous state :math:`X_t` as:
         .. math::
             X_{t+1} = f(X_t, \\theta) + g(X_t, \\theta) \\cdot W_{t+1},
 
@@ -45,53 +43,50 @@ class AffineProcess(StructuralStochasticProcess):
 
     Example:
         One example of an affine stochastic process is the AR(1) process. We define it by:
-            >>> from pyfilter.timeseries import AffineProcess
-            >>> from pyfilter.distributions import DistributionWrapper
+            >>> from stochproc.timeseries import AffineProcess, NamedParameter
+            >>> from stochproc.distributions import DistributionModule
             >>> from torch.distributions import Normal, TransformedDistribution, AffineTransform
             >>>
-            >>> def f(x, alpha, beta, sigma):
-            >>>     return alpha + beta * x.values
-            >>>
-            >>> def g(x, alpha, beta, sigma):
-            >>>     return sigma
+            >>> def mean_scale(x, alpha, beta, sigma):
+            >>>     return alpha + beta * x.values, sigma
             >>>
             >>> def init_transform(model, normal_dist):
             >>>     alpha, beta, sigma = model.functional_parameters()
             >>>     return TransformedDistribution(normal_dist, AffineTransform(alpha, sigma / (1 - beta ** 2)).sqrt())
             >>>
             >>> parameters = (
-            >>>     0.0,    # alpha
-            >>>     0.99,   # beta
-            >>>     0.05,   # sigma
+            >>>     NamedParameter("alpha", 0.0),
+            >>>     NamedParameter("beta", 0.99),
+            >>>     NamedParameter("sigma", 0.05),
             >>> )
-            >>> initial_dist = increment_dist = DistributionWrapper(Normal, loc=0.0, scale=1.0)
-            >>> ar_1 = AffineProcess((f, g), parameters, initial_dist, increment_dist, initial_transform=init_transform)
             >>>
-            >>> samples = ar_1.sample_path(1000)
+            >>> initial_dist = increment_dist = DistributionModule(Normal, loc=0.0, scale=1.0)
+            >>> ar_1 = AffineProcess(mean_scale, parameters, initial_dist, increment_dist, initial_transform=init_transform)
+            >>>
+            >>> samples = ar_1.sample_path(1_000)
     """
 
     def __init__(
         self,
-        funcs: Tuple[MeanOrScaleFun, ...],
-        parameters: Tuple[ArrayType, ...],
-        initial_dist: DistributionWrapper,
-        increment_dist: DistributionWrapper,
+        mean_scale: MeanScaleFun,
+        parameters,
+        initial_dist,
+        increment_dist: DistributionModule,
         **kwargs
     ):
         """
         Initializes the ``AffineProcess`` class.
 
         Args:
-            funcs: Tuple consisting of the pair of functions ``(f, g)`` that control mean and scale respectively. Call
-                signature for both is ``f(x: NewState, *parameters)``.
+            mean_scale: Function constructing the mean and scale.
             parameters: See base.
             initial_dist: See base.
             increment_dist: Corresponds to the distribution that we location-scale transform.
         """
 
         super().__init__(parameters=parameters, initial_dist=initial_dist, **kwargs)
-        self.f, self.g = funcs
 
+        self.mean_scale_fun = mean_scale
         self.increment_dist = increment_dist
 
     def build_density(self, x):
@@ -99,7 +94,7 @@ class AffineProcess(StructuralStochasticProcess):
 
         return _define_transdist(loc, scale, self.n_dim, self.increment_dist())
 
-    def mean_scale(self, x: NewState, parameters=None) -> Tuple[torch.Tensor, torch.Tensor]:
+    def mean_scale(self, x: TimeseriesState, parameters=None) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Returns the mean and scale of the process evaluated at ``x`` and ``.functional_parameters()`` or ``parameters``.
 
@@ -112,10 +107,11 @@ class AffineProcess(StructuralStochasticProcess):
             Returns the tuple ``(mean, scale)`` given by evaluating ``(f(x, *parameters), g(x, *parameters))``.
         """
 
-        params = parameters or self.functional_parameters()
-        return self.f(x, *params), self.g(x, *params)
+        return self.mean_scale_fun(x, *(parameters or self.functional_parameters()))
 
-    def propagate_conditional(self, x: NewState, u: torch.Tensor, parameters=None, time_increment=1.0) -> NewState:
+    def propagate_conditional(
+            self, x: TimeseriesState, u: torch.Tensor, parameters=None, time_increment=1.0
+    ) -> TimeseriesState:
         super(AffineProcess, self).propagate_conditional(x, u, parameters, time_increment)
 
         for _ in range(self.num_steps):
