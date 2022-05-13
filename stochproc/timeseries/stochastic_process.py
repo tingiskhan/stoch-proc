@@ -13,7 +13,7 @@ from ..typing import NamedParameter, _ParameterType
 T = TypeVar("T")
 
 
-class StochasticProcess(Module):
+class StochasticProcess(Module, ABC):
     r"""
     Abstract base class for stochastic processes. By "stochastic process" we mean a sequence of random variables,
     :math:`\{X_t\}_{t \in T}`, defined on a common probability space
@@ -225,7 +225,7 @@ class StochasticProcess(Module):
 _Parameters = Union[Iterable[_ParameterType], Iterable[NamedParameter]]
 
 
-class StructuralStochasticProcess(StochasticProcess, _HasPriorsModule):
+class StructuralStochasticProcess(StochasticProcess, _HasPriorsModule, ABC):
     r"""
     Similar to ``StochasticProcess``, but where we assume that the conditional distribution
     :math:`p(x_k \mid  x_{1:k-1})` is further parameterized by a collection of parameters :math:`\theta`, s.t.
