@@ -1,6 +1,6 @@
 import pytest as pt
 import torch
-from stochproc import distributions as dists, timeseries as ts
+from stochproc import distributions as dists, timeseries as ts, NamedParameter
 from torch.distributions import Normal
 from .stochastic_process import initial_distribution
 
@@ -13,8 +13,8 @@ class TestAffineTimeseries(object):
             return alpha * x_.values, sigma
 
         params = [
-            ts.NamedParameter("alpha", torch.tensor(1.0)),
-            ts.NamedParameter("sigma", torch.tensor(0.05))
+            NamedParameter("alpha", torch.tensor(1.0)),
+            NamedParameter("sigma", torch.tensor(0.05))
         ]
 
         increment_dist = dists.DistributionModule(Normal, loc=0.0, scale=1.0)

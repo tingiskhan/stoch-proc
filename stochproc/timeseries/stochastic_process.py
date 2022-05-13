@@ -7,7 +7,7 @@ from abc import ABC
 from .state import TimeseriesState
 from ..distributions import DistributionModule, _HasPriorsModule
 from ..container import BufferIterable
-from ..typing import NamedParameter, _ParameterType
+from ..typing import ParameterType
 
 
 T = TypeVar("T")
@@ -222,7 +222,7 @@ class StochasticProcess(Module, ABC):
         self._tensor_tuples[self._EXOGENOUS] += (exogenous,)
 
 
-_Parameters = Union[Iterable[_ParameterType], Iterable[NamedParameter]]
+_Parameters = Iterable[ParameterType]
 
 
 class StructuralStochasticProcess(StochasticProcess, _HasPriorsModule, ABC):

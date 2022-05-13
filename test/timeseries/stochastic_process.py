@@ -1,4 +1,4 @@
-from stochproc import timeseries as ts, distributions as dists
+from stochproc import timeseries as ts, distributions as dists, NamedParameter
 import pytest as pt
 import torch
 from torch.distributions import Normal
@@ -14,7 +14,7 @@ class TestStochasticProcess(object):
         val = torch.tensor(1.0)
 
         parameters = [
-            ts.NamedParameter("alpha", val)
+            NamedParameter("alpha", val)
         ]
 
         sts = ts.StructuralStochasticProcess(parameters, initial_distribution)
@@ -31,8 +31,8 @@ class TestStochasticProcess(object):
         val = dists.Prior(Normal, loc=0.0, scale=1.0)
 
         parameters = [
-            ts.NamedParameter("alpha", val),
-            ts.NamedParameter("beta", val)
+            NamedParameter("alpha", val),
+            NamedParameter("beta", val)
         ]
 
         sts = ts.StructuralStochasticProcess(parameters, initial_distribution)
