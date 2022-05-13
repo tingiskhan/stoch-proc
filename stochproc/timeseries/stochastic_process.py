@@ -274,4 +274,8 @@ class StructuralStochasticProcess(StochasticProcess, _HasPriorsModule, ABC):
             f: Optional parameter, whether to apply some sort of transformation to the parameters prior to returning.
         """
 
-        return tuple(f(v) if f is not None else v for v in self.parameters_and_buffers().values())
+        res = self.parameters_and_buffers().values()
+        if f is not None:
+            res = (f(v) for v in res)
+
+        return tuple(res)
