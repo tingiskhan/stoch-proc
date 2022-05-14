@@ -2,7 +2,8 @@ import torch
 from torch.distributions import Normal
 from ..affine import AffineProcess
 from ...distributions import DistributionModule
-from ...typing import ParameterType, NamedParameter
+from ...typing import ParameterType
+from ...utils import enforce_named_parameter
 
 
 def init_builder(kappa, gamma, sigma):
@@ -35,12 +36,7 @@ class OrnsteinUhlenbeck(AffineProcess):
             kwargs: See base.
         """
 
-        if not isinstance(kappa, NamedParameter):
-            kappa = NamedParameter("kappa", kappa)
-        if not isinstance(gamma, NamedParameter):
-            gamma = NamedParameter("gamma", gamma)
-        if not isinstance(sigma, NamedParameter):
-            sigma = NamedParameter("sigma", sigma)
+        kappa, gamma, sigma = enforce_named_parameter(kappa=kappa, gamma=gamma, sigma=sigma)
 
         dist = DistributionModule(Normal, loc=0.0, scale=1.0)
         initial_dist = DistributionModule(init_builder, kappa=kappa, gamma=gamma, sigma=sigma)
