@@ -1,7 +1,7 @@
 from .base import _DistributionModule
 from stochproc.distributions.prior_module import _HasPriorsModule
 from .typing import DistributionOrBuilder
-from ..typing import ParameterType
+from ..typing import ParameterType, NamedParameter
 
 
 class DistributionModule(_DistributionModule, _HasPriorsModule):
@@ -55,6 +55,9 @@ class DistributionModule(_DistributionModule, _HasPriorsModule):
         )
 
         for k, v in parameters.items():
+            if isinstance(v, NamedParameter) and (v.name != k):
+                raise Exception(f"Key != name of parameter: {k} != {v.name}")
+
             self._register_parameter_or_prior(k, v)
 
     def _get_parameters(self):
