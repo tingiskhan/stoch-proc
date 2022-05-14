@@ -40,7 +40,7 @@ class LinearModel(AffineProcess):
         dimension = len(initial_dist.shape)
 
         if b is None:
-            b = torch.zeros(dimension)
+            b = torch.zeros(dimension) if dimension > 0 else 0.0
 
         def _mean_scale(x, a_, b_, s_):
             return _mapping[dimension](x, a_, b_), s_
