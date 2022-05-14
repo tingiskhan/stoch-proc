@@ -2,12 +2,16 @@ from torch.distributions import Normal, TransformedDistribution, AffineTransform
 from pyro.distributions import Delta
 import torch
 from ..linear import LinearModel
-from ...distributions import DistributionWrapper, JointDistribution
+from ...distributions import DistributionModule, JointDistribution
+from ...utils import enforce_named_parameter
 
 
-def _init_trans(module: "AR", dist):
-    beta, alpha, sigma = module.functional_parameters()
-    return TransformedDistribution(dist, AffineTransform(alpha, sigma / (1 - beta ** 2).sqrt()))
+# TODO: Add beta for those where abs(beta) < 1.0
+def _build_init(alpha, beta, sigma, lags, **kwargs):
+    base = _build_trans_dist(0.0, 1.0, lags, **kwargs)
+    std = sigma
+
+    return TransformedDistribution(base, AffineTransform(alpha, std.sqrt()))
 
 
 def _build_trans_dist(loc, scale, lags, **kwargs) -> Distribution:
@@ -38,9 +42,27 @@ class AR(LinearModel):
             kwargs: See base.
         """
 
-        if (lags > 1) and (beta.shape[-1] != lags):
-            raise Exception(f"Mismatch between shapes: {alpha.shape[-1]} != {lags}")
+        alpha, beta, sigma = enforce_named_parameter(alpha=alpha, beta=beta, sigma=sigma)
+
+        if (lags > 1) and (beta.value.shape[-1] != lags):
+            raise Exception(f"Mismatch between shapes: {alpha.value.shape[-1]} != {lags}")
 
         self.lags = lags
-        inc_dist = DistributionWrapper(_build_trans_dist, loc=0.0, scale=1.0, lags=lags)
-        super().__init__(beta, sigma, increment_dist=inc_dist, b=alpha, initial_transform=_init_trans, **kwargs)
+        inc_dist = DistributionModule(_build_trans_dist, loc=0.0, scale=1.0, lags=self.lags)
+        initial_dist = DistributionModule(_build_init, alpha=alpha, beta=beta, sigma=sigma, lags=self.lags)
+
+        def _parameter_transform(a, b, s):
+            if self.lags == 1:
+                return a, b, s
+
+            batch_shape = a.shape[:-1]
+
+            bottom_shape = self.lags - 1, self.lags
+            mask = torch.ones((*batch_shape, *bottom_shape), device=a.device)
+            bottom = torch.eye(*bottom_shape, device=a.device) * mask
+
+            mat = torch.cat((a.unsqueeze(-2), bottom))
+
+            return mat, b, s
+
+        super().__init__(beta, sigma, increment_dist=inc_dist, b=alpha, initial_dist=initial_dist, parameter_transform=_parameter_transform, **kwargs)
