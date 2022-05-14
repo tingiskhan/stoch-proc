@@ -1,7 +1,9 @@
 import torch
 from torch.distributions import utils
 from functools import wraps
+from typing import Dict, List
 from .distributions.base import _DistributionModule
+from .typing import ParameterType, NamedParameter
 
 
 def concat(*x: torch.Tensor) -> torch.Tensor:
@@ -80,3 +82,22 @@ def is_documented_by(original):
         return target
 
     return wrapper
+
+
+def enforce_named_parameter(**kwargs: ParameterType) -> List[ParameterType]:
+    """
+    Enforces parameter types into ``NamedParameters``.
+
+    Args:
+        kwargs: Key worded arguments.
+    """
+
+    res = list()
+    for k, v in kwargs.items():
+        if not isinstance(v, NamedParameter):
+            res.append(NamedParameter(k, v))
+        else:
+            # TODO: Perhaps warn?
+            res.append(NamedParameter(k, v.value))
+
+    return res
