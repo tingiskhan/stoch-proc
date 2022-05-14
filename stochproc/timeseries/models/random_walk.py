@@ -1,9 +1,9 @@
 from torch.distributions import Normal
 import torch
 from ..linear import LinearModel
-from ...distributions import DistributionWrapper
-from ...typing import ArrayType
-from ...utils import broadcast_all
+from ...distributions import DistributionModule
+from ...typing import ParameterType
+from ...utils import enforce_named_parameter
 
 
 class RandomWalk(LinearModel):
@@ -16,30 +16,29 @@ class RandomWalk(LinearModel):
     where :math:`x_0` is the initial mean, defaulting to zero.
     """
 
-    def __init__(self, std: ArrayType, initial_mean: ArrayType = 0.0, initial_scale: ArrayType = 1.0, **kwargs):
+    def __init__(self, scale: ParameterType, initial_mean: ParameterType = 0.0, **kwargs):
         """
         Initializes the ``RandomWalk`` model.
 
         Args:
-            std: Corresponds to :math:`\\sigma` in class doc.
+            scale: Corresponds to :math:`\\sigma` in class doc.
             initial_mean: Optional parameter specifying the mean of the initial distribution. Defaults to 0.
             initial_scale: Optional parameter specifying the scale of the initial distribution. Defaults to 1.
             kwargs: See base.
         """
 
-        std, initial_mean, initial_scale = broadcast_all(std, initial_mean, initial_scale)
+        a, scale, initial_mean = enforce_named_parameter(a=1.0, scale=scale, loc=initial_mean)
 
-        # TODO: Check all instead, as they might share std?
-        reinterpreted_batch_ndims = None if len(std.shape) == 0 else 1
-        initial_dist = DistributionWrapper(
-            Normal, loc=initial_mean, scale=initial_scale, reinterpreted_batch_ndims=reinterpreted_batch_ndims
+        reinterpreted_batch_ndims = None if len(scale.value.shape) == 0 else 1
+        initial_dist = DistributionModule(
+            Normal, loc=initial_mean, scale=scale, reinterpreted_batch_ndims=reinterpreted_batch_ndims
         )
 
-        inc_dist = DistributionWrapper(
+        inc_dist = DistributionModule(
             Normal,
-            loc=torch.zeros(initial_mean.shape),
-            scale=torch.ones(initial_mean.shape),
+            loc=torch.zeros(initial_mean.value.shape),
+            scale=torch.ones(initial_mean.value.shape),
             reinterpreted_batch_ndims=reinterpreted_batch_ndims,
         )
 
-        super().__init__(1.0, std, increment_dist=inc_dist, initial_dist=initial_dist, **kwargs)
+        super().__init__(a, scale, increment_dist=inc_dist, initial_dist=initial_dist, **kwargs)
