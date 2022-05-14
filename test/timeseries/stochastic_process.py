@@ -50,12 +50,15 @@ class TestStochasticProcess(object):
         assert (sts.parameter_dict["alpha"].shape == size)
 
     def test_same_prior_same_parameter(self):
-        param = NamedParameter("alpha", dists.Prior(Normal, loc=0.0, scale=1.0))
-        dist = dists.DistributionModule(Normal, loc=param, scale=1.0)
+        loc_parameter = NamedParameter("alpha", dists.Prior(Normal, loc=0.0, scale=1.0))
+        scale_parameter = NamedParameter("scale", 0.05)
 
-        proc = ts.StructuralStochasticProcess((param,), initial_dist=dist)
+        dist = dists.DistributionModule(Normal, loc=loc_parameter, scale=scale_parameter)
+
+        proc = ts.StructuralStochasticProcess((loc_parameter, scale_parameter), initial_dist=dist)
 
         assert (
                 (proc.parameter_dict["alpha"] is dist.parameter_dict["alpha"]) and
-                len(tuple(proc.parameters())) == 1
+                (len(tuple(proc.parameters())) == 1) and
+                (proc.buffer_dict["scale"] is dist.buffer_dict["scale"])
         )
