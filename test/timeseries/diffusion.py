@@ -19,12 +19,11 @@ class TestDiffusionOneDimensional(object):
             NamedParameter("sigma", 0.075)
         )
 
-        initial_dist = dists.DistributionModule(tdists.Normal, loc=0.0, scale=1.0)
-        increment_dist = dists.DistributionModule(tdists.Normal, loc=0.0, scale=math.sqrt(dt))
+        def builder(kappa, gamma, sigma):
+            return tdists.Normal(loc=gamma, scale=sigma / (2 * kappa).sqrt())
 
-        def initial_transform(module: ts.AffineEulerMaruyama, base_dist):
-            kappa, gamma, sigma = module.functional_parameters()
-            return tdists.TransformedDistribution(base_dist, tdists.AffineTransform(gamma, sigma / (2 * kappa).sqrt()))
+        initial_dist = dists.DistributionModule(builder, kappa=parameters[0], gamma=parameters[1], sigma=parameters[2])
+        increment_dist = dists.DistributionModule(tdists.Normal, loc=0.0, scale=math.sqrt(dt))
 
         discretized_ou = ts.AffineEulerMaruyama(
             dynamics,
@@ -32,7 +31,6 @@ class TestDiffusionOneDimensional(object):
             dt=dt,
             initial_dist=initial_dist,
             increment_dist=increment_dist,
-            initial_transform=initial_transform,
             num_steps=20
         )
 
