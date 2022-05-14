@@ -108,7 +108,7 @@ class StochasticProcess(Module, ABC):
             Returns an initial sample of the process wrapped in a ``NewState`` object.
         """
 
-        return TimeseriesState(0.0, self.initial_dist.expand(shape))
+        return TimeseriesState(0.0, self.initial_dist.expand(shape).sample)
 
     def build_density(self, x: TimeseriesState) -> Distribution:
         """
@@ -135,7 +135,7 @@ class StochasticProcess(Module, ABC):
 
         for _ in range(self.num_steps):
             density = self.build_density(x)
-            x = x.propagate_from(distribution=density, time_increment=time_increment)
+            x = x.propagate_from(values=density.sample, time_increment=time_increment)
 
         return x
 
