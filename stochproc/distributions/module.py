@@ -1,7 +1,7 @@
 from .base import _DistributionModule
 from stochproc.distributions.prior_module import _HasPriorsModule
 from .typing import DistributionOrBuilder
-from ..typing import _ParameterType
+from ..typing import ParameterType
 
 
 class DistributionModule(_DistributionModule, _HasPriorsModule):
@@ -25,7 +25,7 @@ class DistributionModule(_DistributionModule, _HasPriorsModule):
         self,
         base_dist: DistributionOrBuilder,
         reinterpreted_batch_ndims=None,
-        **parameters: _ParameterType
+        **parameters: ParameterType
     ):
         """
         Initializes the ``DistributionModule`` class.
