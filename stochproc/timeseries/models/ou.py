@@ -1,15 +1,12 @@
 import torch
-from torch.distributions import Normal, AffineTransform, TransformedDistribution
+from torch.distributions import Normal
 from ..affine import AffineProcess
-from ...distributions import DistributionWrapper
-from ...typing import ArrayType
-from ...utils import broadcast_all
+from ...distributions import DistributionModule
+from ...typing import ParameterType, NamedParameter
 
 
-def init_trans(module: "OrnsteinUhlenbeck", dist):
-    kappa, gamma, sigma = module.functional_parameters()
-
-    return TransformedDistribution(dist, AffineTransform(gamma, sigma / (2 * kappa).sqrt()))
+def init_builder(kappa, gamma, sigma):
+    return Normal(loc=gamma, scale=sigma / (2 * kappa).sqrt())
 
 
 # TODO: Should perhaps inherit from StochasticDifferentialEquation?
@@ -24,7 +21,7 @@ class OrnsteinUhlenbeck(AffineProcess):
     """
 
     def __init__(
-        self, kappa: ArrayType, gamma: ArrayType, sigma: ArrayType, n_dim: int = None, dt: float = 1.0, **kwargs
+        self, kappa: ParameterType, gamma: ParameterType, sigma: ParameterType, dt: float = 1.0, **kwargs
     ):
         """
         Initializes the ``OrnsteinUhlenbeck`` class.
@@ -38,20 +35,21 @@ class OrnsteinUhlenbeck(AffineProcess):
             kwargs: See base.
         """
 
-        kappa, gamma, sigma = broadcast_all(kappa, gamma, sigma)
+        if not isinstance(kappa, NamedParameter):
+            kappa = NamedParameter("kappa", kappa)
+        if not isinstance(gamma, NamedParameter):
+            gamma = NamedParameter("gamma", gamma)
+        if not isinstance(sigma, NamedParameter):
+            sigma = NamedParameter("sigma", sigma)
 
-        if (n_dim or len(kappa.shape)) > 0:
-            dist = DistributionWrapper(
-                Normal, loc=torch.zeros(sigma.shape), scale=torch.ones(sigma.shape), reinterpreted_batch_ndims=1
-            )
-        else:
-            dist = DistributionWrapper(Normal, loc=0.0, scale=1.0)
+        dist = DistributionModule(Normal, loc=0.0, scale=1.0)
+        initial_dist = DistributionModule(init_builder, kappa=kappa, gamma=gamma, sigma=sigma)
 
-        super().__init__((self._f, self._g), (kappa, gamma, sigma), dist, dist, initial_transform=init_trans, **kwargs)
+        super().__init__(self._mean_scale, (kappa, gamma, sigma), initial_dist, dist, **kwargs)
         self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
 
-    def _f(self, x, k, g, s):
-        return g + (x.values - g) * (-k * self._dt).exp()
+    def _mean_scale(self, x, k, g, s):
+        loc = g + (x.values - g) * (-k * self._dt).exp()
+        scale = s / (2 * k).sqrt() * (1 - (-2 * k * self._dt).exp()).sqrt()
 
-    def _g(self, x, k, g, s):
-        return s / (2 * k).sqrt() * (1 - (-2 * k * self._dt).exp()).sqrt()
+        return loc, scale
