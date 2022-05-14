@@ -25,7 +25,7 @@ class TestStochasticProcess(object):
         assert (sts.n_dim == 0) and (sts.num_vars == 1)
 
         initial_sample = sts.initial_sample()
-        assert isinstance(initial_sample.distribution, Normal)
+        assert callable(initial_sample._values) and isinstance(initial_sample.values, torch.Tensor)
 
     def test_initialize_sts_prior(self, initial_distribution: dists.DistributionModule):
         val = dists.Prior(Normal, loc=0.0, scale=1.0)
@@ -48,3 +48,14 @@ class TestStochasticProcess(object):
         sts.sample_params_(size)
 
         assert (sts.parameter_dict["alpha"].shape == size)
+
+    def test_same_prior_same_parameter(self):
+        param = NamedParameter("alpha", dists.Prior(Normal, loc=0.0, scale=1.0))
+        dist = dists.DistributionModule(Normal, loc=param, scale=1.0)
+
+        proc = ts.StructuralStochasticProcess((param,), initial_dist=dist)
+
+        assert (
+                (proc.parameter_dict["alpha"] is dist.parameter_dict["alpha"]) and
+                len(tuple(proc.parameters())) == 1
+        )
