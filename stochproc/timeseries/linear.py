@@ -1,7 +1,6 @@
 import torch
 from .affine import AffineProcess
 from ..typing import ParameterType
-from ..utils import broadcast_all
 
 
 def _f0d(x, a, b):
@@ -9,14 +8,10 @@ def _f0d(x, a, b):
 
 
 def _f1d(x, a, b):
-    return _f2d(x, a, b)
-
-
-def _f2d(x, a, b):
     return b + a.matmul(x.values.unsqueeze(-1)).squeeze(-1)
 
 
-_mapping = {0: _f0d, 1: _f1d, 2: _f2d}
+_mapping = {0: _f0d, 1: _f1d}
 
 
 class LinearModel(AffineProcess):
@@ -41,21 +36,16 @@ class LinearModel(AffineProcess):
             b: The ``b`` vector in the class docs.
         """
 
-        a = broadcast_all(a)[0]
-        sigma = broadcast_all(sigma)[0]
+        initial_dist = kwargs.pop("initial_dist")
+        dimension = len(initial_dist.shape)
 
         if b is None:
-            b = torch.zeros(sigma.shape)
-
-        dimension = len(a.shape)
-        params = (a, b, sigma)
-
-        initial_dist = kwargs.pop("initial_dist", None)
+            b = torch.zeros(dimension)
 
         def _mean_scale(x, a_, b_, s_):
             return _mapping[dimension](x, a_, b_), s_
 
         super(LinearModel, self).__init__(
-            _mean_scale, parameters=params, initial_dist=initial_dist or increment_dist, increment_dist=increment_dist,
+            _mean_scale, parameters=(a, b, sigma), initial_dist=initial_dist, increment_dist=increment_dist,
             **kwargs
         )
