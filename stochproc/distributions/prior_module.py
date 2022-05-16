@@ -7,7 +7,7 @@ from typing import Iterator, Tuple, Dict, Union
 from .parameter import PriorBoundParameter
 from ..container import BufferDict
 from .prior import Prior
-from ..typing import NamedParameter, _ParameterType
+from ..typing import NamedParameter, ParameterType
 
 
 class UpdateParametersMixin(ABC):
@@ -92,7 +92,7 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
             self.parameter_dict = ParameterDict()
             self.buffer_dict = BufferDict()
 
-    def _register_parameter_or_prior(self, name: str, p: Union[_ParameterType, NamedParameter]):
+    def _register_parameter_or_prior(self, name: str, p: ParameterType):
         """
         Helper method for registering either a:
             - ``pyfilter.distributions.Prior``
@@ -104,18 +104,17 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
             p: The object to register.
         """
 
-        if isinstance(p, NamedParameter):
-            name = p.name
-            p = p.value
+        if not isinstance(p, NamedParameter):
+            p = NamedParameter(name, p)
 
-        if isinstance(p, Prior):
-            self.register_prior(name, p)
-        elif isinstance(p, torch.nn.Parameter):
-            self.parameter_dict[name] = p
+        if p.prior is not None:
+            self.register_prior(p.name, p.prior, p.value)
+        elif isinstance(p.value, torch.nn.Parameter):
+            self.parameter_dict[p.name] = p.value
         else:
-            self.buffer_dict[name] = p if (isinstance(p, torch.Tensor) or p is None) else torch.tensor(p)
+            self.buffer_dict[p.name] = p.value
 
-        self._parameter_order.append(name)
+        self._parameter_order.append(p.name)
 
     def parameters_and_buffers(self) -> Dict[str, Union[torch.Tensor, torch.nn.Parameter]]:
         """
@@ -129,24 +128,19 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
 
         return res
 
-    def register_prior(self, name: str, prior: Prior):
+    def register_prior(self, name: str, prior: Prior, parameter=None):
         """
-        Registers a ``pyfilter.distributions.Prior`` object together with a ``pyfilter.PriorBoundParameter`` on self. If
-        the same prior object already exists on the object, it's assumed that the corresponding parameter should be the
-        same object.
+        Registers a ``pyfilter.distributions.Prior`` object together with a ``pyfilter.PriorBoundParameter`` on self.
+        Utilizes the same parameter for same ``NamedParameter``.
 
         Args:
             name: The name to use for the prior.
             prior: The prior of the parameter.
+            parameter: Override parameter.
         """
 
-        parameter = next(
-            (prm for (prm, p) in self.parameters_and_priors() if p is prior),
-            PriorBoundParameter(prior().sample(), requires_grad=False)
-        )
-
         self.prior_dict[name] = prior
-        self.parameter_dict[name] = parameter
+        self.parameter_dict[name] = parameter or PriorBoundParameter(prior().sample(), requires_grad=False)
 
     def parameters_and_priors(self) -> Iterator[Tuple[PriorBoundParameter, Prior]]:
         """

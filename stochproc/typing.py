@@ -21,8 +21,16 @@ class NamedParameter(object):
             value: The value of the parameter
         """
 
+        from .distributions import PriorBoundParameter
+
         self.name = name
-        self.value = torch.tensor(value) if isinstance(value, Number) else value
+
+        is_prior = isinstance(value, Prior)
+        self.prior = value if is_prior else None
+        if is_prior:
+            self.value = PriorBoundParameter(self.prior().sample(), requires_grad=False)
+        else:
+            self.value = value if isinstance(value, torch.Tensor) else torch.tensor(value)
 
 
 ParameterType = Union[_ParameterType, NamedParameter]
