@@ -69,3 +69,14 @@ class TestStochasticProcess(object):
 
         with pt.raises(Exception):
             dist = dists.DistributionModule(Normal, loc=loc_parameter, scale=scale_parameter)
+
+    def test_nested_parameters(self):
+        loc_parameter = NamedParameter("loc", dists.Prior(Normal, loc=0.0, scale=1.0))
+        scale_parameter = NamedParameter("scale", dists.Prior(Normal, loc=0.0, scale=1.0))
+
+        dist = dists.DistributionModule(Normal, loc=loc_parameter, scale=1.0)
+        proc = ts.StructuralStochasticProcess((scale_parameter,), initial_dist=dist)
+
+        assert (
+            len(tuple(proc.parameters_and_priors())) == 2
+        )
