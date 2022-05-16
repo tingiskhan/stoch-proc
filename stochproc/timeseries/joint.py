@@ -1,3 +1,5 @@
+import functools
+
 import torch
 from torch.distributions import Distribution
 from .stochastic_process import StochasticProcess
@@ -107,4 +109,4 @@ class AffineJointStochasticProcess(AffineProcess):
 
     # TODO: Should perhaps return a flat list which is split later on, but I think this is better
     def functional_parameters(self, **kwargs):
-        return tuple((self._modules[proc_name].functional_parameters(**kwargs) for proc_name in self._proc_names))
+        return tuple((proc.functional_parameters(**kwargs) for proc in self.sub_processes.values()))
