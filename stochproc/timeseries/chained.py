@@ -3,6 +3,7 @@ from .joint import JointStochasticProcess, AffineJointStochasticProcess
 from ..distributions import JointDistribution
 
 
+# TODO: Kill these?
 class ChainedStochasticProcess(JointStochasticProcess):
     """
     Implements a stochastic process which constitutes multiple "chained" stochastic processes, s.t. each process is
