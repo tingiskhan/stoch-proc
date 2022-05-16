@@ -74,7 +74,7 @@ class AffineProcess(StructuralStochasticProcess):
         **kwargs
     ):
         """
-        Initializes the ``AffineProcess`` class.
+        Initializes the :class:`AffineProcess` class.
 
         Args:
             mean_scale: Function constructing the mean and scale.
