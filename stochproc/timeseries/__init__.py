@@ -14,7 +14,6 @@ from .diffusion import (
 )
 from .state import TimeseriesState, JointState
 from .joint import AffineJointStochasticProcess
-# from .chained import ChainedStochasticProcess, AffineChainedStochasticProcess
 from . import models
 
 
