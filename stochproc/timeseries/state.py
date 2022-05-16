@@ -1,7 +1,6 @@
 import torch
 from typing import Union, Callable
 
-
 LazyTensor = Union[torch.Tensor, Callable[[], torch.Tensor]]
 
 
@@ -11,7 +10,8 @@ class TimeseriesState(dict):
     """
 
     def __init__(
-        self, time_index: Union[float, torch.Tensor], values: LazyTensor, exogenous: torch.Tensor = None
+            self, time_index: Union[float, torch.Tensor], values: LazyTensor, event_dim: torch.Size,
+            exogenous: torch.Tensor = None
     ):
         """
         Initializes the ``TimeseriesState`` class.
@@ -19,12 +19,15 @@ class TimeseriesState(dict):
         Args:
             time_index: The time index of the state.
             values: The values of the state. Can be a lazy evaluated tensor as well.
+            event_dim: The event dimension.
+            exogenous: Whether to include any exogenous data.
         """
 
         super().__init__()
 
         self.time_index: torch.Tensor = time_index if isinstance(time_index, torch.Tensor) else torch.tensor(time_index)
         self.exogenous: torch.Tensor = exogenous
+        self.event_dim = event_dim
 
         self._values = values
 
@@ -51,10 +54,12 @@ class TimeseriesState(dict):
             values: See ``__init__``.
         """
 
-        res = self.propagate_from(values, time_increment=0.0)
-        res.add_exog(self.exogenous)
-
-        return res
+        return TimeseriesState(
+            time_index=self.time_index,
+            values=values,
+            event_dim=self.event_dim,
+            exogenous=self.exogenous
+        )
 
     def propagate_from(self, values: torch.Tensor, time_increment=1.0):
         """
@@ -66,7 +71,11 @@ class TimeseriesState(dict):
             time_increment: Optional, specifies how much to increase ``.time_index`` with for new state.
         """
 
-        return TimeseriesState(self.time_index + time_increment, values)
+        return TimeseriesState(
+            time_index=self.time_index + time_increment,
+            values=values,
+            event_dim=self.event_dim
+        )
 
     def add_exog(self, x: torch.Tensor):
         """
@@ -80,3 +89,57 @@ class TimeseriesState(dict):
 
     def __repr__(self):
         return f"TimeseriesState at t={self.time_index} containing: {self.values.__repr__()}"
+
+
+class JointState(TimeseriesState):
+    """
+    Implements a joint state for joint timeseries.
+    """
+
+    def __init__(self, **sub_states: TimeseriesState):
+        """
+        Initializes the :class:`JointState` class.
+
+        Args:
+            sub_states: The sub states.
+        """
+
+        time_index = tuple(sub_states.values())[0].time_index
+        event_dim = torch.Size([sum(ss.event_dim[0] if any(ss.event_dim) else 1 for ss in sub_states.values())])
+        super(JointState, self).__init__(time_index=time_index, event_dim=event_dim, values=None)
+
+        self._sub_states_order = sub_states.keys()
+        for name, sub_state in sub_states.items():
+            assert sub_state.time_index == time_index
+            self[name] = sub_state
+
+    @property
+    def values(self) -> torch.Tensor:
+        res = tuple()
+
+        for sub_state_name in self._sub_states_order:
+            sub_state: TimeseriesState = self[sub_state_name]
+            res += (sub_state.values if any(sub_state.event_dim) else sub_state.values.unsqueeze(-1),)
+
+        return torch.cat(res, dim=-1)
+
+    def propagate_from(self, values: torch.Tensor, time_increment=1.0):
+        # NB: This is a hard assumption that the values are in the correct order...
+        result = dict()
+
+        last_ind = 0
+        for sub_state_name in self._sub_states_order:
+            sub_state: TimeseriesState = self[sub_state_name]
+
+            dimension = len(sub_state.event_dim)
+            if callable(values):
+                sub_values = lambda: values()[..., last_ind: last_ind + dimension + 1].squeeze(-1)
+            else:
+                sub_values = values[..., last_ind: last_ind + dimension + 1].squeeze(-1)
+
+            new_sub_values = sub_values
+
+            result[sub_state_name] = sub_state.propagate_from(new_sub_values, time_increment=time_increment)
+            last_ind += dimension
+
+        return JointState(**result)
