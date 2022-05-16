@@ -50,7 +50,7 @@ class TestStochasticProcess(object):
         assert (sts.parameter_dict["alpha"].shape == size)
 
     def test_same_prior_same_parameter(self):
-        loc_parameter = NamedParameter("alpha", dists.Prior(Normal, loc=0.0, scale=1.0))
+        loc_parameter = NamedParameter("loc", dists.Prior(Normal, loc=0.0, scale=1.0))
         scale_parameter = NamedParameter("scale", 0.05)
 
         dist = dists.DistributionModule(Normal, loc=loc_parameter, scale=scale_parameter)
@@ -58,7 +58,14 @@ class TestStochasticProcess(object):
         proc = ts.StructuralStochasticProcess((loc_parameter, scale_parameter), initial_dist=dist)
 
         assert (
-                (proc.parameter_dict["alpha"] is dist.parameter_dict["alpha"]) and
+                (proc.parameter_dict["loc"] is dist.parameter_dict["loc"]) and
                 (len(tuple(proc.parameters())) == 1) and
                 (proc.buffer_dict["scale"] is dist.buffer_dict["scale"])
         )
+
+    def test_incongruent_names(self):
+        loc_parameter = NamedParameter("alpha", dists.Prior(Normal, loc=0.0, scale=1.0))
+        scale_parameter = NamedParameter("scale", 0.05)
+
+        with pt.raises(Exception):
+            dist = dists.DistributionModule(Normal, loc=loc_parameter, scale=scale_parameter)
