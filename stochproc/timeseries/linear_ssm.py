@@ -53,7 +53,7 @@ class LinearGaussianObservations(LinearSSM):
         if len(a.value.shape) < 2:
             dist = DistributionModule(Normal, loc=0.0, scale=1.0)
         else:
-            dim = a.shape[0]
+            dim = a.value.shape[-2]
             dist = DistributionModule(Normal, loc=torch.zeros(dim), scale=torch.ones(dim), reinterpreted_batch_ndims=1)
 
         super().__init__(hidden, a, scale, dist)
