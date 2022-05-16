@@ -23,7 +23,6 @@ def _define_transdist(
         The resulting affine transformed distribution.
     """
 
-    loc, scale = torch.broadcast_tensors(loc, scale)
     batch_shape = loc.shape[:loc.dim() - n_dim]
 
     return TransformedDistribution(
@@ -107,7 +106,9 @@ class AffineProcess(StructuralStochasticProcess):
             Returns the tuple ``(mean, scale)`` given by evaluating ``(f(x, *parameters), g(x, *parameters))``.
         """
 
-        return self.mean_scale_fun(x, *(parameters or self.functional_parameters()))
+        mean, scale = self.mean_scale_fun(x, *(parameters or self.functional_parameters()))
+
+        return torch.broadcast_tensors(mean, scale)
 
     def propagate_conditional(
             self, x: TimeseriesState, u: torch.Tensor, parameters=None, time_increment=1.0

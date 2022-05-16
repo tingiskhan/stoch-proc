@@ -100,7 +100,7 @@ class AffineJointStochasticProcess(AffineProcess):
 
         for i, (proc_name, proc) in enumerate(self.sub_processes.items()):
             overrides = parameters[i] if parameters is not None else None
-            m, s = torch.broadcast_tensors(*proc.mean_scale(x[proc_name], overrides))
+            m, s = proc.mean_scale(x[proc_name], overrides)
 
             mean += (m.unsqueeze(-1) if proc.n_dim == 0 else m,)
             scale += (s.unsqueeze(-1) if proc.n_dim == 0 else s,)
