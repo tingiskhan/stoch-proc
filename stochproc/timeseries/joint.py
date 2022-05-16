@@ -92,7 +92,7 @@ class AffineJointStochasticProcess(AffineProcess):
         return JointDistribution(*(sub_proc.initial_dist for sub_proc in self.sub_processes.values()))
 
     def initial_sample(self, shape: torch.Size = torch.Size([])) -> JointState:
-        return JointState(**{proc_name: proc.initial_sample() for proc_name, proc in self.sub_processes.items()})
+        return JointState(**{proc_name: proc.initial_sample(shape) for proc_name, proc in self.sub_processes.items()})
 
     def mean_scale(self, x: TimeseriesState, parameters=None):
         mean = tuple()
