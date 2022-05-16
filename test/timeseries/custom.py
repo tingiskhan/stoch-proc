@@ -20,3 +20,10 @@ class TestCustomModels(object):
             x = proc.sample_path(SAMPLES)
 
             assert (x.shape[0] == SAMPLES) and ~torch.isnan(x).any()
+
+    def test_all_models_batched(self):
+        batch_size = torch.Size([15, 10])
+        for proc in models():
+            x = proc.sample_path(SAMPLES, batch_size)
+
+            assert (x.shape[:3] == torch.Size([SAMPLES, *batch_size]))

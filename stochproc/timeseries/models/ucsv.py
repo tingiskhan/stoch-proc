@@ -10,7 +10,7 @@ def f(x, sigma_volatility):
     x1 = x.values[..., 1].exp()
     x2 = sigma_volatility
 
-    return x.values, torch.stack((x1, x2), dim=-1)
+    return x.values, torch.stack(torch.broadcast_tensors(x1, x2), dim=-1)
 
 
 def _init_builder(loc, sigma_volatility):
