@@ -51,7 +51,6 @@ class StateSpaceModel(Module, UpdateParametersMixin):
 
         for t in range(1, steps + 1):
             x = self.hidden.propagate(x)
-
             obs_state = self.observable.propagate(x)
 
             obs += (obs_state,)
