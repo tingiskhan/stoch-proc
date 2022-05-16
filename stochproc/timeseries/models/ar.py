@@ -51,9 +51,13 @@ class AR(LinearModel):
         inc_dist = DistributionModule(_build_trans_dist, loc=0.0, scale=1.0, lags=self.lags)
         initial_dist = DistributionModule(_build_init, alpha=alpha, beta=beta, sigma=sigma, lags=self.lags)
 
-        def _parameter_transform(a, b, s):
+        super().__init__(beta, sigma, increment_dist=inc_dist, b=alpha, initial_dist=initial_dist, **kwargs)
+        self.mean_scale_fun = self._mean_scale_wrapper(self.mean_scale_fun)
+
+    def _mean_scale_wrapper(self, f):
+        def _wrapper(x, a, b, s):
             if self.lags == 1:
-                return a, b, s
+                return f(x, a, b, s)
 
             batch_shape = a.shape[:-1]
 
@@ -61,8 +65,8 @@ class AR(LinearModel):
             mask = torch.ones((*batch_shape, *bottom_shape), device=a.device)
             bottom = torch.eye(*bottom_shape, device=a.device) * mask
 
-            mat = torch.cat((a.unsqueeze(-2), bottom))
+            a = torch.cat((a.unsqueeze(-2), bottom))
 
-            return mat, b, s
+            return f(x, a, b, s)
 
-        super().__init__(beta, sigma, increment_dist=inc_dist, b=alpha, initial_dist=initial_dist, parameter_transform=_parameter_transform, **kwargs)
+        return _wrapper

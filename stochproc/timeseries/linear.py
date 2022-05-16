@@ -27,7 +27,7 @@ class LinearModel(AffineProcess):
     """
 
     def __init__(
-        self, a: ParameterType, sigma: ParameterType, increment_dist, b: ParameterType = None, parameter_transform=None, **kwargs
+        self, a: ParameterType, sigma: ParameterType, increment_dist, b: ParameterType = None, **kwargs
     ):
         """
         Initializes the ``LinearModel`` class.
@@ -45,9 +45,6 @@ class LinearModel(AffineProcess):
             b = torch.zeros(dimension) if dimension > 0 else 0.0
 
         def _mean_scale(x, a_, b_, s_):
-            if parameter_transform is not None:
-                a_, b_, s_ = parameter_transform(a_, b_, s_)
-
             return _mapping[dimension](x, a_, b_), s_
 
         super(LinearModel, self).__init__(
