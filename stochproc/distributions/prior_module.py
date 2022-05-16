@@ -140,7 +140,7 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
         """
 
         self.prior_dict[name] = prior
-        self.parameter_dict[name] = parameter or PriorBoundParameter(prior().sample(), requires_grad=False)
+        self.parameter_dict[name] = parameter if parameter is not None else PriorBoundParameter(prior().sample(), requires_grad=False)
 
     def parameters_and_priors(self) -> Iterator[Tuple[PriorBoundParameter, Prior]]:
         """
