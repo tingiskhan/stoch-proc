@@ -42,7 +42,7 @@ class UpdateParametersMixin(ABC):
                 parameters' original space.
 
         Example:
-            >>> from pyfilter import timeseries as ts, distributions as dists
+            >>> from stochproc import timeseries as ts, distributions as dists
             >>> from torch.distributions import Normal, Uniform
             >>> import torch
             >>>
@@ -95,7 +95,7 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
     def _register_parameter_or_prior(self, name: str, p: ParameterType):
         """
         Helper method for registering either a:
-            - ``pyfilter.distributions.Prior``
+            - ``stochproc.distributions.Prior``
             - ``torch.nn.Parameter``
             - ``torch.Tensor``
 
@@ -130,7 +130,7 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
 
     def register_prior(self, name: str, prior: Prior, parameter=None):
         """
-        Registers a ``pyfilter.distributions.Prior`` object together with a ``pyfilter.PriorBoundParameter`` on self.
+        Registers a ``stochproc.distributions.Prior`` object together with a ``pyfilter.PriorBoundParameter`` on self.
         Utilizes the same parameter for same ``NamedParameter``.
 
         Args:

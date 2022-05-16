@@ -31,9 +31,9 @@ class DistributionModule(_DistributionModule, _HasPriorsModule):
         Initializes the ``DistributionModule`` class.
 
         Args:
-            base_dist: See the ``distribution`` of ``pyfilter.distributions.Prior``.
-            parameters: See ``parameters`` of ``pyfilter.distributions.Prior``. With the addition that we can pass
-                ``pyfilter.distributions.Prior`` objects as parameters.
+            base_dist: See the ``distribution`` of ``stochproc.distributions.Prior``.
+            parameters: See ``parameters`` of ``stochproc.distributions.Prior``. With the addition that we can pass
+                ``stochproc.distributions.Prior`` objects as parameters.
 
         Example:
             In this example we'll construct a distribution wrapper around a normal distribution where the location is a

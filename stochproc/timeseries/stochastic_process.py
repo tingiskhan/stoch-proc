@@ -39,7 +39,7 @@ class StochasticProcess(Module, ABC):
 
         Args:
             initial_dist: The initial distribution of the process. Corresponds to a
-                ``pyfilter.distributions.DistributionModule`` rather than a ``pytorch`` distribution as we require
+                ``stochproc.distributions.DistributionModule`` rather than a ``pytorch`` distribution as we require
                 being able to move the distribution between devices.
             initial_transform: Optional parameter allowing for re-parameterizing the initial distribution with
                 parameters of the ``StochasticProcess`` object. One example is the Ornstein-Uhlenbeck process, where
@@ -215,7 +215,7 @@ class StochasticProcess(Module, ABC):
         are samples drawn from the incremental distribution.
 
         This method is mainly intended to be used filters that either require sigma points (see
-        ``pyfilter.filters.kalman.UKF``), or SQMC filters (currently not implemented).
+        ``stochproc.filters.kalman.UKF``), or SQMC filters (currently not implemented).
 
         Args:
             x: See ``.propagate(...)``
