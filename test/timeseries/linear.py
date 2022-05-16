@@ -21,7 +21,8 @@ class TestLinear(object):
 
         proc = ts.LinearModel(a, sigma, b=b, initial_dist=initial_dist, increment_dist=increment_dist)
 
-        x = proc.sample_path(SAMPLES)
+        batch_size = torch.Size([10, 15])
+        x = proc.sample_path(SAMPLES, samples=batch_size)
 
-        assert x.shape == torch.Size([SAMPLES, dim])
+        assert x.shape == torch.Size([SAMPLES, *batch_size, dim])
 
