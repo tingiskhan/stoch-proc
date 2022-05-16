@@ -12,9 +12,9 @@ from .diffusion import (
     RungeKutta,
     StochasticDifferentialEquation,
 )
-from .state import NewState, JointState
-from .joint import JointStochasticProcess, AffineJointStochasticProcess
-from .chained import ChainedStochasticProcess, AffineChainedStochasticProcess
+from .state import TimeseriesState, JointState
+from .joint import AffineJointStochasticProcess
+# from .chained import ChainedStochasticProcess, AffineChainedStochasticProcess
 from . import models
 
 
@@ -30,13 +30,12 @@ __all__ = [
     "AffineEulerMaruyama",
     "OneStepEulerMaruyma",
     "models",
-    "NewState",
+    "TimeseriesState",
     "Euler",
     "DiscretizedStochasticDifferentialEquation",
     "RungeKutta",
     "StochasticDifferentialEquation",
     "JointState",
-    "JointStochasticProcess",
     "AffineJointStochasticProcess",
     "GeneralObservable",
     "models",

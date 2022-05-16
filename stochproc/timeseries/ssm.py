@@ -4,16 +4,16 @@ from typing import Tuple
 from copy import deepcopy
 from functools import wraps
 from .stochastic_process import StochasticProcess
-from ..prior_module import UpdateParametersMixin, HasPriorsModule
+from ..distributions.prior_module import UpdateParametersMixin, _HasPriorsModule
 
 
 def _check_has_priors_wrapper(f):
     @wraps(f)
-    def _wrapper(obj: "StateSpaceModel", *args, **kwargs):
-        if not any(obj._prior_mods):
-            raise Exception(f"No module is subclassed by {HasPriorsModule.__name__}")
+    def _wrapper(ssm: "StateSpaceModel", *args, **kwargs):
+        if not ssm._has_priors:
+            raise Exception(f"No module is subclassed by {_HasPriorsModule.__name__}")
 
-        return f(obj, *args, **kwargs)
+        return f(ssm, *args, **kwargs)
 
     return _wrapper
 
@@ -41,12 +41,12 @@ class StateSpaceModel(Module, UpdateParametersMixin):
         self.hidden = hidden
         self.observable = observable
 
-        self._prior_mods = tuple(m for m in (self.hidden, self.observable) if issubclass(m.__class__, HasPriorsModule))
+        self._has_priors = issubclass(self.hidden.__class__, _HasPriorsModule) or issubclass(self.observable.__class__, _HasPriorsModule)
 
-    def sample_path(self, steps, samples=None, x_s=None) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample_path(self, steps, samples=torch.Size([]), x_s=None) -> Tuple[torch.Tensor, torch.Tensor]:
         x = x_s if x_s is not None else self.hidden.initial_sample(shape=samples)
 
-        hidden = (x,)
+        hidden = tuple()
         obs = tuple()
 
         for t in range(1, steps + 1):
@@ -67,9 +67,9 @@ class StateSpaceModel(Module, UpdateParametersMixin):
         return deepcopy(self)
 
     @_check_has_priors_wrapper
-    def sample_params(self, shape: torch.Size = torch.Size([])):
+    def sample_params_(self, shape: torch.Size = torch.Size([])):
         for m in self._prior_mods:
-            m.sample_params(shape)
+            m.sample_params_(shape)
 
     @_check_has_priors_wrapper
     def concat_parameters(self, constrained=False, flatten=True):

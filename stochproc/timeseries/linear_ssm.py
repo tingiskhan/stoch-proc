@@ -2,9 +2,9 @@ import torch
 from torch.distributions import Normal
 from .ssm import StateSpaceModel
 from .observable import LinearObservations
-from ..distributions import DistributionWrapper
-from ..typing import ArrayType
-from ..utils import broadcast_all
+from ..distributions import DistributionModule
+from ..typing import ParameterType
+from ..utils import enforce_named_parameter
 
 
 class LinearSSM(StateSpaceModel):
@@ -17,7 +17,7 @@ class LinearSSM(StateSpaceModel):
     a random variable with arbitrary density, and :math:`\\sigma` is a scaling parameter.
     """
 
-    def __init__(self, hidden, a: ArrayType, scale: ArrayType, base_dist: DistributionWrapper):
+    def __init__(self, hidden, a: ParameterType, scale: ParameterType, base_dist: DistributionModule):
         """
         Initializes the ``LinearObservations`` class.
 
@@ -48,13 +48,12 @@ class LinearGaussianObservations(LinearSSM):
             scale: See base.
         """
 
-        a = broadcast_all(a)[0]
-        scale = broadcast_all(scale)[0]
+        a, scale = enforce_named_parameter(a=a, scale=scale)
 
-        if len(a.shape) < 2:
-            dist = DistributionWrapper(Normal, loc=0.0, scale=1.0)
+        if len(a.value.shape) < 2:
+            dist = DistributionModule(Normal, loc=0.0, scale=1.0)
         else:
             dim = a.shape[0]
-            dist = DistributionWrapper(Normal, loc=torch.zeros(dim), scale=torch.ones(dim), reinterpreted_batch_ndims=1)
+            dist = DistributionModule(Normal, loc=torch.zeros(dim), scale=torch.ones(dim), reinterpreted_batch_ndims=1)
 
         super().__init__(hidden, a, scale, dist)

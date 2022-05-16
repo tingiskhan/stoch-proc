@@ -4,7 +4,7 @@ from torch import Size
 from .stochastic_process import StructuralStochasticProcess
 from .affine import AffineProcess
 from .linear import LinearModel
-from .state import NewState
+from .state import TimeseriesState
 
 
 class Observable(StructuralStochasticProcess, ABC):
@@ -23,8 +23,8 @@ class Observable(StructuralStochasticProcess, ABC):
 
         super(Observable, self).__init__(*args, num_steps=num_steps, **kwargs)
 
-    def _add_exog_to_state(self, x: NewState):
-        if any(self._tensor_tuples["exog"]):
+    def _add_exog_to_state(self, x: TimeseriesState):
+        if any(self._tensor_tuples[self._EXOGENOUS]):
             # We subtract 1 as it's technically 1-indexed
             x.add_exog(self.exog[x.time_index.int() - 1])
 
@@ -72,27 +72,30 @@ class GeneralObservable(Observable, ABC):
 
 class Mixin(object):
     @property
-    @lru_cache(maxsize=None)
     def n_dim(self) -> int:
         return len(self.increment_dist().event_shape)
 
     @property
-    @lru_cache(maxsize=None)
     def num_vars(self) -> int:
-        return self.increment_dist().event_shape.numel()
+        return self.dimension.numel()
 
     def forward(self, x, time_increment=1.0):
         self._add_exog_to_state(x)
+        dist = self.build_density(x)
 
-        return NewState(x.time_index, distribution=self.build_density(x))
+        return TimeseriesState(x.time_index, dist.sample, event_dim=self.dimension)
 
     propagate = forward
 
-    def propagate_conditional(self, x, u, parameters=None, time_increment=1.0):
+    def propagate_conditional(self, x: TimeseriesState, u, parameters=None, time_increment=1.0):
         super().propagate_conditional(x, u, parameters, time_increment)
         loc, scale = self.mean_scale(x, parameters=parameters)
 
-        return NewState(x.time_index, values=loc + scale * u)
+        return x.propagate_from(loc + scale * u, time_increment=0.0)
+
+    @property
+    def dimension(self):
+        return self.increment_dist().event_shape
 
 
 class AffineObservations(AffineProcess, Mixin, Observable):
@@ -105,17 +108,17 @@ class AffineObservations(AffineProcess, Mixin, Observable):
     for some functions :math:`f, g` parameterized by :math:`\\theta`.
     """
 
-    def __init__(self, funcs, parameters, increment_dist, **kwargs):
+    def __init__(self, mean_scale, parameters, increment_dist, **kwargs):
         """
         Initializes the ``AffineObservations`` class.
 
         Args:
-            funcs: See base.
+            mean_scale: See base.
             parameters: See base.
             increment_dist: See base.
         """
 
-        super().__init__(funcs, parameters, None, increment_dist, **kwargs)
+        super().__init__(mean_scale, parameters, increment_dist, increment_dist, **kwargs)
 
 
 class LinearObservations(LinearModel, Mixin, Observable):
@@ -136,4 +139,4 @@ class LinearObservations(LinearModel, Mixin, Observable):
             increment_dist: See ``LinearModel``.
         """
 
-        super().__init__(a, sigma, increment_dist, initial_dist=None, **kwargs)
+        super().__init__(a, sigma, increment_dist, initial_dist=increment_dist, **kwargs)
