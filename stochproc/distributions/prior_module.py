@@ -70,6 +70,15 @@ class UpdateParametersMixin(ABC):
         raise NotImplementedError()
 
 
+def _recurse(obj: "_HasPriorsModule", name_):
+    name_split = name_.split(".")
+
+    if len(name_split) == 2:
+        return obj.prior_dict[name_split[-1]]
+
+    return _recurse(obj._modules[name_split[0]], ".".join(name_split[1:]))
+
+
 class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
     """
     Abstract base class that allows registering priors.
@@ -148,20 +157,10 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
             [(parameter_0, prior_parameter_0), ..., (parameter_n, prior_parameter_n)]
         """
 
-        prior_memo = set()
-
-        for name, prior in self.prior_dict.items():
-            prior_memo.add(prior)
-            parameter = self.parameter_dict[name]
+        for name, parameter in self.named_parameters():
+            prior = _recurse(self, name)
 
             yield parameter, prior
-
-        for module in filter(lambda u: isinstance(u, _HasPriorsModule), self.children()):
-            for parameter, prior in module.parameters_and_priors():
-                if prior in prior_memo:
-                    continue
-
-                yield parameter, prior
 
     def sample_params_(self, shape: torch.Size = torch.Size([])):
         for param, prior in self.parameters_and_priors():
