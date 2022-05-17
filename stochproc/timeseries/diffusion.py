@@ -3,7 +3,7 @@ from abc import ABC
 from numbers import Number
 
 import torch
-from torch.distributions import Normal, Independent
+from pyro.distributions import Normal, Independent
 
 from .affine import AffineProcess, MeanScaleFun
 from .stochastic_process import StructuralStochasticProcess
