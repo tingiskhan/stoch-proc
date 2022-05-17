@@ -1,14 +1,15 @@
-import torch
-from abc import ABC
-from torch.distributions import Normal, Independent
 import math
+from abc import ABC
 from numbers import Number
+
+import torch
+from torch.distributions import Normal, Independent
+
 from .affine import AffineProcess, MeanScaleFun
 from .stochastic_process import StructuralStochasticProcess
 from .typing import DiffusionFunction, Drift
 from ..distributions import DistributionModule
 from ..typing import ParameterType
-
 
 _info = torch.finfo(torch.get_default_dtype())
 EPS = math.sqrt(_info.eps)
@@ -199,6 +200,7 @@ class Euler(AffineEulerMaruyama):
             return dynamics(x, *params), torch.ones_like(x.values)
 
         super().__init__(_mean_scale, parameters, iv, dist, dt, **kwargs)
+        self.f = dynamics
 
 
 class RungeKutta(Euler):
@@ -211,9 +213,9 @@ class RungeKutta(Euler):
     def mean_scale(self, x, parameters=None):
         params = parameters or self.functional_parameters()
 
-        k1 = self.f(x, *params)
+        k1, g = self.mean_scale_fun(x, *params)
         k2 = self.f(x.propagate_from(time_increment=self.dt / 2, values=x.values + self.dt * k1 / 2), *params)
         k3 = self.f(x.propagate_from(time_increment=self.dt / 2, values=x.values + self.dt * k2 / 2), *params)
         k4 = self.f(x.propagate_from(time_increment=self.dt, values=x.values + self.dt * k3), *params)
 
-        return x.values + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4), self.g(x, *params)
+        return x.values + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4), g
