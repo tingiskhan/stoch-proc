@@ -4,7 +4,7 @@ from typing import TypeVar, Callable, Union, Tuple, Sequence, Iterable
 
 import pyro
 import torch
-from pyro.distributions import Distribution, Independent
+from pyro.distributions import Distribution
 from torch.nn import Module, Parameter
 
 from .state import TimeseriesState
@@ -251,8 +251,8 @@ class StochasticProcess(Module, ABC):
         time_index = torch.arange(1, obs.shape[0])
         batched_state = TimeseriesState(time_index=time_index, values=obs[:-1], event_dim=self.initial_dist.event_shape)
 
-        with pyro_lib.plate("date", n_plates):
-            dist = pyro_lib.sample("x", Independent(self.build_density(batched_state), 1), obs=obs[1:])
+        with pyro_lib.plate("data", n_plates):
+            dist = pyro_lib.sample("x", self.build_density(batched_state).to_event(1), obs=obs[1:])
 
         return dist
 
