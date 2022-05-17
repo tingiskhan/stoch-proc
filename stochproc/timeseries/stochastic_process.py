@@ -249,7 +249,9 @@ class StochasticProcess(Module, ABC):
             raise NotImplementedError(f"Currently do not support {self.num_steps} != 1")
 
         time_index = torch.arange(1, obs.shape[0])
-        batched_state = TimeseriesState(time_index=time_index, values=obs[:-1], event_dim=self.initial_dist.event_shape)
+
+        init_state = self.initial_sample()
+        batched_state = init_state.propagate_from(values=obs[:-1], time_increment=time_index)
 
         with pyro_lib.plate("data", n_plates):
             dist = pyro_lib.sample("x", self.build_density(batched_state).to_event(1), obs=obs[1:])

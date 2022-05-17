@@ -1,5 +1,6 @@
-import torch
 from typing import Union, Callable
+
+import torch
 
 LazyTensor = Union[torch.Tensor, Callable[[], torch.Tensor]]
 
@@ -110,7 +111,7 @@ class JointState(TimeseriesState):
 
         self._sub_states_order = sub_states.keys()
         for name, sub_state in sub_states.items():
-            assert sub_state.time_index == time_index
+            assert (sub_state.time_index == time_index).all()
             self[name] = sub_state
 
     @property
