@@ -1,14 +1,15 @@
-from torch.distributions import Distribution
-import torch
+from abc import ABC
 from copy import deepcopy
 from typing import TypeVar, Callable, Union, Tuple, Sequence, Iterable
-from torch.nn import Module, Parameter
-from abc import ABC
-from .state import TimeseriesState
-from ..distributions import DistributionModule, _HasPriorsModule
-from ..container import BufferIterable
-from ..typing import ParameterType
 
+import torch
+from torch.distributions import Distribution
+from torch.nn import Module, Parameter
+
+from .state import TimeseriesState
+from ..container import BufferIterable
+from ..distributions import DistributionModule, _HasPriorsModule
+from ..typing import ParameterType
 
 T = TypeVar("T")
 
@@ -229,6 +230,38 @@ class StochasticProcess(Module, ABC):
         """
 
         self._tensor_tuples[self._EXOGENOUS] += (exogenous,)
+
+    def do_sample_pyro(self, pyro_lib, obs: torch.Tensor, n_plates=1):
+        """
+        Samples pyro primitives for inferring the parameters of the model.
+
+        Args:
+            pyro_lib: The pyro library
+            obs: The data to generate for.
+            n_plates: The number of data plates.
+        """
+
+        t_final = obs.shape[0]
+
+        with pyro_lib.plate("data_plate", n_plates) as n:
+            x = pyro_lib.sample("x_0", self.initial_dist)
+            state = TimeseriesState(time_index=0.0, values=x, event_dim=self.initial_dist.event_shape)
+
+            for t in pyro_lib.markov(range(1, t_final * self.num_steps)):
+                x_t_dist = self.build_density(state)
+
+                if (t - 1) % self.num_steps == 0:
+                    obs_t = obs[(t - 1) // self.num_steps]
+                else:
+                    obs_t = None
+
+                x = pyro_lib.sample(
+                    f"x_{t}",
+                    x_t_dist,
+                    obs=obs_t
+                )
+
+                state = state.propagate_from(values=x)
 
 
 _Parameters = Iterable[ParameterType]
