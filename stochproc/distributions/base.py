@@ -7,17 +7,16 @@ from abc import ABC
 
 class _DistributionModule(torch.nn.Module, ABC):
     """
-    Abstract base class for "modulizing" distributions, i.e. for wrapping ``torch.distributions.Distribution`` objects
-    in a ``torch.nn.Module``.
+    Abstract base class for wrapping :class:`torch.distributions.Distribution` objects in a :class:`torch.nn.Module`.
     """
 
     def __init__(self, base_dist: DistributionOrBuilder, reinterpreted_batch_ndims=None):
         """
-        Initializes the ``_DistributionModule`` class.
+        Initializes the :class:`_DistributionModule` class.
 
         Args:
             base_dist: The base distribution, or distribution builder.
-            reinterpreted_batch_ndims: See ``torch.distributions.Independent``.
+            reinterpreted_batch_ndims: See :class:`torch.distributions.Independent`.
         """
 
         super(_DistributionModule, self).__init__()

@@ -13,7 +13,7 @@ def _rebuild_parameter(data, requires_grad, backward_hooks):
 
 class PriorBoundParameter(Parameter):
     """
-    Extends the ``torch.nn.Parameter`` object by adding helper methods relating to sampling and updating values from
+    Extends :class:`torch.nn.Parameter` by adding helper methods relating to sampling and updating values from
     its bound prior.
     """
 
@@ -22,21 +22,20 @@ class PriorBoundParameter(Parameter):
         Given a prior, sample from it inplace.
 
         Args:
-            prior: The associated prior of the parameter.
-            shape: The shape of samples.
+            prior: associated prior of the parameter.
+            shape: shape of samples.
         """
 
         self.data = prior.build_distribution().sample(shape or ())
 
     def update_values_(self, x: torch.Tensor, prior: Prior, constrained=True):
         """
-        Update the values of ``self`` with those of ``x`` inplace.
+        Update the values of self with those of ``x`` inplace.
 
         Args:
-            x: The values to update ``self`` with.
-            prior: See ``.sample_(...)``.
-            constrained: Optional parameter indicating whether the values ``x`` are constrained to the prior's original
-                space.
+            x: values to update self with.
+            prior: see :meth:`PriorBoundParameter.sample_`.
+            constrained: whether the values ``x`` are constrained or not.
         """
 
         value = x if constrained else prior.get_constrained(x)

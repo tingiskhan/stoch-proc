@@ -6,9 +6,7 @@ from ..typing import ParameterType, NamedParameter
 
 class DistributionModule(_DistributionModule, _HasPriorsModule):
     """
-    Implements a wrapper around ``pytorch.distributions.Distribution`` objects. It inherits from ``pytorch.nn.Module``
-    in order to utilize all of the associated methods and attributes. One such is e.g. moving tensors between different
-    devices.
+    See :class:`_DistributionModule`.
 
     Example:
         >>> from torch.distributions import Normal
@@ -28,12 +26,12 @@ class DistributionModule(_DistributionModule, _HasPriorsModule):
         **parameters: ParameterType
     ):
         """
-        Initializes the ``DistributionModule`` class.
+        Initializes the :class:`DistributionModule` class.
 
         Args:
-            base_dist: See the ``distribution`` of ``stochproc.distributions.Prior``.
-            parameters: See ``parameters`` of ``stochproc.distributions.Prior``. With the addition that we can pass
-                ``stochproc.distributions.Prior`` objects as parameters.
+            base_dist: See the ``distribution`` of :class:`stochproc.distributions.Prior`.
+            parameters: See ``parameters`` of :class:`stochproc.distributions.Prior`. With the addition that we can pass
+                :class:`stochproc.distributions.Prior` objects as parameters.
 
         Example:
             In this example we'll construct a distribution wrapper around a normal distribution where the location is a

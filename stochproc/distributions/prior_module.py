@@ -16,7 +16,7 @@ class UpdateParametersMixin(ABC):
         Samples the parameters of the model in place.
 
         Args:
-            shape: The shape of the parameters to use when sampling.
+            shape: shape of the parameters to use when sampling.
         """
 
         raise NotImplementedError()
@@ -26,8 +26,8 @@ class UpdateParametersMixin(ABC):
         Concatenates the parameters into one tensor.
 
         Args:
-            constrained: Optional parameter specifying whether to concatenate the original parameters, or bijected.
-            flatten: Optional parameter specifying whether to flatten the parameters.
+            constrained: whether to concatenate the constrained or unconstrained parameters.
+            flatten: whether to flatten the parameters or not, only applies to parameters multi-dimensional parameters.
         """
 
         raise NotImplementedError()
@@ -37,9 +37,8 @@ class UpdateParametersMixin(ABC):
         Update the parameters of ``self`` with the last dimension of ``x``.
 
         Args:
-            x: The tensor containing the new parameter values.
-            constrained: Optional parameter indicating whether values in ``x`` are considered constrained to the
-                parameters' original space.
+            x: tensor containing the new parameter values.
+            constrained: whether values in ``x`` are considered constrained or not.
 
         Example:
             >>> from stochproc import timeseries as ts, distributions as dists
@@ -64,7 +63,7 @@ class UpdateParametersMixin(ABC):
         Calculates the prior log-likelihood of the current values of the parameters.
 
         Args:
-            constrained: Optional parameter specifying whether to evaluate the original prior, or the bijected prior.
+            constrained: whether to evaluate the prior on constrained parameters or unconstrained.
         """
 
         raise NotImplementedError()
@@ -86,7 +85,7 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
 
     def __init__(self):
         """
-        Initializes the ``_HasPriorsModule`` class.
+        Initializes the :class:`_HasPriorsModule` class.
         """
 
         super().__init__()
@@ -104,9 +103,9 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
     def _register_parameter_or_prior(self, name: str, p: ParameterType):
         """
         Helper method for registering either a:
-            - ``stochproc.distributions.Prior``
-            - ``torch.nn.Parameter``
-            - ``torch.Tensor``
+            - :class:`stochproc.distributions.Prior`
+            - :class:`torch.nn.Parameter`
+            - :class:`torch.Tensor`
 
         Args:
             name: The name to use for the object.
@@ -125,9 +124,9 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
 
         self._parameter_order.append(p.name)
 
-    def parameters_and_buffers(self) -> Dict[str, Union[torch.Tensor, torch.nn.Parameter]]:
+    def parameters_and_buffers(self) -> Dict[str, Union[torch.Tensor, torch.nn.Parameter, PriorBoundParameter]]:
         """
-        Returns the union of the parameters and buffers of the module.
+        Returns the union of the parameters and buffers of the module in order of registration.
         """
 
         # TODO: Do this better
@@ -139,8 +138,8 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
 
     def register_prior(self, name: str, prior: Prior, parameter=None):
         """
-        Registers a ``stochproc.distributions.Prior`` object together with a ``pyfilter.PriorBoundParameter`` on self.
-        Utilizes the same parameter for same ``NamedParameter``.
+        Registers a :class:`stochproc.distributions.Prior` object together with a
+        :class:`stochproc.distributions.PriorBoundParameter`.
 
         Args:
             name: The name to use for the prior.
@@ -154,13 +153,12 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
     def parameters_and_priors(self) -> Iterator[Tuple[PriorBoundParameter, Prior]]:
         """
         Returns the priors and parameters of the module as an iterable of tuples, i.e::
-            [(parameter_0, prior_parameter_0), ..., (parameter_n, prior_parameter_n)]
+
+            (parameter_0, prior_parameter_0), ..., (parameter_n, prior_parameter_n)
         """
 
         for name, parameter in self.named_parameters():
-            prior = _recurse(self, name)
-
-            yield parameter, prior
+            yield parameter, _recurse(self, name)
 
     def sample_params_(self, shape: torch.Size = torch.Size([])):
         for param, prior in self.parameters_and_priors():

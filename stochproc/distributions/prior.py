@@ -36,12 +36,11 @@ class Prior(_DistributionModule):
         self, distribution: DistributionOrBuilder, reinterpreted_batch_ndims=None, **parameters: HyperParameter
     ):
         """
-        Initializes the ``Prior`` class.
+        Initializes the :class:`Prior` class.
 
         Args:
-            distribution: The distribution of the prior. Can be either a type, or a callable that takes as input kwargs
-                corresponding to ``parameters``.
-            parameters: The parameters of the distribution.
+            distribution: distribution of the prior.
+            parameters: parameters of the distribution.
         """
 
         super().__init__(distribution, reinterpreted_batch_ndims=reinterpreted_batch_ndims)
@@ -66,7 +65,7 @@ class Prior(_DistributionModule):
         Given samples ``x``, map the values to the unconstrained space of the bijected prior distribution.
 
         Args:
-            x: The samples to map to unconstrained space.
+            x: the samples to map to unconstrained space.
 
         Example:
             In the following example, we construct an exponential prior, sample from it, and then map to the
@@ -88,7 +87,7 @@ class Prior(_DistributionModule):
         Given samples ``x``, map the values to the constrained space of the original prior distribution.
 
         Args:
-            x: The samples to map to constrained space.
+            x: the samples to map to constrained space.
 
         Example:
             In the following example, we construct an exponential prior and a normal distribution, sample from the
@@ -111,9 +110,8 @@ class Prior(_DistributionModule):
         Evaluate the prior at the point ``x``.
 
         Args:
-            x: The point at which to evaluate the prior at. Note that it should always be the constrained values.
-            constrained: Optional parameter for whether to transform ``x`` to unconstrained and then evaluate the prior
-                using the bijected prior.
+            x: the point at which to evaluate the prior at. Note that it should always be the constrained values.
+            constrained: whether to transform ``x`` to unconstrained and then evaluate using the bijected prior.
         """
 
         if constrained:
@@ -127,7 +125,7 @@ class Prior(_DistributionModule):
         prior.
 
         Args:
-            constrained: Whether to get the number of elements of the constrained or unconstrained distribution.
+            constrained: whether to get the number of elements of the constrained or unconstrained distribution.
         """
 
         return (self().event_shape if not constrained else self.unconstrained_prior.event_shape).numel()
