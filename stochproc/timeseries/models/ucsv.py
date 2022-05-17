@@ -1,8 +1,9 @@
 import torch
-from torch.distributions import Normal, Independent
-from ...typing import ParameterType
-from ...distributions import DistributionModule
+from pyro.distributions import Normal, Independent
+
 from ..affine import AffineProcess
+from ...distributions import DistributionModule
+from ...typing import ParameterType
 from ...utils import enforce_named_parameter
 
 

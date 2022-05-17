@@ -1,6 +1,7 @@
-from torch.distributions import Normal, TransformedDistribution, AffineTransform, Distribution
-from pyro.distributions import Delta
 import torch
+from pyro.distributions import Delta, Normal, TransformedDistribution, Distribution
+from pyro.distributions.transforms import AffineTransform
+
 from ..linear import LinearModel
 from ...distributions import DistributionModule, JointDistribution
 from ...utils import enforce_named_parameter

@@ -1,10 +1,13 @@
-from torch.distributions import Distribution, AffineTransform, TransformedDistribution
-import torch
 from typing import Tuple
-from .stochastic_process import StructuralStochasticProcess
-from ..distributions import DistributionModule
-from .typing import MeanScaleFun
+
+import torch
+from pyro.distributions import Distribution, TransformedDistribution
+from pyro.distributions.transforms import AffineTransform
+
 from .state import TimeseriesState
+from .stochastic_process import StructuralStochasticProcess
+from .typing import MeanScaleFun
+from ..distributions import DistributionModule
 
 
 def _define_transdist(

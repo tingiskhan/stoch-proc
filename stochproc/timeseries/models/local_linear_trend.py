@@ -1,8 +1,9 @@
 import torch
-from torch.distributions import Normal
+from pyro.distributions import Normal
+
 from ..linear import LinearModel
-from ...typing import ParameterType
 from ...distributions import DistributionModule
+from ...typing import ParameterType
 from ...utils import enforce_named_parameter
 
 

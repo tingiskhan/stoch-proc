@@ -1,4 +1,5 @@
-from torch.distributions import Normal
+from pyro.distributions import Normal
+
 from ..linear import LinearModel
 from ...distributions import DistributionModule
 from ...typing import ParameterType

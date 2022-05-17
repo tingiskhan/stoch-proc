@@ -1,5 +1,8 @@
-from torch.distributions import Normal, TransformedDistribution, AbsTransform
 from math import sqrt
+
+from pyro.distributions import Normal, TransformedDistribution
+from pyro.distributions.transforms import AbsTransform
+
 from .ou import init_builder as ou_builder
 from ..diffusion import AffineEulerMaruyama
 from ...distributions import DistributionModule

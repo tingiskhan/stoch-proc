@@ -1,5 +1,6 @@
 import torch
-from torch.distributions import Normal
+from pyro.distributions import Normal
+
 from ..affine import AffineProcess
 from ...distributions import DistributionModule
 from ...typing import ParameterType
