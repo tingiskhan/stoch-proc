@@ -232,31 +232,68 @@ class StochasticProcess(Module, ABC):
 
         self._tensor_tuples[self._EXOGENOUS] += (exogenous,)
 
-    def do_sample_pyro(self, pyro_lib: pyro, obs: torch.Tensor, n_plates=1):
-        """
-        Samples pyro primitives for inferring the parameters of the model.
-
-        Args:
-            pyro_lib: The pyro library
-            obs: The data to generate for.
-            n_plates: The number of data plates.
-
-        References:
-            https://forum.pyro.ai/t/using-pyro-markov-for-time-series-variational-inference/1960/2
-        """
-
-        if self.num_steps != 1:
-            raise NotImplementedError(f"Currently do not support {self.num_steps} != 1")
-
+    def _pyro_vanilla(self, pyro_lib: pyro, obs: torch.Tensor, n_plates):
         time_index = torch.arange(1, obs.shape[0])
 
         init_state = self.initial_sample()
         batched_state = init_state.propagate_from(values=obs[:-1], time_increment=time_index)
 
         with pyro_lib.plate("data", n_plates):
-            dist = pyro_lib.sample("x", self.build_density(batched_state).to_event(1), obs=obs[1:])
+            x = pyro_lib.sample("x", self.build_density(batched_state).to_event(1), obs=obs[1:])
 
-        return dist
+        return pyro.deterministic("x", x)
+
+    def _pyro_full(self, pyro_lib: pyro, obs: torch.Tensor, n_plates):
+        t_final = obs.shape[0]
+
+        with pyro_lib.plate("data_plate", n_plates):
+            x = pyro_lib.sample("x_0", self.initial_dist)
+            state = self.initial_sample().copy(values=x)
+
+            out = torch.empty((t_final * self.num_steps, n_plates, *state.event_dim))
+            out[0] = x
+
+            for t in pyro_lib.markov(range(1, out.shape[0])):
+                x_t_dist = self.build_density(state)
+
+                if (t - 1) % self.num_steps == 0:
+                    obs_t = obs[(t - 1) // self.num_steps]
+                else:
+                    obs_t = None
+
+                x = pyro_lib.sample(
+                    f"x_{t}",
+                    x_t_dist,
+                    obs=obs_t
+                )
+
+                state = state.propagate_from(values=x)
+                out[t] = x
+
+        return pyro.deterministic("x", out)
+
+    def do_sample_pyro(self, pyro_lib: pyro, obs: torch.Tensor, n_plates=1, use_full: bool = None):
+        """
+        Samples pyro primitives for inferring the parameters of the model.
+
+        Args:
+            pyro_lib: the pyro library.
+            obs: the data to generate for.
+            n_plates: the number of data plates.
+            use_full: whether to sample the full model, i.e. both model and states. If ``None`` then decides whether
+                it is required.
+
+        References:
+            https://forum.pyro.ai/t/using-pyro-markov-for-time-series-variational-inference/1960/2
+        """
+
+        if (use_full is True) or (self.num_steps != 1):
+            if use_full is False:
+                raise Exception(f"``use_full`` must be ``True`` when ``self.num_steps > 1``!")
+
+            return self._pyro_full(pyro_lib, obs, n_plates)
+
+        return self._pyro_vanilla(pyro_lib, obs, n_plates)
 
 
 _Parameters = Iterable[ParameterType]
