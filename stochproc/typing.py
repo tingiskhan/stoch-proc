@@ -9,16 +9,16 @@ _ParameterType = Union[Number, torch.Tensor, torch.nn.Parameter, Prior]
 
 class NamedParameter(object):
     """
-    Defines a named parameter type.
+    Defines a named parameter.
     """
 
     def __init__(self, name: str, value: _ParameterType):
         """
-        Initializes the ``NamedParameter`` class.
+        Initializes the :class:`NamedParameter` class.
 
         Args:
-            name: The name of the parameter.
-            value: The value of the parameter
+            name: name of the parameter.
+            value: value of the parameter
         """
 
         from .distributions import PriorBoundParameter

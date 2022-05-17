@@ -23,23 +23,25 @@ def _build_trans_dist(loc, scale, lags, **kwargs) -> Distribution:
 
 
 class AR(LinearModel):
-    """
+    r"""
     Implements an AR(k) process, i.e. a process given by
         .. math::
-            X_{t+1} = \\alpha + \\beta X_t + \\sigma W_t, \n
-            X_0 \\sim \\mathcal{N}(\\alpha, \\frac{\\sigma}{\\sqrt{(1 - \\beta^2)})
+            X_{t+1} = \alpha + \beta X_t + \sigma W_t, \newline
+            X_0 \sim \mathcal{N}(\alpha, \frac{\sigma}{\sqrt{1 - \beta^2}},
+
+    where :math:`W_t` is a univariate zero mean, unit variance Gaussian random variable.
     """
 
     def __init__(self, alpha, beta, sigma, lags=1, **kwargs):
         """
-        Initializes the ``AR`` class.
+        Initializes the :class:`AR` class.
 
         Args:
-            alpha: The mean of the process.
-            beta: The reversion of the process, usually constrained to :math:`(-1, 1)`.
-            sigma: The volatility of the process.
-            lags: The number of lags.
-            kwargs: See base.
+            alpha: mean of the process.
+            beta: reversion of the process, usually constrained to :math:`(-1, 1)`.
+            sigma: volatility of the process.
+            lags: number of lags.
+            kwargs: see base.
         """
 
         alpha, beta, sigma = enforce_named_parameter(alpha=alpha, beta=beta, sigma=sigma)

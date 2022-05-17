@@ -20,21 +20,21 @@ def _check_has_priors_wrapper(f):
 
 # TODO: Add methods ``concat_parameters`` and ``update_parameters_from_tensor``
 class StateSpaceModel(Module, UpdateParametersMixin):
-    """
+    r"""
     Class representing a state space model, i.e. a dynamical system given by the pair stochastic processes
-    :math:`\\{X_t\\}` and :math:`\\{Y_t\\}`, where :math:`X_t` is independent from :math:`Y_t`, and :math:`Y_t`
-    conditionally indpendent given :math:`X_t`. See more `here`_.
+    :math:`\{ X_t \}` and :math:`\{ Y_t \}`, where :math:`X_t` is independent from :math:`Y_t`, and :math:`Y_t`
+    conditionally independent given :math:`X_t`. See more `here`_.
 
     .. _`here`: https://en.wikipedia.org/wiki/State-space_representation
     """
 
     def __init__(self, hidden: StochasticProcess, observable: StochasticProcess):
         """
-        Initializes the ``StateSpaceModel`` class.
+        Initializes the :class:`StateSpaceModel` class.
 
         Args:
-            hidden: The hidden process.
-            observable: The observable process.
+            hidden: hidden process.
+            observable: observable process.
         """
 
         super().__init__()
@@ -60,7 +60,7 @@ class StateSpaceModel(Module, UpdateParametersMixin):
 
     def copy(self) -> "StateSpaceModel":
         """
-        Creates a deep copy of ``self``.
+        Creates a deep copy of self.
         """
 
         return deepcopy(self)

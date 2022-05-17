@@ -14,10 +14,10 @@ def _define_transdist(
     Helper method for defining an affine transition density given the location and scale.
 
     Args:
-        loc: The location of the distribution.
-        scale: The scale of the distribution.
-        n_dim: The dimension of space of the distribution.
-        dist: The base distribution to apply the location-scale transform..
+        loc: location of the distribution.
+        scale: scale of the distribution.
+        n_dim: dimension of space of the distribution.
+        dist: base distribution to apply the location-scale transform..
 
     Returns:
         The resulting affine transformed distribution.
@@ -42,25 +42,24 @@ class AffineProcess(StructuralStochasticProcess):
 
     Example:
         One example of an affine stochastic process is the AR(1) process. We define it by:
-            >>> from stochproc.timeseries import AffineProcess, NamedParameter
-            >>> from stochproc.distributions import DistributionModule
+            >>> from stochproc import timeseries as ts, distributions as dists, NamedParameter
             >>> from torch.distributions import Normal, TransformedDistribution, AffineTransform
             >>>
             >>> def mean_scale(x, alpha, beta, sigma):
             >>>     return alpha + beta * x.values, sigma
             >>>
-            >>> def init_transform(model, normal_dist):
-            >>>     alpha, beta, sigma = model.functional_parameters()
-            >>>     return TransformedDistribution(normal_dist, AffineTransform(alpha, sigma / (1 - beta ** 2)).sqrt())
+            >>> def initial_builder(alpha, beta, sigma):
+            >>>     return Normal(loc=alpha, scale=sigma / (1 - beta ** 2).sqrt())
             >>>
-            >>> parameters = (
-            >>>     NamedParameter("alpha", 0.0),
-            >>>     NamedParameter("beta", 0.99),
-            >>>     NamedParameter("sigma", 0.05),
-            >>> )
+            >>> alpha = NamedParameter("alpha", 0.0)
+            >>> beta = NamedParameter("beta", 0.99)
+            >>> sigma = NamedParameter("sigma", 0.05)
             >>>
-            >>> initial_dist = increment_dist = DistributionModule(Normal, loc=0.0, scale=1.0)
-            >>> ar_1 = AffineProcess(mean_scale, parameters, initial_dist, increment_dist, initial_transform=init_transform)
+            >>> initial_dist = dists.DistributionModule(initial_builder, alpha=alpha, beta=beta, sigma=sigma)
+            >>> increment_dist = dists.DistributionModule(Normal, loc=0.0, scale=1.0)
+            >>>
+            >>> parameters = (alpha, beta, sigma)
+            >>> ar_1 = ts.AffineProcess(mean_scale, parameters, initial_dist, increment_dist)
             >>>
             >>> samples = ar_1.sample_path(1_000)
     """
@@ -77,10 +76,10 @@ class AffineProcess(StructuralStochasticProcess):
         Initializes the :class:`AffineProcess` class.
 
         Args:
-            mean_scale: Function constructing the mean and scale.
-            parameters: See base.
-            initial_dist: See base.
-            increment_dist: Corresponds to the distribution that we location-scale transform.
+            mean_scale: function constructing the mean and scale.
+            parameters: see base.
+            initial_dist: see base.
+            increment_dist: distribution that we location-scale transform.
         """
 
         super().__init__(parameters=parameters, initial_dist=initial_dist, **kwargs)
@@ -98,12 +97,12 @@ class AffineProcess(StructuralStochasticProcess):
         Returns the mean and scale of the process evaluated at ``x`` and ``.functional_parameters()`` or ``parameters``.
 
         Args:
-            x: The previous state of the process.
-            parameters: Whether to override the current parameters of the model, otherwise uses
-                ``.functional_parameters()``.
+            x: previous state of the process.
+            parameters: whether to override the current parameters of the model, otherwise uses
+                :meth:`stochproc.timeseries.StructuralStochasticProcess.functional_parameters`.
 
         Returns:
-            Returns the tuple ``(mean, scale)`` given by evaluating ``(f(x, *parameters), g(x, *parameters))``.
+            Returns the tuple ``(mean, scale)``.
         """
 
         mean, scale = self.mean_scale_fun(x, *(parameters or self.functional_parameters()))

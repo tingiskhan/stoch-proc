@@ -23,8 +23,8 @@ def make_dequeue(maxlen: BoolOrInt = None) -> deque:
 # TODO: Utilize torch's own BufferDict when available
 class BufferDict(Module):
     """
-    Implements a naive version of the ``torch.nn.ParameterDict`` containing buffers instead of parameters. Note that
-    this class basically copies ``torch.nn.ParameterDict``.
+    Implements a naive version of the :class:`torch.nn.ParameterDict` containing buffers instead of parameters. Note
+    that this class basically copies :class:`torch.nn.ParameterDict`.
     """
 
     def __init__(self, parameters: Optional[Mapping[str, "Tensor"]] = None) -> None:
@@ -127,7 +127,7 @@ class BufferIterable(BufferDict):
 
     def __init__(self, **kwargs: Iterable[torch.Tensor]):
         """
-        Initializes the ``BufferIterable`` class.
+        Initializes the :class:`BufferIterable` class.
         """
 
         super().__init__()

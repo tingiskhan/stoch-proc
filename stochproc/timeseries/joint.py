@@ -60,17 +60,22 @@ from ..distributions import JointDistribution, DistributionModule
 
 
 class AffineJointStochasticProcess(AffineProcess):
-    """
-    Similar to ``JointStochasticProcess`` but with the exception that all processes are of type ``AffineProcess``. This
-    allows us to concatenate the mean and scale processes.
+    r"""
+    Implements an affine joint stochastic process, i.e. a stochastic process comprising several conditionally
+    independent affine sub processes. That is, given :math:`n` stochastic processes :math:`\{ X^i_t \}, i = 1, \dots, n`
+    we have
+         .. math::
+             p(x^1_{t+1}, \dots, x^n_{t+1} \mid x^1_t, \dots, x^n_t) = \prod^n_{i=1} p( x^i_{t+1} \mid x^i_t ),
+
+    where every sub process :math:`X^i` is of affine type.
     """
 
     def __init__(self, **processes: AffineProcess):
         """
-        Initializes the ``AffineJointStochasticProcess`` class.
+        Initializes the :class:`AffineJointStochasticProcess` class.
 
         Args:
-            processes: See base.
+            processes: sub processes to combine into a single affine process.
         """
 
         if not all(isinstance(p, AffineProcess) for p in processes.values()):

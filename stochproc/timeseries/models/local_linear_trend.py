@@ -7,13 +7,13 @@ from ...utils import enforce_named_parameter
 
 
 class LocalLinearTrend(LinearModel):
-    """
+    r"""
     Implements a Local Linear Trend model, i.e. a model with the following dynamics
         .. math::
-            L_{t+1} = L_t + S_t + \\sigma_l W_{t+1}, \n
-            S_{t+1} = S_t + \\sigma_s V_{t+1},
+            L_{t+1} = L_t + S_t + \sigma_l W_{t+1}, \newline
+            S_{t+1} = S_t + \sigma_s V_{t+1},
 
-    where :math:`\\sigma_i > 0``, and :math:`W_t, V_t` are two independent zero mean and unit variance Gaussians.
+    where :math:`\sigma_i > 0``, and :math:`W_t, V_t` are two independent zero mean and unit variance Gaussians.
     """
 
     def __init__(
@@ -22,13 +22,13 @@ class LocalLinearTrend(LinearModel):
         initial_mean: ParameterType = torch.zeros(2),
         **kwargs
     ):
-        """
-        Initializes the ``LocalLinearTrend`` class.
+        r"""
+        Initializes the :class:`LocalLinearTrend` class.
 
         Args:
-            sigma: Corresponds to the vector :math:`[ \\sigma_s, \\Delta \\sigma ]``.
-            initial_mean: Optional, specifies the initial mean.
-            kwargs: See base.
+            sigma: the vector :math:`[ \sigma_s, \sigma_l ]`.
+            initial_mean: the initial mean.
+            kwargs: see base.
         """
 
         sigma = enforce_named_parameter(scale=sigma)[0]

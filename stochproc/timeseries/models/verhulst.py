@@ -18,24 +18,24 @@ def _init_builder(kappa, gamma, sigma):
 
 
 class Verhulst(AffineEulerMaruyama):
-    """
+    r"""
     Implements a discretized Verhulst SDE with the following dynamics
         .. math::
-            dX_t = \\kappa (\\gamma - X_t)X_t dt + \\sigma X_t dW_t, \n
-            X_0 \\sim \\left | \\mathcal{N}(x_0, \\frac{\\sigma}{\\sqrt{2\\kappa}} \\right |,
+            dX_t = \kappa (\gamma - X_t)X_t dt + \sigma X_t dW_t, \newlin
+            X_0 \sim \left | \mathcal{N}(x_0, \frac{\sigma}{\sqrt{2\kappa}} \right |,
 
-    where :math:`\\kappa, \\gamma, \\sigma > 0`.
+    where :math:`\kappa, \gamma, \sigma > 0`.
     """
 
     def __init__(self, kappa: ParameterType, gamma: ParameterType, sigma: ParameterType, dt, **kwargs):
         """
-        Initializes the ``Verhulst`` class.
+        Initializes the :class:`Verhulst` class.
 
         Args:
-            reversion: Corresponds to :math:`\\kappa`.
-            mean: Corresponds to :math:`\\gamma`.
-            vol: Corresponds to :math:`\\sigma`.
-            kwargs: See base.
+            reversion: :math:`\\kappa`.
+            mean: :math:`\\gamma`.
+            vol: :math:`\\sigma`.
+            kwargs: see base.
         """
 
         kappa, gamma, sigma = enforce_named_parameter(kappa=kappa, gamma=gamma, sigma=sigma)

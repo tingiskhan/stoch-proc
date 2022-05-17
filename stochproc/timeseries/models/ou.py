@@ -12,28 +12,27 @@ def init_builder(kappa, gamma, sigma):
 
 # TODO: Should perhaps inherit from StochasticDifferentialEquation?
 class OrnsteinUhlenbeck(AffineProcess):
-    """
+    r"""
     Implements the solved Ornstein-Uhlenbeck process, i.e. the solution to the SDE
         .. math::
-            dX_t = \\kappa (\\gamma - X_t) dt + \\sigma dW_t, \n
-            X_0 \\sim \\mathcal{N}(\\gamma, \\frac{\\sigma}{\\sqrt{2\\kappa}},
+            dX_t = \kappa (\gamma - X_t) dt + \sigma dW_t, \newline
+            X_0 \sim \mathcal{N}(\gamma, \frac{\sigma}{\sqrt{2 \kappa}},
 
-    where :math:`\\kappa, \\sigma \\in \\mathbb{R}_+^n`, and :math:`\\gamma \\in \\mathbb{R}^n`.
+    where :math:`\kappa, \sigma \in \mathbb{R}_+^n`, and :math:`\gamma \in \mathbb{R}^n`.
     """
 
     def __init__(
         self, kappa: ParameterType, gamma: ParameterType, sigma: ParameterType, dt: float = 1.0, **kwargs
     ):
         """
-        Initializes the ``OrnsteinUhlenbeck`` class.
+        Initializes the :class:`OrnsteinUhlenbeck` class.
 
         Args:
-            kappa: The reversion parameter.
-            gamma: The mean parameter.
-            sigma: The volatility parameter.
-            n_dim: Optional parameter controlling the dimension of the process. Inferred from ``sigma`` if ``None``.
-            dt: Optional, the timestep to use.
-            kwargs: See base.
+            kappa: reversion parameter.
+            gamma: mean parameter.
+            sigma: volatility parameter.
+            dt: the timestep to use.
+            kwargs: see base.
         """
 
         kappa, gamma, sigma = enforce_named_parameter(kappa=kappa, gamma=gamma, sigma=sigma)

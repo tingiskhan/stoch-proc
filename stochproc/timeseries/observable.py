@@ -14,8 +14,9 @@ class Observable(StructuralStochasticProcess, ABC):
 
     def __init__(self, *args, **kwargs):
         """
-        Initializes the ``Observable`` class.
+        Initializes the :class:`Observable` class.
         """
+
         num_steps = kwargs.pop("num_steps", 1)
 
         if num_steps != 1:
@@ -38,16 +39,16 @@ class Observable(StructuralStochasticProcess, ABC):
 class GeneralObservable(Observable, ABC):
     """
     Abstract base class constituting the observable dynamics of a state space model. Derived classes should override the
-    ``.build_density(...)`` method.
+    :meth:`stochproc.timeseries.GeneralObservable.build_density` method.
     """
 
     def __init__(self, parameters, **kwargs):
         """
-        Initializes the ``GeneralObservable`` class.
+        Initializes the :class:`GeneralObservable` class.
 
         Args:
-             parameters: See base.
-             kwargs: See base.
+             parameters: see base.
+             kwargs: see base.
         """
 
         super().__init__(parameters, initial_dist=None, **kwargs)
@@ -99,44 +100,45 @@ class Mixin(object):
 
 
 class AffineObservations(AffineProcess, Mixin, Observable):
-    """
+    r"""
     Constitutes the observable dynamics of a state space model in which the dynamics are affine in terms of the latent
     state, i.e. we have that
         .. math::
-            Y_t = f_\\theta(X_t) + g_\\theta(X_t) W_t,
+            Y_t = f_\theta(X_t) + g_\theta(X_t) W_t,
 
-    for some functions :math:`f, g` parameterized by :math:`\\theta`.
+    for some functions :math:`f, g` parameterized by :math:`\theta`.
     """
 
     def __init__(self, mean_scale, parameters, increment_dist, **kwargs):
         """
-        Initializes the ``AffineObservations`` class.
+        Initializes the :class:`AffineObservations` class.
 
         Args:
-            mean_scale: See base.
-            parameters: See base.
-            increment_dist: See base.
+            mean_scale: see base.
+            parameters: see base.
+            increment_dist: see base.
         """
 
         super().__init__(mean_scale, parameters, increment_dist, increment_dist, **kwargs)
 
 
 class LinearObservations(LinearModel, Mixin, Observable):
-    """
+    r"""
     Defines an observable process in which the dynamics are given by a linear combination of the states, i.e.
         .. math::
-            X_t = A \\cdot X_t + \\sigma \\epsilon_t,
-    where :math:`A \\in \\mathbb{R}^{n \\times n}`, :math:`X_t \\in \\mathbb{R}^n`.
+            X_t = A \cdot X_t + \sigma \epsilon_t,
+
+    where :math:`A \in \mathbb{R}^{n \times n}`, :math:`X_t \in \mathbb{R}^n`.
     """
 
     def __init__(self, a, sigma, increment_dist, **kwargs):
         """
-        Initializes the ``LinearObservations`` class.
+        Initializes the :class:`LinearObservations` class.
 
         Args:
-            a: See ``LinearModel``.
-            b: See ``LinearModel``.
-            increment_dist: See ``LinearModel``.
+            a: see :class:`stochproc.timeseries.LinearModel`.
+            b: see :class:`stochproc.timeseries.LinearModel`.
+            increment_dist: see :class:`stochproc.timeseries.LinearModel`.
         """
 
         super().__init__(a, sigma, increment_dist, initial_dist=increment_dist, **kwargs)

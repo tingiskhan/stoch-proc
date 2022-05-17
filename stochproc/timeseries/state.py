@@ -14,13 +14,13 @@ class TimeseriesState(dict):
             exogenous: torch.Tensor = None
     ):
         """
-        Initializes the ``TimeseriesState`` class.
+        Initializes the :class:`TimeseriesState` class.
 
         Args:
-            time_index: The time index of the state.
-            values: The values of the state. Can be a lazy evaluated tensor as well.
-            event_dim: The event dimension.
-            exogenous: Whether to include any exogenous data.
+            time_index: time index of the state.
+            values: values of the state. Can be a lazy evaluated tensor as well.
+            event_dim: event dimension.
+            exogenous: whether to include any exogenous data.
         """
 
         super().__init__()
@@ -48,10 +48,10 @@ class TimeseriesState(dict):
 
     def copy(self, values: torch.Tensor) -> "TimeseriesState":
         """
-        Copies ``self`` with specified ``distribution`` and ``values`` but with ``time_index`` of current instance.
+        Copies self with specified ``values``, but with ``time_index`` of current instance.
 
         Args:
-            values: See ``__init__``.
+            values: see ``__init__``.
         """
 
         return TimeseriesState(
@@ -63,12 +63,12 @@ class TimeseriesState(dict):
 
     def propagate_from(self, values: torch.Tensor, time_increment=1.0):
         """
-        Returns a new instance of ``NewState`` with ``distribution`` and ``values``, and ``time_index`` given by
+        Returns a new instance of :class:`TimeseriesState` with `values`` and ``time_index`` given by
         ``.time_index + time_increment``.
 
         Args:
-            values: See ``__init__``.
-            time_increment: Optional, specifies how much to increase ``.time_index`` with for new state.
+            values: see ``__init__``.
+            time_increment: how much to increase ``.time_index`` with for new state.
         """
 
         return TimeseriesState(
@@ -82,7 +82,7 @@ class TimeseriesState(dict):
         Adds an exogenous variable to the state.
 
         Args:
-            x: The exogenous variable.
+            x: exogenous variable.
         """
 
         self.exogenous = x

@@ -6,20 +6,6 @@ from .distributions.base import _DistributionModule
 from .typing import ParameterType, NamedParameter
 
 
-def concat(*x: torch.Tensor) -> torch.Tensor:
-    """
-    Given an iterable of tensors, broadcast them to the same shape and stack along the last dimension.
-
-    Args:
-        x: The iterable of tensors to stack.
-    """
-
-    if isinstance(x, torch.Tensor):
-        return x
-
-    return torch.stack(torch.broadcast_tensors(*x), dim=-1)
-
-
 def construct_diag_from_flat(x: torch.Tensor, base_dim: int) -> torch.Tensor:
     """
     Constructs a diagonal matrix based on ``x``. Solution found `here`_:
@@ -45,8 +31,8 @@ def construct_diag_from_flat(x: torch.Tensor, base_dim: int) -> torch.Tensor:
 
 def broadcast_all(*values):
     """
-    Wrapper around ``torch.distributions.utils.broadcast_all`` for setting the same shape of tensors while ignoring
-    any objects inheriting from ``_DistributionModule``.
+    Wrapper around :func:`torch.distributions.utils.broadcast_all` for setting the same shape of tensors while ignoring
+    any objects inheriting from :class:`_DistributionModule`.
 
     Args:
         values: Iterable of tensors.
@@ -86,7 +72,7 @@ def is_documented_by(original):
 
 def enforce_named_parameter(**kwargs: ParameterType) -> List[ParameterType]:
     """
-    Enforces parameter types into ``NamedParameters``.
+    Enforces parameter types into :class:`NamedParameter`.
 
     Args:
         kwargs: Key worded arguments.
