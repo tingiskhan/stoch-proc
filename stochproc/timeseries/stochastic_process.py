@@ -247,13 +247,14 @@ class StochasticProcess(Module, ABC):
         return
 
     def _pyro_full(self, pyro_lib: pyro, obs: torch.Tensor):
-        t_final = obs.shape[0] * self.num_steps
-
         x_max = obs.max(dim=0).values
         x_min = obs.min(dim=0).values
 
-        with pyro_lib.plate("time", t_final, dim=-1) as t:
+        with pyro_lib.plate("time", obs.shape[0] * self.num_steps, dim=-1) as t:
             mask = (t + 1) % self.num_steps == 0
+
+            if obs.dim() > 1:
+                mask.unsqueeze_(-1)
 
             base_dist = Uniform(low=0.0, high=1.0).expand(self.initial_dist.event_shape)
             transformed = pyro.sample(
@@ -261,12 +262,12 @@ class StochasticProcess(Module, ABC):
                 TransformedDistribution(base_dist, AffineTransform(loc=x_min, scale=x_max - x_min)).to_event()
             )
 
-            transformed.masked_scatter_(mask.unsqueeze(-1), obs)
+            transformed.masked_scatter_(mask, obs)
 
             with torch.no_grad():
                 initial_dist = self.initial_dist
                 initial_state = self.initial_sample()
-                state = initial_state.propagate_from(values=transformed[:-1], time_increment=t)
+                state = initial_state.propagate_from(values=transformed[:-1], time_increment=t[1:])
 
             tot_dist = self.build_density(state)
             log_prob = tot_dist.log_prob(transformed[1:]).sum() + initial_dist.log_prob(transformed[0])
