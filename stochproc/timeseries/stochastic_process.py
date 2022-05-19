@@ -4,8 +4,7 @@ from typing import TypeVar, Callable, Union, Tuple, Sequence, Iterable
 
 import pyro
 import torch
-from pyro.distributions import Uniform, TransformedDistribution
-from pyro.distributions.transforms import AffineTransform
+from pyro.distributions import LogNormal, Normal
 from torch.distributions import Distribution
 from torch.nn import Module, Parameter
 
@@ -112,7 +111,7 @@ class StochasticProcess(Module, ABC):
             Returns an initial sample of the process wrapped in a ``NewState`` object.
         """
 
-        return TimeseriesState(0.0, self.initial_dist.expand(shape).sample, event_dim=self.initial_dist.event_shape)
+        return TimeseriesState(0.0, self.initial_dist.sample, event_dim=self.initial_dist.event_shape)
 
     def build_density(self, x: TimeseriesState) -> Distribution:
         r"""
@@ -247,8 +246,16 @@ class StochasticProcess(Module, ABC):
         return
 
     def _pyro_full(self, pyro_lib: pyro, obs: torch.Tensor):
-        x_max = obs.max(dim=0).values
-        x_min = obs.min(dim=0).values
+        event_shape = self.initial_dist.event_shape
+
+        with pyro_lib.plate("num_aux", event_shape.numel()):
+            scale = pyro_lib.sample("rw_scale", LogNormal(loc=-1.0, scale=1.0))
+
+        with torch.no_grad():
+            initial_state = self.initial_sample()
+
+        loc = torch.zeros(event_shape)
+        initial_sample = pyro_lib.sample("_auxiliary_0", self.initial_dist)
 
         with pyro_lib.plate("time", obs.shape[0] * self.num_steps, dim=-1) as t:
             mask = (t + 1) % self.num_steps == 0
@@ -256,25 +263,23 @@ class StochasticProcess(Module, ABC):
             if obs.dim() > 1:
                 mask.unsqueeze_(-1)
 
-            base_dist = Uniform(low=0.0, high=1.0).expand(self.initial_dist.event_shape)
-            transformed = pyro.sample(
-                "auxiliary",
-                TransformedDistribution(base_dist, AffineTransform(loc=x_min, scale=x_max - x_min)).to_event()
-            )
+            auxiliary = pyro_lib.sample("_auxiliary", Normal(loc=loc, scale=scale).to_event(1))
 
-            transformed.masked_scatter_(mask, obs)
+            if initial_sample.dim() < auxiliary.dim():
+                initial_sample.unsqueeze_(0)
 
-            with torch.no_grad():
-                initial_dist = self.initial_dist
-                initial_state = self.initial_sample()
-                state = initial_state.propagate_from(values=transformed[:-1], time_increment=t[1:])
+            auxiliary = torch.cat((initial_sample, auxiliary), dim=0).cumsum(dim=0)
+            state = initial_state.propagate_from(values=auxiliary[:-1], time_increment=t + 1.0)
 
             tot_dist = self.build_density(state)
-            log_prob = tot_dist.log_prob(transformed[1:]).sum() + initial_dist.log_prob(transformed[0])
 
+            y_eval = auxiliary[1:].clone()
+            y_eval.masked_scatter_(mask, obs)
+
+            log_prob = tot_dist.log_prob(y_eval).sum()
             pyro_lib.factor("model_prob", log_prob)
 
-        return transformed
+        return pyro.deterministic("auxiliary", auxiliary)
 
     def do_sample_pyro(self, pyro_lib: pyro, obs: torch.Tensor, use_full: bool = None):
         """
