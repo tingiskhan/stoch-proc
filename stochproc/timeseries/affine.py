@@ -26,11 +26,7 @@ def _define_transdist(
         The resulting affine transformed distribution.
     """
 
-    batch_shape = loc.shape[:loc.dim() - n_dim]
-
-    return TransformedDistribution(
-        dist.expand(batch_shape), AffineTransform(loc, scale, event_dim=n_dim), validate_args=False
-    )
+    return TransformedDistribution(dist, AffineTransform(loc, scale, event_dim=n_dim), validate_args=False)
 
 
 class AffineProcess(StructuralStochasticProcess):
