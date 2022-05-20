@@ -269,13 +269,13 @@ class StochasticProcess(Module, ABC):
             initial_state = self.initial_sample()
 
         with pyro_lib.plate("time", (t_final - 1) * (self.num_steps - 1) + t_final, dim=-1) as t:
-            mask = t % self.num_steps == 0
-
             auxiliary = pyro_lib.sample("auxiliary", Normal(loc=loc, scale=scale).to_event(1)).cumsum(dim=0)
             state = initial_state.propagate_from(values=auxiliary[:-1], time_increment=t[1:])
 
             y_eval = auxiliary.clone()
             if obs is not None:
+                mask = t % self.num_steps == 0
+
                 if obs.dim() > 1:
                     mask.unsqueeze_(-1)
 
