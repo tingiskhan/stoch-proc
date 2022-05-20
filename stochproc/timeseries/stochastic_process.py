@@ -233,60 +233,68 @@ class StochasticProcess(Module, ABC):
 
         self._tensor_tuples[self._EXOGENOUS] += (exogenous,)
 
-    def _pyro_vanilla(self, pyro_lib: pyro, obs: torch.Tensor):
+    def _pyro_params_only(self, pyro_lib: pyro, obs: torch.Tensor):
         time_index = torch.arange(1, obs.shape[0])
 
         with torch.no_grad():
             init_state = self.initial_sample()
             batched_state = init_state.propagate_from(values=obs[:-1], time_increment=time_index)
 
-        log_prob = self.build_density(batched_state).log_prob(obs[1:]).sum()
+        log_prob = self.build_density(batched_state).log_prob(obs[1:]).sum() + self.initial_dist.log_prob(obs[0])
         pyro_lib.factor("model_prob", log_prob)
 
         return
 
-    def _pyro_full(self, pyro_lib: pyro, obs: torch.Tensor):
+    def _pyro_full(self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None):
+        """
+        Implements a vectorized inference model utilizing an auxiliary model comprising a random walk of the same
+        dimension as the timeseries dimension.
+
+        Args:
+            pyro_lib: pyro library.
+            t_final: length of the timeseries.
+            obs: optional observations.
+
+        Returns:
+            Returns the sampled path.
+        """
+
         event_shape = self.initial_dist.event_shape
 
+        loc = torch.zeros(event_shape)
         with pyro_lib.plate("num_aux", event_shape.numel()):
             scale = pyro_lib.sample("rw_scale", LogNormal(loc=-1.0, scale=1.0))
 
         with torch.no_grad():
             initial_state = self.initial_sample()
 
-        loc = torch.zeros(event_shape)
-        initial_sample = pyro_lib.sample("_auxiliary_0", self.initial_dist)
+        with pyro_lib.plate("time", (t_final - 1) * (self.num_steps - 1) + t_final, dim=-1) as t:
+            mask = t % self.num_steps == 0
 
-        with pyro_lib.plate("time", obs.shape[0] * self.num_steps, dim=-1) as t:
-            mask = (t + 1) % self.num_steps == 0
+            auxiliary = pyro_lib.sample("auxiliary", Normal(loc=loc, scale=scale).to_event(1)).cumsum(dim=0)
+            state = initial_state.propagate_from(values=auxiliary[:-1], time_increment=t[1:])
 
-            if obs.dim() > 1:
-                mask.unsqueeze_(-1)
+            y_eval = auxiliary.clone()
+            if obs is not None:
+                if obs.dim() > 1:
+                    mask.unsqueeze_(-1)
 
-            auxiliary = pyro_lib.sample("_auxiliary", Normal(loc=loc, scale=scale).to_event(1))
-
-            if initial_sample.dim() < auxiliary.dim():
-                initial_sample.unsqueeze_(0)
-
-            auxiliary = torch.cat((initial_sample, auxiliary), dim=0).cumsum(dim=0)
-            state = initial_state.propagate_from(values=auxiliary[:-1], time_increment=t + 1.0)
+                y_eval.masked_scatter_(mask, obs)
 
             tot_dist = self.build_density(state)
+            log_prob = tot_dist.log_prob(y_eval[1:]).sum() + self.initial_dist.log_prob(y_eval[0])
 
-            y_eval = auxiliary[1:].clone()
-            y_eval.masked_scatter_(mask, obs)
-
-            log_prob = tot_dist.log_prob(y_eval).sum()
             pyro_lib.factor("model_prob", log_prob)
 
-        return pyro.deterministic("auxiliary", auxiliary)
+        return auxiliary
 
-    def do_sample_pyro(self, pyro_lib: pyro, obs: torch.Tensor, use_full: bool = None):
+    def do_sample_pyro(self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None, use_full: bool = None):
         """
         Samples pyro primitives for inferring the parameters of the model.
 
         Args:
             pyro_lib: the pyro library.
+            t_final: length to sample.
             obs: the data to generate for.
             use_full: whether to sample the full model, i.e. both model and states. If ``None`` then decides whether
                 it is required.
@@ -299,9 +307,9 @@ class StochasticProcess(Module, ABC):
             if use_full is False:
                 raise Exception(f"``use_full`` must be ``True`` when ``self.num_steps > 1``!")
 
-            return self._pyro_full(pyro_lib, obs)
+            return self._pyro_full(pyro_lib, t_final, obs=obs)
 
-        return self._pyro_vanilla(pyro_lib, obs)
+        return self._pyro_params_only(pyro_lib, obs)
 
 
 _Parameters = Iterable[ParameterType]
