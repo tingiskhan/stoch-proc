@@ -241,9 +241,8 @@ class StochasticProcess(Module, ABC):
             batched_state = init_state.propagate_from(values=obs[:-1], time_increment=time_index)
 
         log_prob = self.build_density(batched_state).log_prob(obs[1:]).sum() + self.initial_dist.log_prob(obs[0])
-        pyro_lib.factor("model_prob", log_prob)
 
-        return
+        return obs, log_prob
 
     def _pyro_full(self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None):
         """
@@ -269,7 +268,7 @@ class StochasticProcess(Module, ABC):
             initial_state = self.initial_sample()
 
         with pyro_lib.plate("time", (t_final - 1) * (self.num_steps - 1) + t_final, dim=-1) as t:
-            auxiliary = pyro_lib.sample("auxiliary", Normal(loc=loc, scale=scale).to_event(1)).cumsum(dim=0)
+            auxiliary = pyro_lib.sample("_auxiliary", Normal(loc=loc, scale=scale).to_event(1)).cumsum(dim=0)
             state = initial_state.propagate_from(values=auxiliary[:-1], time_increment=t[1:])
 
             y_eval = auxiliary.clone()
@@ -284,11 +283,13 @@ class StochasticProcess(Module, ABC):
             tot_dist = self.build_density(state)
             log_prob = tot_dist.log_prob(y_eval[1:]).sum() + self.initial_dist.log_prob(y_eval[0])
 
-            pyro_lib.factor("model_prob", log_prob)
+            pyro.deterministic("auxiliary", auxiliary)
 
-        return auxiliary
+        return auxiliary, log_prob
 
-    def do_sample_pyro(self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None, use_full: bool = None):
+    def do_sample_pyro(
+            self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None, use_full: bool = None, factor: bool = True
+    ) -> Tuple[Union[None, torch.Tensor], torch.Tensor]:
         """
         Samples pyro primitives for inferring the parameters of the model.
 
@@ -298,18 +299,27 @@ class StochasticProcess(Module, ABC):
             obs: the data to generate for.
             use_full: whether to sample the full model, i.e. both model and states. If ``None`` then decides whether
                 it is required.
+            factor: Whether to factor the log probability.
+
+        Returns:
+            Returns the tuple consisting of ``(auxiliary_latent_state, log prob)``.
 
         References:
             https://forum.pyro.ai/t/using-pyro-markov-for-time-series-variational-inference/1960/2
         """
 
-        if (use_full is True) or (self.num_steps != 1):
+        if (use_full is True) or (self.num_steps != 1) or (obs is None):
             if use_full is False:
-                raise Exception(f"``use_full`` must be ``True`` when ``self.num_steps > 1``!")
+                raise Exception(f"``use_full`` must be ``True`` when ``self.num_steps > 1`` or ``obs`` is None!")
 
-            return self._pyro_full(pyro_lib, t_final, obs=obs)
+            latent, log_prob = self._pyro_full(pyro_lib, t_final, obs=obs)
+        else:
+            latent, log_prob = self._pyro_params_only(pyro_lib, obs)
 
-        return self._pyro_params_only(pyro_lib, obs)
+        if factor:
+            pyro_lib.factor("model_prob", log_prob)
+
+        return latent, log_prob
 
 
 _Parameters = Iterable[ParameterType]
