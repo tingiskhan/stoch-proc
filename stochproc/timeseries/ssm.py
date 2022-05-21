@@ -1,8 +1,11 @@
-import torch
-from torch.nn import Module
-from typing import Tuple
 from copy import deepcopy
 from functools import wraps
+from typing import Tuple
+
+import pyro
+import torch
+from torch.nn import Module
+
 from .stochastic_process import StochasticProcess
 from ..distributions.prior_module import UpdateParametersMixin, _HasPriorsModule
 
@@ -99,3 +102,26 @@ class StateSpaceModel(Module, UpdateParametersMixin):
     @_check_has_priors_wrapper
     def eval_prior_log_prob(self, constrained=True):
         return sum(m.eval_prior_log_prob(constrained=constrained) for m in self._prior_mods)
+
+    def do_sample_pyro(self, pyro_lib: pyro, obs: torch.Tensor) -> torch.Tensor:
+        """
+        Samples the state space model.
+
+        Args:
+            pyro_lib: pyro library.
+            obs: the observed data.
+
+        Returns:
+            Returns the latent process.
+
+        """
+
+        latent, log_prob = self.hidden.do_sample_pyro(pyro_lib, obs.shape[0] + 1, use_full=True, factor=False)
+
+        time = torch.arange(1, latent.shape[0] + 1)
+        state = self.hidden.initial_sample().propagate_from(values=latent[1::self.hidden.num_steps], time_increment=time)
+        obs_dist = self.observable.build_density(state)
+
+        pyro_lib.factor("tot_prob", obs_dist.log_prob(obs).sum() + log_prob)
+
+        return latent
