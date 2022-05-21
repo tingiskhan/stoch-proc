@@ -1,8 +1,9 @@
-import pytest as pt
-from stochproc import distributions as dists, timeseries as ts, NamedParameter
-import torch.distributions as tdists
-import torch
 import math
+
+import torch
+import torch.distributions as tdists
+
+from stochproc import distributions as dists, timeseries as ts, NamedParameter
 from .affine import SAMPLES
 
 
@@ -37,3 +38,22 @@ class TestDiffusionOneDimensional(object):
         x = discretized_ou.sample_path(SAMPLES)
 
         assert (x.shape == torch.Size([SAMPLES])) and (not torch.isnan(x).any())
+
+    def test_runge_kutta(self):
+        dt = 0.05
+
+        def dynamics(x_, kappa, gamma):
+            return kappa * (gamma - x_.values)
+
+        parameters = (
+            NamedParameter("kappa", 0.05),
+            NamedParameter("gamma", 0.0),
+        )
+
+        for tuning_std in [False, 0.1]:
+            newton_cooling = ts.RungeKutta(
+                dynamics, parameters, initial_values=torch.tensor(1.0), dt=dt, event_dim=0, tuning_std=tuning_std
+            )
+            x = newton_cooling.sample_path(SAMPLES)
+
+            assert x.shape == torch.Size([SAMPLES])
