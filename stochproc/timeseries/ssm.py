@@ -105,7 +105,7 @@ class StateSpaceModel(Module, UpdateParametersMixin):
 
     def do_sample_pyro(self, pyro_lib: pyro, obs: torch.Tensor) -> torch.Tensor:
         """
-        Samples the state space model.
+        Samples the state space model utilizing pyro.
 
         Args:
             pyro_lib: pyro library.
@@ -113,7 +113,6 @@ class StateSpaceModel(Module, UpdateParametersMixin):
 
         Returns:
             Returns the latent process.
-
         """
 
         latent = self.hidden.do_sample_pyro(pyro_lib, obs.shape[0] + 1, use_full=True)
