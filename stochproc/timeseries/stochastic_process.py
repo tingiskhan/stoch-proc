@@ -288,8 +288,8 @@ class StochasticProcess(Module, ABC):
         return auxiliary, log_prob
 
     def do_sample_pyro(
-            self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None, use_full: bool = None, factor: bool = True
-    ) -> Tuple[Union[None, torch.Tensor], torch.Tensor]:
+            self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None, use_full: bool = None
+    ) -> torch.Tensor:
         """
         Samples pyro primitives for inferring the parameters of the model.
 
@@ -299,7 +299,6 @@ class StochasticProcess(Module, ABC):
             obs: the data to generate for.
             use_full: whether to sample the full model, i.e. both model and states. If ``None`` then decides whether
                 it is required.
-            factor: Whether to factor the log probability.
 
         Returns:
             Returns the tuple consisting of ``(auxiliary_latent_state, log prob)``.
@@ -316,10 +315,9 @@ class StochasticProcess(Module, ABC):
         else:
             latent, log_prob = self._pyro_params_only(pyro_lib, obs)
 
-        if factor:
-            pyro_lib.factor("model_prob", log_prob)
+        pyro_lib.factor("model_prob", log_prob)
 
-        return latent, log_prob
+        return latent
 
 
 _Parameters = Iterable[ParameterType]

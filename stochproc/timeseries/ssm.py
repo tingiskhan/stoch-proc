@@ -116,12 +116,12 @@ class StateSpaceModel(Module, UpdateParametersMixin):
 
         """
 
-        latent, log_prob = self.hidden.do_sample_pyro(pyro_lib, obs.shape[0] + 1, use_full=True, factor=False)
+        latent = self.hidden.do_sample_pyro(pyro_lib, obs.shape[0] + 1, use_full=True)
 
         time = torch.arange(1, latent.shape[0] + 1)
         state = self.hidden.initial_sample().propagate_from(values=latent[1::self.hidden.num_steps], time_increment=time)
         obs_dist = self.observable.build_density(state)
 
-        pyro_lib.factor("tot_prob", obs_dist.log_prob(obs).sum() + log_prob)
+        pyro_lib.factor("obs_prob", obs_dist.log_prob(obs).sum())
 
         return latent
