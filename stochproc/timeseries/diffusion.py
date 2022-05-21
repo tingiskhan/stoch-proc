@@ -180,7 +180,8 @@ class Euler(AffineEulerMaruyama):
             kwargs: see base.
         """
 
-        scale = 1.0 if isinstance(initial_values, float) else torch.ones(initial_values.shape)
+        # TODO: Enforce sending event dim
+        scale = 1.0 if isinstance(initial_values, Number) else torch.ones(initial_values.shape)
 
         if isinstance(scale, Number):
             dist = DistributionModule(Normal, loc=0.0, scale=math.sqrt(dt) * tuning_std)
