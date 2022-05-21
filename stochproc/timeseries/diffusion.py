@@ -1,9 +1,8 @@
 import math
 from abc import ABC
-from numbers import Number
 
 import torch
-from pyro.distributions import Normal, Independent
+from pyro.distributions import Normal, Delta
 
 from .affine import AffineProcess, MeanScaleFun
 from .stochastic_process import StructuralStochasticProcess
@@ -166,7 +165,7 @@ class Euler(AffineEulerMaruyama):
     """
 
     def __init__(
-        self, dynamics: Drift, parameters, initial_values: ParameterType, dt, tuning_std: float = 1.0, **kwargs
+        self, dynamics: Drift, parameters, initial_values: ParameterType, dt, event_dim: int, tuning_std: float = False, **kwargs
     ):
         """
         Initializes the :class:`Euler` class.
@@ -176,29 +175,22 @@ class Euler(AffineEulerMaruyama):
             parameters: see base.
             initial_values: initial value(s) of the ODE. Can be a prior as well.
             dt: see base.
+            event_dim: event dimension.
             tuning_std: tuning standard deviation of the Gaussian distribution.
             kwargs: see base.
         """
 
-        # TODO: Enforce sending event dim
-        scale = 1.0 if isinstance(initial_values, Number) else torch.ones(initial_values.shape)
-
-        if isinstance(scale, Number):
-            dist = DistributionModule(Normal, loc=0.0, scale=math.sqrt(dt) * tuning_std)
-            iv = DistributionModule(Normal, loc=initial_values, scale=EPS * scale)
+        if not tuning_std:
+            iv = DistributionModule(Delta, v=initial_values, event_dim=event_dim)
+            dist = DistributionModule(Delta, v=torch.zeros(initial_values.shape), event_dim=event_dim)
         else:
-            def _indep_builder(**u):
-                return Independent(Normal(**u), 1)
-
-            iv = DistributionModule(_indep_builder, loc=initial_values, scale=EPS * scale, )
+            iv = DistributionModule(lambda **u: Normal(**u).to_event(event_dim), loc=initial_values, scale=EPS)
             dist = DistributionModule(
-                _indep_builder,
-                loc=torch.zeros(scale.shape),
-                scale=tuning_std * math.sqrt(dt) * torch.ones(scale.shape),
+                lambda **u: Normal(**u).expand(initial_values.shape).to_event(event_dim), loc=0.0, scale=math.sqrt(dt)
             )
 
         def _mean_scale(x, *params):
-            return dynamics(x, *params), torch.ones_like(x.values)
+            return dynamics(x, *params), torch.ones_like(x.values) * tuning_std
 
         super().__init__(_mean_scale, parameters, iv, dist, dt, **kwargs)
         self.f = dynamics
