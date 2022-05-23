@@ -1,5 +1,4 @@
 from copy import deepcopy
-from functools import wraps
 from typing import Tuple
 
 import pyro
@@ -7,21 +6,9 @@ import torch
 from torch.nn import Module
 
 from .stochastic_process import StochasticProcess
-from ..distributions.prior_module import UpdateParametersMixin, _HasPriorsModule
+from ..distributions.prior_module import UpdateParametersMixin
 
 
-def _check_has_priors_wrapper(f):
-    @wraps(f)
-    def _wrapper(ssm: "StateSpaceModel", *args, **kwargs):
-        if not ssm._has_priors:
-            raise Exception(f"No module is subclassed by {_HasPriorsModule.__name__}")
-
-        return f(ssm, *args, **kwargs)
-
-    return _wrapper
-
-
-# TODO: Add methods ``concat_parameters`` and ``update_parameters_from_tensor``
 class StateSpaceModel(Module, UpdateParametersMixin):
     r"""
     Class representing a state space model, i.e. a dynamical system given by the pair stochastic processes
@@ -43,8 +30,6 @@ class StateSpaceModel(Module, UpdateParametersMixin):
         super().__init__()
         self.hidden = hidden
         self.observable = observable
-
-        self._has_priors = issubclass(self.hidden.__class__, _HasPriorsModule) or issubclass(self.observable.__class__, _HasPriorsModule)
 
     def sample_path(self, steps, samples=torch.Size([]), x_s=None) -> Tuple[torch.Tensor, torch.Tensor]:
         x = x_s if x_s is not None else self.hidden.initial_sample(shape=samples)
@@ -89,3 +74,7 @@ class StateSpaceModel(Module, UpdateParametersMixin):
         pyro_lib.factor("obs_prob", obs_dist.log_prob(obs).sum())
 
         return latent
+
+    def sample_params_(self, shape: torch.Size = torch.Size([])):
+        self.hidden.sample_params_(shape)
+        self.observable.sample_params_(shape)
