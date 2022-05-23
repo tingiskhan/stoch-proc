@@ -58,9 +58,7 @@ class StochasticProcess(Module, ABC):
         self._init_transform = initial_transform
         self.num_steps = num_steps
 
-        self._tensor_tuples = BufferIterable(**{
-            self._EXOGENOUS: tuple(exogenous) if isinstance(exogenous, torch.Tensor) else (exogenous or ())
-        })
+        self._tensor_tuples = BufferIterable(**{self._EXOGENOUS: exogenous})
 
     @property
     def exogenous(self) -> torch.Tensor:
@@ -111,7 +109,7 @@ class StochasticProcess(Module, ABC):
             Returns an initial sample of the process wrapped in a ``NewState`` object.
         """
 
-        return TimeseriesState(0.0, self.initial_dist.sample, event_dim=self.initial_dist.event_shape)
+        return TimeseriesState(0.0, self.initial_dist.expand(shape).sample, event_dim=self.initial_dist.event_shape)
 
     def build_density(self, x: TimeseriesState) -> Distribution:
         r"""
@@ -130,7 +128,7 @@ class StochasticProcess(Module, ABC):
         raise NotImplementedError()
 
     def _add_exog_to_state(self, x: TimeseriesState):
-        if any(self._tensor_tuples[self._EXOGENOUS]):
+        if self._EXOGENOUS in self._tensor_tuples:
             x.add_exog(self.exog[x.time_index.int()])
 
     def forward(self, x: TimeseriesState, time_increment=1.0) -> TimeseriesState:

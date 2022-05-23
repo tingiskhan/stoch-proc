@@ -1,10 +1,11 @@
-from functools import lru_cache
 from abc import ABC, abstractmethod
+
 from torch import Size
-from .stochastic_process import StructuralStochasticProcess
+
 from .affine import AffineProcess
 from .linear import LinearModel
 from .state import TimeseriesState
+from .stochastic_process import StructuralStochasticProcess
 
 
 class Observable(StructuralStochasticProcess, ABC):
@@ -25,7 +26,7 @@ class Observable(StructuralStochasticProcess, ABC):
         super(Observable, self).__init__(*args, num_steps=num_steps, **kwargs)
 
     def _add_exog_to_state(self, x: TimeseriesState):
-        if any(self._tensor_tuples[self._EXOGENOUS]):
+        if self._EXOGENOUS in self._tensor_tuples:
             # We subtract 1 as it's technically 1-indexed
             x.add_exog(self.exog[x.time_index.int() - 1])
 
