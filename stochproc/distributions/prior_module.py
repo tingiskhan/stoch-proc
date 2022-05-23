@@ -1,12 +1,14 @@
 import warnings
-from torch.nn import Module, ModuleDict, ParameterDict
 from abc import ABC
-import torch
 from collections import OrderedDict
 from typing import Iterator, Tuple, Dict, Union
+
+import torch
+from torch.nn import Module, ModuleDict, ParameterDict
+
 from .parameter import PriorBoundParameter
-from ..container import BufferDict
 from .prior import Prior
+from ..container import BufferDict
 from ..typing import NamedParameter, ParameterType
 
 
@@ -17,53 +19,6 @@ class UpdateParametersMixin(ABC):
 
         Args:
             shape: shape of the parameters to use when sampling.
-        """
-
-        raise NotImplementedError()
-
-    def concat_parameters(self, constrained=False, flatten=True) -> torch.Tensor:
-        """
-        Concatenates the parameters into one tensor.
-
-        Args:
-            constrained: whether to concatenate the constrained or unconstrained parameters.
-            flatten: whether to flatten the parameters or not, only applies to parameters multi-dimensional parameters.
-        """
-
-        raise NotImplementedError()
-
-    def update_parameters_from_tensor(self, x: torch.Tensor, constrained=False):
-        """
-        Update the parameters of ``self`` with the last dimension of ``x``.
-
-        Args:
-            x: tensor containing the new parameter values.
-            constrained: whether values in ``x`` are considered constrained or not.
-
-        Example:
-            >>> from stochproc import timeseries as ts, distributions as dists
-            >>> from torch.distributions import Normal, Uniform
-            >>> import torch
-            >>>
-            >>> alpha_prior = dists.Prior(Normal, loc=0.0, scale=1.0)
-            >>> beta_prior = dists.Prior(Uniform, low=-1.0, high=1.0)
-            >>>
-            >>> ar = ts.models.AR(alpha_prior, beta_prior, 0.05)
-            >>> ar.sample_params_(torch.Size([1]))
-            >>>
-            >>> new_values = torch.empty(2).normal_()
-            >>> ar.update_parameters_from_tensor(new_values, constrained=False)
-            >>> assert (new_values == ar.concat_parameters(constrained=False)).all()
-        """
-
-        raise NotImplementedError()
-
-    def eval_prior_log_prob(self, constrained=True) -> torch.Tensor:
-        """
-        Calculates the prior log-likelihood of the current values of the parameters.
-
-        Args:
-            constrained: whether to evaluate the prior on constrained parameters or unconstrained.
         """
 
         raise NotImplementedError()
@@ -165,28 +120,3 @@ class _HasPriorsModule(Module, UpdateParametersMixin, ABC):
             param.sample_(prior, shape)
 
         return self
-
-    def eval_prior_log_prob(self, constrained=True) -> torch.Tensor:
-        return sum((prior.eval_prior(p, constrained) for p, prior in self.parameters_and_priors()))
-
-    def concat_parameters(self, constrained=False, flatten=True) -> Union[torch.Tensor, None]:
-        def _first_dim(p: PriorBoundParameter, prior: Prior):
-            return (-1,) if flatten else p.shape[: p.dim() - len(prior.shape)]
-
-        res = tuple(
-            (p if constrained else prior.get_unconstrained(p)).view(*_first_dim(p, prior), prior.get_numel(constrained))
-            for p, prior in self.parameters_and_priors()
-        )
-
-        if not res:
-            return None
-
-        return torch.cat(res, dim=-1)
-
-    def update_parameters_from_tensor(self, x: torch.Tensor, constrained=False):
-        left_index = 0
-        for p, prior in self.parameters_and_priors():
-            right_index = left_index + prior.get_numel(constrained=constrained)
-
-            p.update_values_(x[..., left_index:right_index], prior, constrained=constrained)
-            left_index = right_index

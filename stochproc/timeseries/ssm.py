@@ -68,41 +68,6 @@ class StateSpaceModel(Module, UpdateParametersMixin):
 
         return deepcopy(self)
 
-    @_check_has_priors_wrapper
-    def sample_params_(self, shape: torch.Size = torch.Size([])):
-        for m in self._prior_mods:
-            m.sample_params_(shape)
-
-    @_check_has_priors_wrapper
-    def concat_parameters(self, constrained=False, flatten=True):
-        res = tuple()
-        for m in self._prior_mods:
-            to_concat = m.concat_parameters(constrained, flatten)
-
-            if to_concat is None:
-                continue
-
-            res += (to_concat,)
-
-        if not res:
-            return None
-
-        return torch.cat(res, dim=-1)
-
-    @_check_has_priors_wrapper
-    def update_parameters_from_tensor(self, x: torch.Tensor, constrained=False):
-        hidden_priors_elem = sum(prior.get_numel(constrained) for prior in self.hidden.priors())
-
-        hidden_x = x[..., :hidden_priors_elem]
-        observable_x = x[..., hidden_priors_elem:]
-
-        self.hidden.update_parameters_from_tensor(hidden_x, constrained)
-        self.observable.update_parameters_from_tensor(observable_x, constrained)
-
-    @_check_has_priors_wrapper
-    def eval_prior_log_prob(self, constrained=True):
-        return sum(m.eval_prior_log_prob(constrained=constrained) for m in self._prior_mods)
-
     def do_sample_pyro(self, pyro_lib: pyro, obs: torch.Tensor) -> torch.Tensor:
         """
         Samples the state space model utilizing pyro.
