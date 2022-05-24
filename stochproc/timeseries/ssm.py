@@ -53,25 +53,28 @@ class StateSpaceModel(Module, UpdateParametersMixin):
 
         return deepcopy(self)
 
-    def do_sample_pyro(self, pyro_lib: pyro, obs: torch.Tensor) -> torch.Tensor:
+    def do_sample_pyro(self, pyro_lib: pyro, obs: torch.Tensor, mode: str = "approximate") -> torch.Tensor:
         """
         Samples the state space model utilizing pyro.
 
         Args:
             pyro_lib: pyro library.
             obs: the observed data.
+            mode: the mode to use for the latent process, see :meth:`StochasticProcess.do_sample_pyro`.
 
         Returns:
             Returns the latent process.
         """
 
-        latent = self.hidden.do_sample_pyro(pyro_lib, obs.shape[0] + 1, use_full=True)
+        latent = self.hidden.do_sample_pyro(pyro_lib, obs.shape[0] + 1, mode=mode)
 
         time = torch.arange(1, latent.shape[0] + 1)
-        state = self.hidden.initial_sample().propagate_from(values=latent[1::self.hidden.num_steps], time_increment=time)
+
+        x = latent[self.hidden.num_steps::self.hidden.num_steps]
+        state = self.hidden.initial_sample().propagate_from(values=x, time_increment=time)
         obs_dist = self.observable.build_density(state)
 
-        pyro_lib.factor("obs_prob", obs_dist.log_prob(obs).sum())
+        pyro_lib.sample("obs", obs_dist.to_event(1), obs=obs)
 
         return latent
 
