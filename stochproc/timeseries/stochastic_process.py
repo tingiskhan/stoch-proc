@@ -242,8 +242,9 @@ class StochasticProcess(Module, ABC):
             batched_state = init_state.propagate_from(values=obs[:-1], time_increment=time_index)
 
         log_prob = self.build_density(batched_state).log_prob(obs[1:]).sum() + self.initial_dist.log_prob(obs[0])
+        pyro_lib.factor("model_prob", log_prob)
 
-        return obs, log_prob
+        return obs
 
     def _get_pyro_length(self, t_final: int) -> int:
         """
@@ -288,7 +289,9 @@ class StochasticProcess(Module, ABC):
 
             latent[t] = x
 
-        return latent, None
+        pyro.deterministic("x", latent)
+
+        return latent
 
     def _pyro_approximate(self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None):
         """
@@ -319,23 +322,25 @@ class StochasticProcess(Module, ABC):
             if self.n_dim == 0:
                 auxiliary.squeeze_(-1)
 
-            state = initial_state.propagate_from(values=auxiliary[:-1], time_increment=t[1:])
-
-            y_eval = auxiliary.clone()
-            if obs is not None:
-                mask = t % self.num_steps == 0
-
-                if obs.dim() > 1:
-                    mask.unsqueeze_(-1)
-
-                y_eval.masked_scatter_(mask, obs)
-
-            tot_dist = self.build_density(state)
-            log_prob = tot_dist.log_prob(y_eval[1:]).sum() + self.initial_dist.log_prob(y_eval[0])
-
             pyro.deterministic("auxiliary", auxiliary)
 
-        return auxiliary, log_prob
+        state = initial_state.propagate_from(values=auxiliary[:-1], time_increment=t[1:])
+
+        y_eval = auxiliary.clone()
+        if obs is not None:
+            mask = t % self.num_steps == 0
+
+            if obs.dim() > 1:
+                mask.unsqueeze_(-1)
+
+            y_eval.masked_scatter_(mask, obs)
+
+        tot_dist = self.build_density(state)
+
+        pyro_lib.sample("x_0", self.initial_dist, obs=y_eval[0])
+        pyro_lib.sample("x", tot_dist.to_event(1), obs=y_eval[1:])
+
+        return auxiliary
 
     def do_sample_pyro(
             self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None, mode: str = "parameters_only"
@@ -361,19 +366,16 @@ class StochasticProcess(Module, ABC):
         """
 
         if mode == "full":
-            latent, log_prob = self._pyro_full(pyro_lib, t_final, obs)
+            latent = self._pyro_full(pyro_lib, t_final, obs)
         elif mode == "approximate":
-            latent, log_prob = self._pyro_approximate(pyro_lib, t_final, obs)
+            latent = self._pyro_approximate(pyro_lib, t_final, obs)
         elif mode == "parameters_only":
             if (self.num_steps > 1) or (obs is None):
                 raise Exception(f"'{mode}' only works with observable data and `num_steps` == 1")
 
-            latent, log_prob = self._pyro_params_only(pyro_lib, obs)
+            latent = self._pyro_params_only(pyro_lib, obs)
         else:
             raise Exception(f"No such mode exists: '{mode}'!")
-
-        if log_prob is not None:
-            pyro_lib.factor("model_prob", log_prob)
 
         return latent
 
