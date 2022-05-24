@@ -1,5 +1,8 @@
-from abc import ABC, abstractmethod
+from abc import ABC
+from typing import Callable, Tuple
 
+import torch
+from pyro.distributions import Distribution
 from torch import Size
 
 from .affine import AffineProcess
@@ -37,22 +40,32 @@ class Observable(StructuralStochasticProcess, ABC):
         raise Exception("Cannot sample from Observable only!")
 
 
+DistBuilder = Callable[[TimeseriesState, Tuple[torch.Tensor, ...]], Distribution]
+
+
 class GeneralObservable(Observable, ABC):
     """
     Abstract base class constituting the observable dynamics of a state space model. Derived classes should override the
     :meth:`stochproc.timeseries.GeneralObservable.build_density` method.
     """
 
-    def __init__(self, parameters, **kwargs):
+    def __init__(self, parameters, dist_builder: DistBuilder, dimension: Size, **kwargs):
         """
         Initializes the :class:`GeneralObservable` class.
 
         Args:
              parameters: see base.
+             dist_builder: function for building the density.
+             dimension: dimension of the process
              kwargs: see base.
         """
 
         super().__init__(parameters, initial_dist=None, **kwargs)
+        self._dist_builder = dist_builder
+        self.dimension = dimension
+
+    def build_density(self, x: TimeseriesState) -> Distribution:
+        return self._dist_builder(x, *self.functional_parameters())
 
     @property
     def n_dim(self) -> int:
@@ -61,15 +74,6 @@ class GeneralObservable(Observable, ABC):
     @property
     def num_vars(self) -> int:
         return self.dimension.numel()
-
-    @property
-    @abstractmethod
-    def dimension(self) -> Size:
-        """
-        The dimension of the process.
-        """
-
-        pass
 
 
 class Mixin(object):
