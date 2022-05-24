@@ -315,6 +315,10 @@ class StochasticProcess(Module, ABC):
 
         with pyro_lib.plate("time", self._get_pyro_length(t_final), dim=-1) as t:
             auxiliary = pyro_lib.sample("_auxiliary", Normal(loc=loc, scale=scale).to_event(1)).cumsum(dim=0)
+
+            if self.n_dim == 0:
+                auxiliary.squeeze_(-1)
+
             state = initial_state.propagate_from(values=auxiliary[:-1], time_increment=t[1:])
 
             y_eval = auxiliary.clone()
