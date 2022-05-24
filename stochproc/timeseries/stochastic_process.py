@@ -4,8 +4,7 @@ from typing import TypeVar, Callable, Union, Tuple, Sequence, Iterable
 
 import pyro
 import torch
-from pyro.distributions import LogNormal, Normal
-from torch.distributions import Distribution
+from pyro.distributions import LogNormal, Normal, Distribution
 from torch.nn import Module, Parameter
 
 from .state import TimeseriesState
@@ -242,7 +241,52 @@ class StochasticProcess(Module, ABC):
 
         return obs, log_prob
 
+    def _get_pyro_length(self, t_final: int) -> int:
+        """
+        Helper method for finding the total lenght.
+
+        Args:
+            t_final: The final lenght.
+
+        Returns:
+            The total length of samples to produce.
+        """
+
+        return (t_final - 1) * (self.num_steps - 1) + t_final
+
     def _pyro_full(self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None):
+        """
+        Implements the full joint distribution of the states. Not that this one is very slow.
+
+        Args:
+            pyro_lib: pyro library.
+            t_final: length of the timeseries.
+            obs: optional observations.
+
+        Returns:
+            Returns the sampled path together with the log likelihood.
+        """
+
+        with torch.no_grad():
+            state = self.initial_sample()
+
+        x = pyro_lib.sample("x_0", self.initial_dist, obs=obs[0] if obs is not None else None)
+
+        length = self._get_pyro_length(t_final)
+        latent = torch.empty((length, *state.event_dim))
+
+        latent[0] = x
+        for t in pyro_lib.markov(range(1, length)):
+            state = state.propagate_from(values=x)
+
+            obs_t = obs[t] if (t % self.num_steps == 0) and (obs is not None) else None
+            x = pyro.sample(f"x_{t}", self.build_density(state), obs=obs_t)
+
+            latent[t] = x
+
+        return latent, None
+
+    def _pyro_approximate(self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None):
         """
         Implements a vectorized inference model utilizing an auxiliary model comprising a random walk of the same
         dimension as the timeseries dimension.
@@ -265,7 +309,7 @@ class StochasticProcess(Module, ABC):
         with torch.no_grad():
             initial_state = self.initial_sample()
 
-        with pyro_lib.plate("time", (t_final - 1) * (self.num_steps - 1) + t_final, dim=-1) as t:
+        with pyro_lib.plate("time", self._get_pyro_length(t_final), dim=-1) as t:
             auxiliary = pyro_lib.sample("_auxiliary", Normal(loc=loc, scale=scale).to_event(1)).cumsum(dim=0)
             state = initial_state.propagate_from(values=auxiliary[:-1], time_increment=t[1:])
 
@@ -286,7 +330,7 @@ class StochasticProcess(Module, ABC):
         return auxiliary, log_prob
 
     def do_sample_pyro(
-            self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None, use_full: bool = None
+            self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None, mode: str = "parameters_only"
     ) -> torch.Tensor:
         """
         Samples pyro primitives for inferring the parameters of the model.
@@ -295,25 +339,33 @@ class StochasticProcess(Module, ABC):
             pyro_lib: the pyro library.
             t_final: length to sample.
             obs: the data to generate for.
-            use_full: whether to sample the full model, i.e. both model and states. If ``None`` then decides whether
-                it is required.
+            mode: the mode of sampling, can be:
+                - "parameters_only" - just infers the parameters, not available if ``obs`` is not none
+                - "approximate" - uses an approximate scheme by sampling from a RW enabling batched inference
+                - "full" - samples from the full joint distribution
 
         Returns:
-            Returns the tuple consisting of ``(auxiliary_latent_state, log prob)``.
+            Returns the latent state.
 
         References:
             https://forum.pyro.ai/t/using-pyro-markov-for-time-series-variational-inference/1960/2
+            http://pyro.ai/examples/sir_hmc.html
         """
 
-        if (use_full is True) or (self.num_steps != 1) or (obs is None):
-            if use_full is False:
-                raise Exception(f"``use_full`` must be ``True`` when ``self.num_steps > 1`` or ``obs`` is None!")
+        if mode == "full":
+            latent, log_prob = self._pyro_full(pyro_lib, t_final, obs)
+        elif mode == "approximate":
+            latent, log_prob = self._pyro_approximate(pyro_lib, t_final, obs)
+        elif mode == "parameters_only":
+            if (self.num_steps > 1) or (obs is None):
+                raise Exception(f"'{mode}' only works with observable data and `num_steps` == 1")
 
-            latent, log_prob = self._pyro_full(pyro_lib, t_final, obs=obs)
-        else:
             latent, log_prob = self._pyro_params_only(pyro_lib, obs)
+        else:
+            raise Exception(f"No such mode exists: '{mode}'!")
 
-        pyro_lib.factor("model_prob", log_prob)
+        if log_prob is not None:
+            pyro_lib.factor("model_prob", log_prob)
 
         return latent
 
