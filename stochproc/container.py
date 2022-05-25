@@ -29,15 +29,15 @@ class BufferDict(Module):
     that this class basically copies :class:`torch.nn.ParameterDict`.
     """
 
-    def __init__(self, parameters: Optional[Mapping[str, "Tensor"]] = None) -> None:
+    def __init__(self, parameters: Optional[Mapping[str, torch.Tensor]] = None) -> None:
         super(BufferDict, self).__init__()
         if parameters is not None:
             self.update(parameters)
 
-    def __getitem__(self, key: str) -> "Tensor":
+    def __getitem__(self, key: str) -> torch.Tensor:
         return self._buffers[key]
 
-    def __setitem__(self, key: str, parameter: "Tensor") -> None:
+    def __setitem__(self, key: str, parameter: torch.Tensor) -> None:
         self.register_buffer(key, parameter)
 
     def __delitem__(self, key: str) -> None:
@@ -63,7 +63,7 @@ class BufferDict(Module):
         """
         self._buffers.clear()
 
-    def pop(self, key: str) -> "Tensor":
+    def pop(self, key: str) -> torch.Tensor:
         """
         See ``torch.nn.ParameterDict``.
         """
@@ -77,19 +77,19 @@ class BufferDict(Module):
         """
         return self._buffers.keys()
 
-    def items(self) -> Iterable[Tuple[str, "Tensor"]]:
+    def items(self) -> Iterable[Tuple[str, torch.Tensor]]:
         """
         See ``torch.nn.ParameterDict``.
         """
         return self._buffers.items()
 
-    def values(self) -> Iterable["Tensor"]:
+    def values(self) -> Iterable[torch.Tensor]:
         """
         See ``torch.nn.ParameterDict``.
         """
         return self._buffers.values()
 
-    def update(self, parameters: Mapping[str, "Tensor"]) -> None:
+    def update(self, parameters: Mapping[str, torch.Tensor]) -> None:
         """
         See ``torch.nn.ParameterDict``.
         """
@@ -187,7 +187,7 @@ class BufferIterable(BufferDict):
 
         raise Exception(f"Could not find '{key}'!")
 
-    def __setitem__(self, key: str, parameter: Iterable["Tensor"]) -> None:
+    def __setitem__(self, key: str, parameter: Iterable[torch.Tensor]) -> None:
         raise Exception("Not allowed!")
 
     def __delitem__(self, key: str) -> None:
@@ -210,7 +210,7 @@ class BufferIterable(BufferDict):
     def __contains__(self, key: str) -> bool:
         return any(key in item for item in [self._tuples, self._deques])
 
-    def values(self) -> Iterable[Iterable["Tensor"]]:
+    def values(self) -> Iterable[Iterable[torch.Tensor]]:
         return itertools.chain(self._tuples.values(), self._deques.values())
 
     def keys(self):
