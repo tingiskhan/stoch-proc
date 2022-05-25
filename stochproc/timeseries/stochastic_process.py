@@ -312,15 +312,17 @@ class StochasticProcess(Module, ABC):
         loc = torch.zeros(event_shape)
         scale = torch.ones_like(loc)
 
+        re_interpreted_dims = len(event_shape)
+
         with torch.no_grad():
             initial_state = self.initial_sample()
 
         with pyro_lib.plate("time", self._get_pyro_length(t_final), dim=-1) as t:
             # NB: This is a purely heuristic approach and I don't really know if you actually can do this...
             rw_dist = Normal(loc=loc, scale=scale).mask(False)
-            auxiliary = pyro_lib.sample("_auxiliary", rw_dist.to_event(len(event_shape))).cumsum(dim=0)
+            auxiliary = pyro_lib.sample("_auxiliary", rw_dist.to_event(re_interpreted_dims)).cumsum(dim=0)
 
-            if self.n_dim == 0:
+            if re_interpreted_dims == 0:
                 auxiliary.squeeze_(-1)
 
             pyro.deterministic("auxiliary", auxiliary)
