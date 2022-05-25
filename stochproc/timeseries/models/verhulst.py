@@ -1,52 +1,53 @@
-from ..diffusion import AffineEulerMaruyama
-from torch.distributions import Normal, TransformedDistribution, AbsTransform
-from .ou import init_trans
 from math import sqrt
-from ...distributions import DistributionWrapper
-from ...typing import ArrayType
+
+from pyro.distributions import Normal, TransformedDistribution
+from pyro.distributions.transforms import AbsTransform
+
+from .ou import init_builder as ou_builder
+from ..diffusion import AffineEulerMaruyama
+from ...distributions import DistributionModule
+from ...typing import ParameterType
+from ...utils import enforce_named_parameter
 
 
-def f(x, k, g, s):
-    return k * (g - x.values) * x.values
+def _f(x, k, g, s):
+    return k * (g - x.values) * x.values, s * x.values
 
 
-def g_(x, k, g, s):
-    return s * x.values
-
-
-def init_transform(module, dist):
-    dist = init_trans(module, dist)
+def _init_builder(kappa, gamma, sigma):
+    dist = ou_builder(kappa, gamma, sigma)
 
     return TransformedDistribution(dist, AbsTransform())
 
 
 class Verhulst(AffineEulerMaruyama):
-    """
+    r"""
     Implements a discretized Verhulst SDE with the following dynamics
         .. math::
-            dX_t = \\kappa (\\gamma - X_t)X_t dt + \\sigma X_t dW_t, \n
-            X_0 \\sim \\left | \\mathcal{N}(x_0, \\frac{\\sigma}{\\sqrt{2\\kappa}} \\right |,
+            dX_t = \kappa (\gamma - X_t)X_t dt + \sigma X_t dW_t, \newlin
+            X_0 \sim \left | \mathcal{N}(x_0, \frac{\sigma}{\sqrt{2\kappa}} \right |,
 
-    where :math:`\\kappa, \\gamma, \\sigma > 0`.
+    where :math:`\kappa, \gamma, \sigma > 0`.
     """
 
-    def __init__(self, reversion, mean, vol, dt, **kwargs):
+    def __init__(self, kappa: ParameterType, gamma: ParameterType, sigma: ParameterType, dt, **kwargs):
         """
-        Initializes the ``Verhulst`` class.
+        Initializes the :class:`Verhulst` class.
 
         Args:
-            reversion: Corresponds to :math:`\\kappa`.
-            mean: Corresponds to :math:`\\gamma`.
-            vol: Corresponds to :math:`\\sigma`.
-            kwargs: See base.
+            reversion: :math:`\\kappa`.
+            mean: :math:`\\gamma`.
+            vol: :math:`\\sigma`.
+            kwargs: see base.
         """
 
+        kappa, gamma, sigma = enforce_named_parameter(kappa=kappa, gamma=gamma, sigma=sigma)
+
         super().__init__(
-            (f, g_),
-            (reversion, mean, vol),
-            DistributionWrapper(Normal, loc=0.0, scale=1.0),
-            DistributionWrapper(Normal, loc=0.0, scale=sqrt(dt)),
+            _f,
+            (kappa, gamma, sigma),
+            DistributionModule(_init_builder, kappa=kappa, gamma=gamma, sigma=sigma),
+            DistributionModule(Normal, loc=0.0, scale=sqrt(dt)),
             dt=dt,
-            initial_transform=init_transform,
             **kwargs
         )

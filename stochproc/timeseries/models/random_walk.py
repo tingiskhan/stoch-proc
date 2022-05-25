@@ -1,45 +1,34 @@
-from torch.distributions import Normal
-import torch
+from pyro.distributions import Normal
+
 from ..linear import LinearModel
-from ...distributions import DistributionWrapper
-from ...typing import ArrayType
-from ...utils import broadcast_all
+from ...distributions import DistributionModule
+from ...typing import ParameterType
+from ...utils import enforce_named_parameter
 
 
 class RandomWalk(LinearModel):
-    """
-    Defines a Gaussian random walk process, i.e. in which the dynamics are given by
+    r"""
+    Defines a one-dimensional Gaussian random walk process, i.e. in which the dynamics are given by
         .. math::
-            X_{t+1} \\sim \\mathcal{N}(X_t, \\sigma), \n
-            X_0 \\sim \\mathcal{N}(x_0, \\sigma_0),
+            X_{t+1} \sim \mathcal{N}(X_t, \sigma), \newline
+            X_0 \sim \mathcal{N}(x_0, \sigma_0),
 
     where :math:`x_0` is the initial mean, defaulting to zero.
     """
 
-    def __init__(self, std: ArrayType, initial_mean: ArrayType = 0.0, initial_scale: ArrayType = 1.0, **kwargs):
+    def __init__(self, scale: ParameterType, initial_mean: ParameterType = 0.0, **kwargs):
         """
-        Initializes the ``RandomWalk`` model.
+        Initializes the :class:`RandomWalk` model.
 
         Args:
-            std: Corresponds to :math:`\\sigma` in class doc.
-            initial_mean: Optional parameter specifying the mean of the initial distribution. Defaults to 0.
-            initial_scale: Optional parameter specifying the scale of the initial distribution. Defaults to 1.
-            kwargs: See base.
+            scale: :math:`\\sigma` in class doc.
+            initial_mean: parameter specifying the mean of the initial distribution. Defaults to 0.
+            kwargs: see base.
         """
 
-        std, initial_mean, initial_scale = broadcast_all(std, initial_mean, initial_scale)
+        a, scale, initial_mean = enforce_named_parameter(a=1.0, scale=scale, loc=initial_mean)
 
-        # TODO: Check all instead, as they might share std?
-        reinterpreted_batch_ndims = None if len(std.shape) == 0 else 1
-        initial_dist = DistributionWrapper(
-            Normal, loc=initial_mean, scale=initial_scale, reinterpreted_batch_ndims=reinterpreted_batch_ndims
-        )
+        initial_dist = DistributionModule(Normal, loc=initial_mean, scale=scale)
+        inc_dist = DistributionModule(Normal, loc=0.0, scale=1.0)
 
-        inc_dist = DistributionWrapper(
-            Normal,
-            loc=torch.zeros(initial_mean.shape),
-            scale=torch.ones(initial_mean.shape),
-            reinterpreted_batch_ndims=reinterpreted_batch_ndims,
-        )
-
-        super().__init__(1.0, std, increment_dist=inc_dist, initial_dist=initial_dist, **kwargs)
+        super().__init__(a, scale, increment_dist=inc_dist, initial_dist=initial_dist, **kwargs)

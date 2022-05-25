@@ -1,57 +1,44 @@
+from copy import deepcopy
+from typing import Tuple
+
+import pyro
 import torch
 from torch.nn import Module
-from typing import Tuple
-from copy import deepcopy
-from functools import wraps
+
 from .stochastic_process import StochasticProcess
-from ..prior_module import UpdateParametersMixin, HasPriorsModule
+from ..distributions.prior_module import UpdateParametersMixin
 
 
-def _check_has_priors_wrapper(f):
-    @wraps(f)
-    def _wrapper(obj: "StateSpaceModel", *args, **kwargs):
-        if not any(obj._prior_mods):
-            raise Exception(f"No module is subclassed by {HasPriorsModule.__name__}")
-
-        return f(obj, *args, **kwargs)
-
-    return _wrapper
-
-
-# TODO: Add methods ``concat_parameters`` and ``update_parameters_from_tensor``
 class StateSpaceModel(Module, UpdateParametersMixin):
-    """
+    r"""
     Class representing a state space model, i.e. a dynamical system given by the pair stochastic processes
-    :math:`\\{X_t\\}` and :math:`\\{Y_t\\}`, where :math:`X_t` is independent from :math:`Y_t`, and :math:`Y_t`
-    conditionally indpendent given :math:`X_t`. See more `here`_.
+    :math:`\{ X_t \}` and :math:`\{ Y_t \}`, where :math:`X_t` is independent from :math:`Y_t`, and :math:`Y_t`
+    conditionally independent given :math:`X_t`. See more `here`_.
 
     .. _`here`: https://en.wikipedia.org/wiki/State-space_representation
     """
 
     def __init__(self, hidden: StochasticProcess, observable: StochasticProcess):
         """
-        Initializes the ``StateSpaceModel`` class.
+        Initializes the :class:`StateSpaceModel` class.
 
         Args:
-            hidden: The hidden process.
-            observable: The observable process.
+            hidden: hidden process.
+            observable: observable process.
         """
 
         super().__init__()
         self.hidden = hidden
         self.observable = observable
 
-        self._prior_mods = tuple(m for m in (self.hidden, self.observable) if issubclass(m.__class__, HasPriorsModule))
-
-    def sample_path(self, steps, samples=None, x_s=None) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample_path(self, steps, samples=torch.Size([]), x_s=None) -> Tuple[torch.Tensor, torch.Tensor]:
         x = x_s if x_s is not None else self.hidden.initial_sample(shape=samples)
 
-        hidden = (x,)
+        hidden = tuple()
         obs = tuple()
 
         for t in range(1, steps + 1):
             x = self.hidden.propagate(x)
-
             obs_state = self.observable.propagate(x)
 
             obs += (obs_state,)
@@ -61,42 +48,36 @@ class StateSpaceModel(Module, UpdateParametersMixin):
 
     def copy(self) -> "StateSpaceModel":
         """
-        Creates a deep copy of ``self``.
+        Creates a deep copy of self.
         """
 
         return deepcopy(self)
 
-    @_check_has_priors_wrapper
-    def sample_params(self, shape: torch.Size = torch.Size([])):
-        for m in self._prior_mods:
-            m.sample_params(shape)
+    def do_sample_pyro(self, pyro_lib: pyro, obs: torch.Tensor, mode: str = "approximate") -> torch.Tensor:
+        """
+        Samples the state space model utilizing pyro.
 
-    @_check_has_priors_wrapper
-    def concat_parameters(self, constrained=False, flatten=True):
-        res = tuple()
-        for m in self._prior_mods:
-            to_concat = m.concat_parameters(constrained, flatten)
+        Args:
+            pyro_lib: pyro library.
+            obs: the observed data.
+            mode: the mode to use for the latent process, see :meth:`StochasticProcess.do_sample_pyro`.
 
-            if to_concat is None:
-                continue
+        Returns:
+            Returns the latent process.
+        """
 
-            res += (to_concat,)
+        latent = self.hidden.do_sample_pyro(pyro_lib, obs.shape[0] + 1, mode=mode)
 
-        if not res:
-            return None
+        time = torch.arange(1, latent.shape[0] + 1)
 
-        return torch.cat(res, dim=-1)
+        x = latent[self.hidden.num_steps :: self.hidden.num_steps]
+        state = self.hidden.initial_sample().propagate_from(values=x, time_increment=time)
+        obs_dist = self.observable.build_density(state)
 
-    @_check_has_priors_wrapper
-    def update_parameters_from_tensor(self, x: torch.Tensor, constrained=False):
-        hidden_priors_elem = sum(prior.get_numel(constrained) for prior in self.hidden.priors())
+        pyro_lib.factor("y_log_prob", obs_dist.log_prob(obs).sum(dim=0))
 
-        hidden_x = x[..., :hidden_priors_elem]
-        observable_x = x[..., hidden_priors_elem:]
+        return latent
 
-        self.hidden.update_parameters_from_tensor(hidden_x, constrained)
-        self.observable.update_parameters_from_tensor(observable_x, constrained)
-
-    @_check_has_priors_wrapper
-    def eval_prior_log_prob(self, constrained=True):
-        return sum(m.eval_prior_log_prob(constrained=constrained) for m in self._prior_mods)
+    def sample_params_(self, shape: torch.Size = torch.Size([])):
+        self.hidden.sample_params_(shape)
+        self.observable.sample_params_(shape)

@@ -1,9 +1,5 @@
-from .stochastic_process import StochasticProcess, StructuralStochasticProcess
+from . import models
 from .affine import AffineProcess
-from .ssm import StateSpaceModel
-from .linear import LinearModel
-from .linear_ssm import LinearGaussianObservations, LinearObservations
-from .observable import AffineObservations, GeneralObservable
 from .diffusion import (
     AffineEulerMaruyama,
     OneStepEulerMaruyma,
@@ -12,11 +8,13 @@ from .diffusion import (
     RungeKutta,
     StochasticDifferentialEquation,
 )
-from .state import NewState, JointState
-from .joint import JointStochasticProcess, AffineJointStochasticProcess
-from .chained import ChainedStochasticProcess, AffineChainedStochasticProcess
-from . import models
-
+from .joint import AffineJointStochasticProcess
+from .linear import LinearModel
+from .linear_ssm import LinearGaussianObservations, LinearObservations, LinearSSM
+from .observable import AffineObservations, GeneralObservable
+from .ssm import StateSpaceModel
+from .state import TimeseriesState, JointState
+from .stochastic_process import StochasticProcess, StructuralStochasticProcess
 
 # TODO: Remove TimeseriesState and BatchedState
 __all__ = [
@@ -24,19 +22,19 @@ __all__ = [
     "StructuralStochasticProcess",
     "AffineProcess",
     "StateSpaceModel",
+    "LinearSSM",
     "LinearGaussianObservations",
     "LinearObservations",
     "AffineObservations",
     "AffineEulerMaruyama",
     "OneStepEulerMaruyma",
     "models",
-    "NewState",
+    "TimeseriesState",
     "Euler",
     "DiscretizedStochasticDifferentialEquation",
     "RungeKutta",
     "StochasticDifferentialEquation",
     "JointState",
-    "JointStochasticProcess",
     "AffineJointStochasticProcess",
     "GeneralObservable",
     "models",

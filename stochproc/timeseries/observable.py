@@ -1,10 +1,14 @@
-from functools import lru_cache
-from abc import ABC, abstractmethod
+from abc import ABC
+from typing import Callable, Tuple
+
+import torch
+from pyro.distributions import Distribution
 from torch import Size
-from .stochastic_process import StructuralStochasticProcess
+
 from .affine import AffineProcess
 from .linear import LinearModel
-from .state import NewState
+from .state import TimeseriesState
+from .stochastic_process import StructuralStochasticProcess
 
 
 class Observable(StructuralStochasticProcess, ABC):
@@ -14,8 +18,9 @@ class Observable(StructuralStochasticProcess, ABC):
 
     def __init__(self, *args, **kwargs):
         """
-        Initializes the ``Observable`` class.
+        Initializes the :class:`Observable` class.
         """
+
         num_steps = kwargs.pop("num_steps", 1)
 
         if num_steps != 1:
@@ -23,8 +28,8 @@ class Observable(StructuralStochasticProcess, ABC):
 
         super(Observable, self).__init__(*args, num_steps=num_steps, **kwargs)
 
-    def _add_exog_to_state(self, x: NewState):
-        if any(self._tensor_tuples["exog"]):
+    def _add_exog_to_state(self, x: TimeseriesState):
+        if self._EXOGENOUS in self._tensor_tuples:
             # We subtract 1 as it's technically 1-indexed
             x.add_exog(self.exog[x.time_index.int() - 1])
 
@@ -35,22 +40,32 @@ class Observable(StructuralStochasticProcess, ABC):
         raise Exception("Cannot sample from Observable only!")
 
 
+DistBuilder = Callable[[TimeseriesState, Tuple[torch.Tensor, ...]], Distribution]
+
+
 class GeneralObservable(Observable, ABC):
     """
     Abstract base class constituting the observable dynamics of a state space model. Derived classes should override the
-    ``.build_density(...)`` method.
+    :meth:`stochproc.timeseries.GeneralObservable.build_density` method.
     """
 
-    def __init__(self, parameters, **kwargs):
+    def __init__(self, parameters, dist_builder: DistBuilder, dimension: Size, **kwargs):
         """
-        Initializes the ``GeneralObservable`` class.
+        Initializes the :class:`GeneralObservable` class.
 
         Args:
-             parameters: See base.
-             kwargs: See base.
+             parameters: see base.
+             dist_builder: function for building the density.
+             dimension: dimension of the process
+             kwargs: see base.
         """
 
         super().__init__(parameters, initial_dist=None, **kwargs)
+        self._dist_builder = dist_builder
+        self.dimension = dimension
+
+    def build_density(self, x: TimeseriesState) -> Distribution:
+        return self._dist_builder(x, *self.functional_parameters())
 
     @property
     def n_dim(self) -> int:
@@ -60,80 +75,75 @@ class GeneralObservable(Observable, ABC):
     def num_vars(self) -> int:
         return self.dimension.numel()
 
-    @property
-    @abstractmethod
-    def dimension(self) -> Size:
-        """
-        The dimension of the process.
-        """
-
-        pass
-
 
 class Mixin(object):
     @property
-    @lru_cache(maxsize=None)
     def n_dim(self) -> int:
         return len(self.increment_dist().event_shape)
 
     @property
-    @lru_cache(maxsize=None)
     def num_vars(self) -> int:
-        return self.increment_dist().event_shape.numel()
+        return self.dimension.numel()
 
     def forward(self, x, time_increment=1.0):
         self._add_exog_to_state(x)
+        dist = self.build_density(x)
 
-        return NewState(x.time_index, distribution=self.build_density(x))
+        return TimeseriesState(x.time_index, dist.sample, event_dim=self.dimension)
 
     propagate = forward
 
-    def propagate_conditional(self, x, u, parameters=None, time_increment=1.0):
+    def propagate_conditional(self, x: TimeseriesState, u, parameters=None, time_increment=1.0):
         super().propagate_conditional(x, u, parameters, time_increment)
         loc, scale = self.mean_scale(x, parameters=parameters)
 
-        return NewState(x.time_index, values=loc + scale * u)
+        return x.propagate_from(loc + scale * u, time_increment=0.0)
+
+    @property
+    def dimension(self):
+        return self.increment_dist().event_shape
 
 
 class AffineObservations(AffineProcess, Mixin, Observable):
-    """
+    r"""
     Constitutes the observable dynamics of a state space model in which the dynamics are affine in terms of the latent
     state, i.e. we have that
         .. math::
-            Y_t = f_\\theta(X_t) + g_\\theta(X_t) W_t,
+            Y_t = f_\theta(X_t) + g_\theta(X_t) W_t,
 
-    for some functions :math:`f, g` parameterized by :math:`\\theta`.
+    for some functions :math:`f, g` parameterized by :math:`\theta`.
     """
 
-    def __init__(self, funcs, parameters, increment_dist, **kwargs):
+    def __init__(self, mean_scale, parameters, increment_dist, **kwargs):
         """
-        Initializes the ``AffineObservations`` class.
+        Initializes the :class:`AffineObservations` class.
 
         Args:
-            funcs: See base.
-            parameters: See base.
-            increment_dist: See base.
+            mean_scale: see base.
+            parameters: see base.
+            increment_dist: see base.
         """
 
-        super().__init__(funcs, parameters, None, increment_dist, **kwargs)
+        super().__init__(mean_scale, parameters, increment_dist, increment_dist, **kwargs)
 
 
 class LinearObservations(LinearModel, Mixin, Observable):
-    """
+    r"""
     Defines an observable process in which the dynamics are given by a linear combination of the states, i.e.
         .. math::
-            X_t = A \\cdot X_t + \\sigma \\epsilon_t,
-    where :math:`A \\in \\mathbb{R}^{n \\times n}`, :math:`X_t \\in \\mathbb{R}^n`.
+            X_t = A \cdot X_t + \sigma \epsilon_t,
+
+    where :math:`A \in \mathbb{R}^{n \times n}`, :math:`X_t \in \mathbb{R}^n`.
     """
 
     def __init__(self, a, sigma, increment_dist, **kwargs):
         """
-        Initializes the ``LinearObservations`` class.
+        Initializes the :class:`LinearObservations` class.
 
         Args:
-            a: See ``LinearModel``.
-            b: See ``LinearModel``.
-            increment_dist: See ``LinearModel``.
+            a: see :class:`stochproc.timeseries.LinearModel`.
+            b: see :class:`stochproc.timeseries.LinearModel`.
+            increment_dist: see :class:`stochproc.timeseries.LinearModel`.
         """
 
-        super().__init__(a, sigma, increment_dist, initial_dist=None, **kwargs)
+        super().__init__(a, sigma, increment_dist, initial_dist=increment_dist, **kwargs)
