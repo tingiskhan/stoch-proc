@@ -2,6 +2,7 @@ import torch
 from torch.distributions import Normal
 
 from stochproc import distributions as dists, timeseries as ts, NamedParameter
+from .test_stochastic_process import initial_distribution   # flake8: noqa
 
 SAMPLES = 100
 
