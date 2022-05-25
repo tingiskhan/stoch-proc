@@ -27,10 +27,12 @@ jobs:
     - name: Install pytorch
       run: |
         conda install pytorch torchvision torchaudio cpuonly -c pytorch
+        conda info
     - uses: actions/checkout@v3
     - name: Install dependencies
       run: |        
         conda install -c anaconda pytest flake8
+        conda activate test
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
