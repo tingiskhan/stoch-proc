@@ -1,7 +1,8 @@
-from stochproc import timeseries as ts, distributions as dists, NamedParameter
 import pytest as pt
 import torch
 from torch.distributions import Normal
+
+from stochproc import timeseries as ts, distributions as dists, NamedParameter
 
 
 @pt.fixture()

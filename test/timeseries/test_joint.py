@@ -1,7 +1,7 @@
-from stochproc import timeseries as ts
-import pytest as pt
 import torch
-from .affine import SAMPLES
+
+from stochproc import timeseries as ts
+from .test_affine import SAMPLES
 
 
 class TestJointProcesses(object):

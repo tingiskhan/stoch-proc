@@ -1,7 +1,8 @@
 import pytest
 import torch
-from stochproc.distributions import Prior, DistributionModule
 from torch.distributions import Exponential, StudentT, Independent, Normal
+
+from stochproc.distributions import Prior, DistributionModule
 
 
 @pytest.fixture

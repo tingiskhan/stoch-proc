@@ -1,14 +1,14 @@
-import math
+from math import pi, sqrt
 
 import pytest
 import torch
-from stochproc.distributions import SinhArcsinhTransform
 from torch.distributions import (
     AffineTransform,
     TransformedDistribution,
     Normal,
 )
-from math import pi, sqrt
+
+from stochproc.distributions import SinhArcsinhTransform
 
 
 @pytest.fixture

@@ -1,8 +1,7 @@
-import pytest as pt
 import torch
-from stochproc import distributions as dists, timeseries as ts, NamedParameter
 from torch.distributions import Normal
-from .stochastic_process import initial_distribution
+
+from stochproc import distributions as dists, timeseries as ts, NamedParameter
 
 SAMPLES = 100
 

@@ -1,7 +1,7 @@
-import pytest as pt
-from stochproc import timeseries as ts, distributions as dists
 import torch
-from .affine import SAMPLES
+
+from stochproc import timeseries as ts
+from .test_affine import SAMPLES
 
 
 class TestSSM(object):

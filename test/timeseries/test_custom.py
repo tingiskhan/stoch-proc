@@ -1,7 +1,7 @@
-import pytest as pt
-from stochproc.timeseries import models as mods
 import torch
-from .affine import SAMPLES
+
+from stochproc.timeseries import models as mods
+from .test_affine import SAMPLES
 
 
 def models():

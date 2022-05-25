@@ -1,8 +1,8 @@
-from stochproc import timeseries as ts, distributions as dists, NamedParameter
-import pytest as pt
-import torch.distributions as tdists
 import torch
-from .affine import SAMPLES
+import torch.distributions as tdists
+
+from stochproc import timeseries as ts, distributions as dists, NamedParameter
+from .test_affine import SAMPLES
 
 
 class TestLinear(object):

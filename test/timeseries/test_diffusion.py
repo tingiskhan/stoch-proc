@@ -4,7 +4,7 @@ import torch
 import torch.distributions as tdists
 
 from stochproc import distributions as dists, timeseries as ts, NamedParameter
-from .affine import SAMPLES
+from .test_affine import SAMPLES
 
 
 class TestDiffusionOneDimensional(object):

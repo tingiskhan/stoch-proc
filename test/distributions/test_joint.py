@@ -1,6 +1,5 @@
 import pytest
 import torch
-from stochproc.distributions import JointDistribution
 from torch.distributions import (
     Exponential,
     StudentT,
@@ -9,6 +8,8 @@ from torch.distributions import (
     TransformedDistribution,
     ExpTransform,
 )
+
+from stochproc.distributions import JointDistribution
 
 
 @pytest.fixture
