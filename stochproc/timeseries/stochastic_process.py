@@ -4,7 +4,7 @@ from typing import TypeVar, Callable, Union, Tuple, Sequence, Iterable
 
 import pyro
 import torch
-from pyro.distributions import LogNormal, Normal, Distribution
+from pyro.distributions import Normal, Distribution
 from torch.nn import Module, Parameter
 
 from .state import TimeseriesState
@@ -310,14 +310,14 @@ class StochasticProcess(Module, ABC):
         event_shape = self.initial_dist.event_shape
 
         loc = torch.zeros(event_shape)
-        with pyro_lib.plate("num_aux", event_shape.numel()):
-            scale = pyro_lib.sample("rw_scale", LogNormal(loc=-1.0, scale=1.0))
+        scale = torch.ones_like(loc)
 
         with torch.no_grad():
             initial_state = self.initial_sample()
 
         with pyro_lib.plate("time", self._get_pyro_length(t_final), dim=-1) as t:
-            auxiliary = pyro_lib.sample("_auxiliary", Normal(loc=loc, scale=scale).to_event(1)).cumsum(dim=0)
+            rw_dist = Normal(loc=loc, scale=scale).mask(False)
+            auxiliary = pyro_lib.sample("_auxiliary", rw_dist.to_event(len(event_shape))).cumsum(dim=0)
 
             if self.n_dim == 0:
                 auxiliary.squeeze_(-1)
@@ -336,9 +336,9 @@ class StochasticProcess(Module, ABC):
             y_eval.masked_scatter_(mask, obs)
 
         tot_dist = self.build_density(state)
+        log_prob = tot_dist.log_prob(y_eval[1:]).sum(dim=0) + self.initial_dist.log_prob(y_eval[0])
 
-        pyro_lib.sample("x_0", self.initial_dist, obs=y_eval[0])
-        pyro_lib.sample("x", tot_dist.to_event(1), obs=y_eval[1:])
+        pyro.factor("x_log_prob", log_prob)
 
         return auxiliary
 
