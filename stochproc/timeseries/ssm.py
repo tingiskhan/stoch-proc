@@ -74,7 +74,7 @@ class StateSpaceModel(Module, UpdateParametersMixin):
         state = self.hidden.initial_sample().propagate_from(values=x, time_increment=time)
         obs_dist = self.observable.build_density(state)
 
-        pyro_lib.sample("obs", obs_dist.to_event(1), obs=obs)
+        pyro_lib.factor("y_log_prob", obs_dist.log_prob(obs).sum(dim=0))
 
         return latent
 
