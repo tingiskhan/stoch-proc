@@ -248,10 +248,7 @@ class BufferIterable(BufferDict):
         p = self._PREFIX
 
         # TODO: Fix s.t. deque can be found...
-        keys = tuple(
-            u for u in state_dict.keys()
-            if (p.format(type_="tuple") in u) or (p.format(type_="deque") in u)
-        )
+        keys = tuple(u for u in state_dict.keys() if (p.format(type_="tuple") in u) or (p.format(type_="deque") in u))
 
         for k in keys:
             v = state_dict.pop(k)

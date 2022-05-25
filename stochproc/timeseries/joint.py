@@ -85,7 +85,7 @@ class AffineJointStochasticProcess(AffineProcess):
             None,
             (),
             increment_dist=DistributionModule(self._inc_builder),
-            initial_dist=DistributionModule(self._init_builder)
+            initial_dist=DistributionModule(self._init_builder),
         )
 
         self.sub_processes = torch.nn.ModuleDict(processes)

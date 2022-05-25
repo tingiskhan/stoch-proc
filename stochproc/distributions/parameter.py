@@ -52,10 +52,7 @@ class PriorBoundParameter(Parameter):
 
     # NB: Same as torch but we replace the `_rebuild_parameter` with our custom one.
     def __reduce_ex__(self, proto):
-        return (
-            _rebuild_parameter,
-            (self.data, self.requires_grad, OrderedDict())
-        )
+        return (_rebuild_parameter, (self.data, self.requires_grad, OrderedDict()))
 
     def __repr__(self):
         return f"PriorBoundParameter containing:\n{super(Parameter, self).__repr__()}"

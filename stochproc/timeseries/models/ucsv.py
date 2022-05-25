@@ -29,12 +29,7 @@ class UCSV(AffineProcess):
     where :math:`\sigma_v > 0`.
     """
 
-    def __init__(
-        self,
-        sigma_volatility: ParameterType,
-        initial_state_mean: ParameterType = torch.zeros(2),
-        **kwargs
-    ):
+    def __init__(self, sigma_volatility: ParameterType, initial_state_mean: ParameterType = torch.zeros(2), **kwargs):
         """
         Inititalizes :class:`UCSV`.
 

@@ -11,5 +11,5 @@ __all__ = [
     "JointDistribution",
     "SinhArcsinhTransform",
     "_HasPriorsModule",
-    "PriorBoundParameter"
+    "PriorBoundParameter",
 ]

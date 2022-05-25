@@ -19,12 +19,7 @@ class DistributionModule(_DistributionModule, _HasPriorsModule):
         >>> cuda_samples = wrapped_normal_cuda.build_distribution().sample((1000,)) # device cuda
     """
 
-    def __init__(
-        self,
-        base_dist: DistributionOrBuilder,
-        reinterpreted_batch_ndims=None,
-        **parameters: ParameterType
-    ):
+    def __init__(self, base_dist: DistributionOrBuilder, reinterpreted_batch_ndims=None, **parameters: ParameterType):
         """
         Initializes the :class:`DistributionModule` class.
 

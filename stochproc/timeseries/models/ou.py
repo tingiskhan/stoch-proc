@@ -22,9 +22,7 @@ class OrnsteinUhlenbeck(AffineProcess):
     where :math:`\kappa, \sigma \in \mathbb{R}_+^n`, and :math:`\gamma \in \mathbb{R}^n`.
     """
 
-    def __init__(
-        self, kappa: ParameterType, gamma: ParameterType, sigma: ParameterType, dt: float = 1.0, **kwargs
-    ):
+    def __init__(self, kappa: ParameterType, gamma: ParameterType, sigma: ParameterType, dt: float = 1.0, **kwargs):
         """
         Initializes the :class:`OrnsteinUhlenbeck` class.
 

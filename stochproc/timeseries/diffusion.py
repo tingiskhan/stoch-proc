@@ -116,13 +116,7 @@ class AffineEulerMaruyama(AffineProcess, StochasticDifferentialEquation):
     """
 
     def __init__(
-        self,
-        dynamics: MeanScaleFun,
-        parameters,
-        initial_dist,
-        increment_dist: DistributionModule,
-        dt,
-        **kwargs
+        self, dynamics: MeanScaleFun, parameters, initial_dist, increment_dist: DistributionModule, dt, **kwargs
     ):
         """
         Initializes the :class:`AffineEulerMaruyama` class.
@@ -165,7 +159,14 @@ class Euler(AffineEulerMaruyama):
     """
 
     def __init__(
-        self, dynamics: Drift, parameters, initial_values: ParameterType, dt, event_dim: int, tuning_std: float = False, **kwargs
+        self,
+        dynamics: Drift,
+        parameters,
+        initial_values: ParameterType,
+        dt,
+        event_dim: int,
+        tuning_std: float = False,
+        **kwargs
     ):
         """
         Initializes the :class:`Euler` class.

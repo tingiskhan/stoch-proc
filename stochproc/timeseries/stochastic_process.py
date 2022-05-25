@@ -158,7 +158,9 @@ class StochasticProcess(Module, ABC):
 
         return self.__call__(x, time_increment=time_increment)
 
-    def sample_path(self, steps: int, samples: torch.Size = torch.Size([]), x_s: TimeseriesState = None) -> torch.Tensor:
+    def sample_path(
+        self, steps: int, samples: torch.Size = torch.Size([]), x_s: TimeseriesState = None
+    ) -> torch.Tensor:
         r"""
         Same as ``.sample_states(...)`` but combines the values of the states into a single tensor instead, does not
         include the zeroth sample.
@@ -170,7 +172,9 @@ class StochasticProcess(Module, ABC):
         states = self.sample_states(steps, samples, x_s)
         return torch.stack(tuple(r.values for r in states[1:]), dim=0)
 
-    def sample_states(self, steps: int, samples: torch.Size = torch.Size([]), x_s: TimeseriesState = None) -> Tuple[TimeseriesState, ...]:
+    def sample_states(
+        self, steps: int, samples: torch.Size = torch.Size([]), x_s: TimeseriesState = None
+    ) -> Tuple[TimeseriesState, ...]:
         r"""
         Samples a trajectory from the stochastic process, i.e. samples the collection :math:`\{ X_j \}^T_{j = 0}`,
         where :math:`T` corresponds to ``steps``.
@@ -201,7 +205,7 @@ class StochasticProcess(Module, ABC):
         return deepcopy(self)
 
     def propagate_conditional(
-            self, x: TimeseriesState, u: torch.Tensor, parameters=None, time_increment=1.0
+        self, x: TimeseriesState, u: torch.Tensor, parameters=None, time_increment=1.0
     ) -> TimeseriesState:
         r"""
         Propagate the process conditional on both state and draws from an incremental distribution. This method assumes
@@ -346,7 +350,7 @@ class StochasticProcess(Module, ABC):
         return auxiliary
 
     def do_sample_pyro(
-            self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None, mode: str = "parameters_only"
+        self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None, mode: str = "parameters_only"
     ) -> torch.Tensor:
         """
         Samples pyro primitives for inferring the parameters of the model.

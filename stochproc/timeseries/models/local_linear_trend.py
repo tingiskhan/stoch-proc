@@ -17,12 +17,7 @@ class LocalLinearTrend(LinearModel):
     where :math:`\sigma_i > 0``, and :math:`W_t, V_t` are two independent zero mean and unit variance Gaussians.
     """
 
-    def __init__(
-        self,
-        sigma: ParameterType,
-        initial_mean: ParameterType = torch.zeros(2),
-        **kwargs
-    ):
+    def __init__(self, sigma: ParameterType, initial_mean: ParameterType = torch.zeros(2), **kwargs):
         r"""
         Initializes the :class:`LocalLinearTrend` class.
 

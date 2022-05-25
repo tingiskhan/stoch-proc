@@ -26,9 +26,7 @@ class LinearModel(AffineProcess):
     :math:`A \in \mathbb{R}^{n \times n}`.
     """
 
-    def __init__(
-        self, a: ParameterType, sigma: ParameterType, increment_dist, b: ParameterType = None, **kwargs
-    ):
+    def __init__(self, a: ParameterType, sigma: ParameterType, increment_dist, b: ParameterType = None, **kwargs):
         """
         Initializes the ``LinearModel`` class.
 
@@ -48,6 +46,5 @@ class LinearModel(AffineProcess):
             return _mapping[dimension](x, a_, b_), s_
 
         super(LinearModel, self).__init__(
-            _mean_scale, parameters=(a, b, sigma), initial_dist=initial_dist, increment_dist=increment_dist,
-            **kwargs
+            _mean_scale, parameters=(a, b, sigma), initial_dist=initial_dist, increment_dist=increment_dist, **kwargs
         )

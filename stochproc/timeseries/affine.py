@@ -64,12 +64,7 @@ class AffineProcess(StructuralStochasticProcess):
     """
 
     def __init__(
-        self,
-        mean_scale: MeanScaleFun,
-        parameters,
-        initial_dist,
-        increment_dist: DistributionModule,
-        **kwargs
+        self, mean_scale: MeanScaleFun, parameters, initial_dist, increment_dist: DistributionModule, **kwargs
     ):
         """
         Initializes the :class:`AffineProcess` class.
@@ -109,7 +104,7 @@ class AffineProcess(StructuralStochasticProcess):
         return torch.broadcast_tensors(mean, scale)
 
     def propagate_conditional(
-            self, x: TimeseriesState, u: torch.Tensor, parameters=None, time_increment=1.0
+        self, x: TimeseriesState, u: torch.Tensor, parameters=None, time_increment=1.0
     ) -> TimeseriesState:
         super(AffineProcess, self).propagate_conditional(x, u, parameters, time_increment)
 

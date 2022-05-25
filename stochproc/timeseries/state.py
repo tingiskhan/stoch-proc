@@ -11,8 +11,11 @@ class TimeseriesState(dict):
     """
 
     def __init__(
-            self, time_index: Union[float, torch.Tensor], values: LazyTensor, event_dim: torch.Size,
-            exogenous: torch.Tensor = None
+        self,
+        time_index: Union[float, torch.Tensor],
+        values: LazyTensor,
+        event_dim: torch.Size,
+        exogenous: torch.Tensor = None,
     ):
         """
         Initializes the :class:`TimeseriesState` class.
@@ -56,10 +59,7 @@ class TimeseriesState(dict):
         """
 
         return TimeseriesState(
-            time_index=self.time_index,
-            values=values,
-            event_dim=self.event_dim,
-            exogenous=self.exogenous
+            time_index=self.time_index, values=values, event_dim=self.event_dim, exogenous=self.exogenous
         )
 
     def propagate_from(self, values: torch.Tensor, time_increment=1.0):
@@ -72,11 +72,7 @@ class TimeseriesState(dict):
             time_increment: how much to increase ``.time_index`` with for new state.
         """
 
-        return TimeseriesState(
-            time_index=self.time_index + time_increment,
-            values=values,
-            event_dim=self.event_dim
-        )
+        return TimeseriesState(time_index=self.time_index + time_increment, values=values, event_dim=self.event_dim)
 
     def add_exog(self, x: torch.Tensor):
         """
@@ -134,9 +130,9 @@ class JointState(TimeseriesState):
 
             dimension = len(sub_state.event_dim)
             if callable(values):
-                sub_values = lambda: values()[..., last_ind: last_ind + dimension + 1].squeeze(-1)
+                sub_values = lambda: values()[..., last_ind : last_ind + dimension + 1].squeeze(-1)
             else:
-                sub_values = values[..., last_ind: last_ind + dimension + 1].squeeze(-1)
+                sub_values = values[..., last_ind : last_ind + dimension + 1].squeeze(-1)
 
             new_sub_values = sub_values
 

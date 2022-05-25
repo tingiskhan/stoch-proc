@@ -70,7 +70,7 @@ class StateSpaceModel(Module, UpdateParametersMixin):
 
         time = torch.arange(1, latent.shape[0] + 1)
 
-        x = latent[self.hidden.num_steps::self.hidden.num_steps]
+        x = latent[self.hidden.num_steps :: self.hidden.num_steps]
         state = self.hidden.initial_sample().propagate_from(values=x, time_increment=time)
         obs_dist = self.observable.build_density(state)
 
