@@ -6,10 +6,10 @@ import torch
 from torch.nn import Module
 
 from .stochastic_process import StochasticProcess
-from ..distributions.prior_module import UpdateParametersMixin
+from ..distributions.prior_module import _SampleParameterMixin
 
 
-class StateSpaceModel(Module, UpdateParametersMixin):
+class StateSpaceModel(Module, _SampleParameterMixin):
     r"""
     Class representing a state space model, i.e. a dynamical system given by the pair stochastic processes
     :math:`\{ X_t \}` and :math:`\{ Y_t \}`, where :math:`X_t` is independent from :math:`Y_t`, and :math:`Y_t`
