@@ -19,7 +19,7 @@ class StochasticProcess(Module, ABC):
     r"""
     Abstract base class for stochastic processes. By "stochastic process" we mean a sequence of random variables,
     :math:`\{X_t\}_{t \in T}`, defined on a common probability space
-    :math:`\{ \Omega, \mathcal{F}, \{\mathcal{F\}_t \}`, with joint distribution
+    :math:`\{ \Omega, \mathcal{F}, \{ \mathcal{F}_t \}`, with joint distribution
         .. math::
             p(x_1, ..., x_t) = p(x_1) \prod^t_{k=2} p(x_k \mid x_{1:k-1})
 
