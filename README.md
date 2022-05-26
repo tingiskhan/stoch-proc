@@ -5,7 +5,7 @@
 [pyfilter](https://github.com/tingiskhan/pyfilter), but was moved into a separate library in order to enable integration
 with `pyro`s inference algorithms.
 
-## Installing
+## Installation
 
 `stoch-proc` is currently not available on PyPi, so you'll have to install it via
 ```cmd
