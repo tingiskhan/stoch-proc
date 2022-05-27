@@ -1,14 +1,16 @@
 import math
+import pytest
 
 import torch
 import torch.distributions as tdists
 
 from stochproc import distributions as dists, timeseries as ts, NamedParameter
-from .test_affine import SAMPLES
+from .constants import SAMPLES, BATCH_SHAPES
 
 
 class TestDiffusionOneDimensional(object):
-    def test_affine_euler(self):
+    @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+    def test_affine_euler(self, batch_shape):
         dt = 0.05
 
         def dynamics(x_, kappa, gamma, sigma):
@@ -35,11 +37,12 @@ class TestDiffusionOneDimensional(object):
             num_steps=20
         )
 
-        x = discretized_ou.sample_path(SAMPLES)
+        x = discretized_ou.sample_states(SAMPLES, samples=batch_shape).get_path()
 
-        assert (x.shape == torch.Size([SAMPLES])) and (not torch.isnan(x).any())
+        assert (x.shape == torch.Size([SAMPLES, *batch_shape])) and (not torch.isnan(x).any())
 
-    def test_runge_kutta(self):
+    @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+    def test_runge_kutta(self, batch_shape):
         dt = 0.05
 
         def dynamics(x_, kappa, gamma):
@@ -54,6 +57,6 @@ class TestDiffusionOneDimensional(object):
             newton_cooling = ts.RungeKutta(
                 dynamics, parameters, initial_values=torch.tensor(1.0), dt=dt, event_dim=0, tuning_std=tuning_std
             )
-            x = newton_cooling.sample_path(SAMPLES)
+            x = newton_cooling.sample_states(SAMPLES, samples=batch_shape).get_path()
 
-            assert x.shape == torch.Size([SAMPLES])
+            assert x.shape == torch.Size([SAMPLES, *batch_shape])

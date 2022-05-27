@@ -1,6 +1,6 @@
 import pytest
 import torch
-from torch.distributions import Exponential, StudentT, Independent, Normal
+from pyro.distributions import Exponential, StudentT, Independent, Normal
 
 from stochproc.distributions import Prior, DistributionModule
 

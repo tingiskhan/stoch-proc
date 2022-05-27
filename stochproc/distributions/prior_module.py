@@ -12,18 +12,6 @@ from ..container import BufferDict
 from ..typing import NamedParameter, ParameterType
 
 
-class _SampleParameterMixin(ABC):
-    def sample_params_(self, shape: torch.Size = torch.Size([])):
-        """
-        Samples the parameters of the model in place.
-
-        Args:
-            shape: shape of the parameters to use when sampling.
-        """
-
-        raise NotImplementedError()
-
-
 def _recurse(obj: "_HasPriorsModule", name_):
     name_split = name_.split(".")
 
@@ -32,8 +20,8 @@ def _recurse(obj: "_HasPriorsModule", name_):
 
     return _recurse(obj._modules[name_split[0]], ".".join(name_split[1:]))
 
-
-class _HasPriorsModule(Module, _SampleParameterMixin, ABC):
+  
+class _HasPriorsModule(Module, ABC):
     """
     Abstract base class that allows registering priors.
     """

@@ -8,6 +8,7 @@ from pyro.distributions import Normal, Distribution
 from torch.nn import Module, Parameter
 
 from .state import TimeseriesState
+from .result import TimeseriesPath
 from ..container import BufferIterable
 from ..distributions import DistributionModule, _HasPriorsModule
 from ..typing import ParameterType
@@ -68,13 +69,21 @@ class StochasticProcess(Module, ABC):
         return self._tensor_tuples.get_as_tensor(self._EXOGENOUS)
 
     @property
+    def event_shape(self) -> torch.Size:
+        """
+        Returns the event shape of the process.
+        """
+
+        return self.initial_dist.event_shape
+
+    @property
     def n_dim(self) -> int:
         """
         Returns the dimension of the process. If it's univariate it returns a 0, 1 for a vector etc, just like
         ``torch``.
         """
 
-        return len(self.initial_dist.event_shape)
+        return len(self.event_shape)
 
     @property
     def num_vars(self) -> int:
@@ -83,7 +92,7 @@ class StochasticProcess(Module, ABC):
         if it's a multivariate process it returns the number of elements in the vector or matrix.
         """
 
-        return self.initial_dist.event_shape.numel()
+        return self.event_shape.numel()
 
     @property
     def initial_dist(self) -> Distribution:
@@ -112,7 +121,7 @@ class StochasticProcess(Module, ABC):
         if shape:
             dist = dist.expand(shape)
 
-        return TimeseriesState(0.0, dist.sample, event_dim=self.initial_dist.event_shape)
+        return TimeseriesState(0.0, dist.sample, event_dim=dist.event_shape)
 
     def build_density(self, x: TimeseriesState) -> Distribution:
         r"""
@@ -158,23 +167,9 @@ class StochasticProcess(Module, ABC):
 
         return self.__call__(x, time_increment=time_increment)
 
-    def sample_path(
-        self, steps: int, samples: torch.Size = torch.Size([]), x_s: TimeseriesState = None
-    ) -> torch.Tensor:
-        r"""
-        Same as ``.sample_states(...)`` but combines the values of the states into a single tensor instead, does not
-        include the zeroth sample.
-
-        Returns:
-            Returns a tensor of shape ``(steps, [samples], [.n_dim])``.
-        """
-
-        states = self.sample_states(steps, samples, x_s)
-        return torch.stack(tuple(r.values for r in states[1:]), dim=0)
-
     def sample_states(
         self, steps: int, samples: torch.Size = torch.Size([]), x_s: TimeseriesState = None
-    ) -> Tuple[TimeseriesState, ...]:
+    ) -> TimeseriesPath:
         r"""
         Samples a trajectory from the stochastic process, i.e. samples the collection :math:`\{ X_j \}^T_{j = 0}`,
         where :math:`T` corresponds to ``steps``.
@@ -195,7 +190,7 @@ class StochasticProcess(Module, ABC):
         for i in range(1, steps + 1):
             res += (self.propagate(res[-1]),)
 
-        return res
+        return TimeseriesPath(*res[1:])
 
     def copy(self) -> "StochasticProcess":
         """
@@ -349,8 +344,28 @@ class StochasticProcess(Module, ABC):
 
         return auxiliary
 
+    @staticmethod
+    def _check_obs_and_t(t_final: int, obs: torch.Tensor) -> Tuple[int, torch.Tensor]:
+        """
+        Helper method for coalescing `t_final` and `obs`.
+
+        Args:
+            t_final: the final time index.
+            obs: the (potentially) observed data.
+
+        """
+
+        if (t_final is None) and (obs is None):
+            raise Exception("Both 't_final' and 'obs' cannot be None!")
+        elif t_final is None:
+            t_final = obs.shape[0]
+        elif (obs is not None) and (t_final != obs.shape[0]):
+            raise Exception(f"'t_final' != 'obs.shape[0]': {t_final:d} != {obs.shape[0]:d}")
+
+        return t_final, obs
+
     def do_sample_pyro(
-        self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None, mode: str = "parameters_only"
+        self, pyro_lib: pyro, t_final: int = None, obs: torch.Tensor = None, mode: str = "parameters_only"
     ) -> torch.Tensor:
         """
         Samples pyro primitives for inferring the parameters of the model.
@@ -371,6 +386,8 @@ class StochasticProcess(Module, ABC):
             https://forum.pyro.ai/t/using-pyro-markov-for-time-series-variational-inference/1960/2
             http://pyro.ai/examples/sir_hmc.html
         """
+
+        t_final, obs = self._check_obs_and_t(t_final, obs)
 
         if mode == "full":
             latent = self._pyro_full(pyro_lib, t_final, obs)

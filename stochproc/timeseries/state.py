@@ -93,12 +93,15 @@ class JointState(TimeseriesState):
     Implements a joint state for joint timeseries.
     """
 
+    _ENFORCE_SAME_TIME_INDEX = True
+
     def __init__(self, **sub_states: TimeseriesState):
         """
         Initializes the :class:`JointState` class.
 
         Args:
             sub_states: The sub states.
+            enforce_same_time_index
         """
 
         time_index = tuple(sub_states.values())[0].time_index
@@ -107,7 +110,9 @@ class JointState(TimeseriesState):
 
         self._sub_states_order = sub_states.keys()
         for name, sub_state in sub_states.items():
-            assert (sub_state.time_index == time_index).all()
+            if self._ENFORCE_SAME_TIME_INDEX:
+                assert (sub_state.time_index == time_index).all()
+
             self[name] = sub_state
 
     @property
@@ -140,3 +145,11 @@ class JointState(TimeseriesState):
             last_ind += dimension
 
         return JointState(**result)
+
+
+class StateSpaceModelState(JointState):
+    """
+    Implements a joint state for joint timeseries.
+    """
+
+    _ENFORCE_SAME_TIME_INDEX = False

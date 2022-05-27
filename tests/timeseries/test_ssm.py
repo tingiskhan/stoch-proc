@@ -1,27 +1,40 @@
 import torch
 
 from stochproc import timeseries as ts
+from pyro.distributions import Normal
+import pytest
+
 from .test_affine import SAMPLES
+from .constants import BATCH_SHAPES
 
 
 class TestSSM(object):
-    def test_ssm(self):
+    @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+    def test_ssm(self, batch_shape):
         rw = ts.models.RandomWalk(0.05)
-        ssm = ts.LinearGaussianObservations(rw, torch.tensor([1.0, 0.01]))
 
-        x, y = ssm.sample_path(SAMPLES)
+        def f(x_, a):
+            return Normal(loc=x_.values.unsqueeze(-1) * a, scale=1.0).to_event(1)
 
-        assert (x.shape[0] == y.shape[0] == SAMPLES)
+        ssm = ts.StateSpaceModel(rw, f, parameters=(torch.tensor([1.0, 0.01]),))
 
-    def test_joint_ssm(self):
+        states = ssm.sample_states(SAMPLES, samples=batch_shape)
+        x, y = states.get_paths()
+
+        assert x.shape == torch.Size([SAMPLES, *batch_shape])
+        assert y.shape == torch.Size([SAMPLES, *batch_shape, 2])
+
+    @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+    def test_joint_ssm(self, batch_shape):
         loc_1 = ts.models.RandomWalk(0.05)
         loc_2 = ts.models.RandomWalk(0.025)
 
         joint = ts.AffineJointStochasticProcess(loc_1=loc_1, loc_2=loc_2)
 
-        ssm = ts.LinearGaussianObservations(joint, torch.eye(2))
+        def f(x_, a):
+            return Normal(loc=a.matmul(x_.values.unsqueeze(-1)).squeeze(-1), scale=1.0).to_event(1)
 
-        batch_size = torch.Size([10, 10, 2])
-        x, y = ssm.sample_path(SAMPLES, samples=batch_size)
+        ssm = ts.StateSpaceModel(joint, f, parameters=(torch.eye(2),))
+        x, y = ssm.sample_states(SAMPLES, samples=batch_shape).get_paths()
 
-        assert (y.shape == torch.Size([SAMPLES, *batch_size, 2]))
+        assert (y.shape == torch.Size([SAMPLES, *batch_shape, 2]))
