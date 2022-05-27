@@ -10,8 +10,6 @@ from .diffusion import (
 )
 from .joint import AffineJointStochasticProcess
 from .linear import LinearModel
-from .linear_ssm import LinearGaussianObservations, LinearObservations, LinearSSM
-from .observable import AffineObservations, GeneralObservable
 from .ssm import StateSpaceModel
 from .state import TimeseriesState, JointState
 from .stochastic_process import StochasticProcess, StructuralStochasticProcess
@@ -22,10 +20,6 @@ __all__ = [
     "StructuralStochasticProcess",
     "AffineProcess",
     "StateSpaceModel",
-    "LinearSSM",
-    "LinearGaussianObservations",
-    "LinearObservations",
-    "AffineObservations",
     "AffineEulerMaruyama",
     "OneStepEulerMaruyma",
     "models",
@@ -36,7 +30,6 @@ __all__ = [
     "StochasticDifferentialEquation",
     "JointState",
     "AffineJointStochasticProcess",
-    "GeneralObservable",
     "models",
     "LinearModel",
 ]
