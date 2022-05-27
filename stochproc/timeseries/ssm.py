@@ -1,15 +1,17 @@
-from copy import deepcopy
-from typing import Tuple
+from typing import Tuple, Callable
 
 import pyro
 import torch
-from torch.nn import Module
+from pyro.distributions import Distribution
 
-from .stochastic_process import StochasticProcess
-from ..distributions.prior_module import UpdateParametersMixin
+from .stochastic_process import StructuralStochasticProcess
+from .state import TimeseriesState, StateSpaceModelState
+from .result import StateSpacePath
+
+DistBuilder = Callable[[TimeseriesState, Tuple[torch.Tensor, ...]], Distribution]
 
 
-class StateSpaceModel(Module, UpdateParametersMixin):
+class StateSpaceModel(StructuralStochasticProcess):
     r"""
     Class representing a state space model, i.e. a dynamical system given by the pair stochastic processes
     :math:`\{ X_t \}` and :math:`\{ Y_t \}`, where :math:`X_t` is independent from :math:`Y_t`, and :math:`Y_t`
@@ -18,66 +20,66 @@ class StateSpaceModel(Module, UpdateParametersMixin):
     .. _`here`: https://en.wikipedia.org/wiki/State-space_representation
     """
 
-    def __init__(self, hidden: StochasticProcess, observable: StochasticProcess):
+    def __init__(self, hidden: StructuralStochasticProcess, f: DistBuilder, parameters, **kwargs):
         """
         Initializes the :class:`StateSpaceModel` class.
 
         Args:
             hidden: hidden process.
-            observable: observable process.
         """
 
-        super().__init__()
+        super().__init__(parameters=parameters, initial_dist=None, **kwargs)
         self.hidden = hidden
-        self.observable = observable
+        self._dist_builder = f
 
-    def sample_path(self, steps, samples=torch.Size([]), x_s=None) -> Tuple[torch.Tensor, torch.Tensor]:
+    def initial_dist(self) -> Distribution:
+        raise NotImplementedError("Cannot sample from initial distribution of SSM directly!")
+
+    def build_density(self, x):
+        return self._dist_builder(x, *self.functional_parameters())
+
+    def _add_exog_to_state(self, x: TimeseriesState):
+        if self._EXOGENOUS in self._tensor_tuples:
+            x.add_exog(self.exog[(x.time_index - 1.0).int()])
+
+    def forward(self, x: TimeseriesState, time_increment=1.0) -> TimeseriesState:
+        self._add_exog_to_state(x)
+        dist = self.build_density(x)
+
+        return TimeseriesState(x.time_index, dist.sample, event_dim=dist.event_shape)
+
+    def sample_states(
+        self, steps: int, samples: torch.Size = torch.Size([]), x_s: TimeseriesState = None
+    ) -> StateSpacePath:
         x = x_s if x_s is not None else self.hidden.initial_sample(shape=samples)
 
-        hidden = tuple()
-        obs = tuple()
-
+        res = tuple()
         for t in range(1, steps + 1):
             x = self.hidden.propagate(x)
-            obs_state = self.observable.propagate(x)
+            y = self.propagate(x)
 
-            obs += (obs_state,)
-            hidden += (x,)
+            res += (StateSpaceModelState(x=x, y=y),)
 
-        return torch.stack([t.values for t in hidden]), torch.stack([t.values for t in obs])
+        return StateSpacePath(*res)
 
-    def copy(self) -> "StateSpaceModel":
-        """
-        Creates a deep copy of self.
-        """
+    def do_sample_pyro(
+            self, pyro_lib: pyro, t_final: int = None, obs: torch.Tensor = None, mode: str = "approximate"
+    ) -> torch.Tensor:
 
-        return deepcopy(self)
+        assert mode != "parameters_only", f"Mode cannot be '{mode}'!"
 
-    def do_sample_pyro(self, pyro_lib: pyro, obs: torch.Tensor, mode: str = "approximate") -> torch.Tensor:
-        """
-        Samples the state space model utilizing pyro.
+        t_final, obs = self._check_obs_and_t(t_final, obs)
 
-        Args:
-            pyro_lib: pyro library.
-            obs: the observed data.
-            mode: the mode to use for the latent process, see :meth:`StochasticProcess.do_sample_pyro`.
-
-        Returns:
-            Returns the latent process.
-        """
-
-        latent = self.hidden.do_sample_pyro(pyro_lib, obs.shape[0] + 1, mode=mode)
-
+        latent = self.hidden.do_sample_pyro(pyro_lib, t_final + 1, mode=mode)
         time = torch.arange(1, latent.shape[0] + 1)
 
         x = latent[self.hidden.num_steps :: self.hidden.num_steps]
         state = self.hidden.initial_sample().propagate_from(values=x, time_increment=time)
-        obs_dist = self.observable.build_density(state)
+        obs_dist = self.build_density(state)
 
-        pyro_lib.factor("y_log_prob", obs_dist.log_prob(obs).sum(dim=0))
+        if obs is None:
+            pyro_lib.sample("y", obs_dist)
+        else:
+            pyro_lib.factor("y_log_prob", obs_dist.log_prob(obs).sum(dim=0))
 
         return latent
-
-    def sample_params_(self, shape: torch.Size = torch.Size([])):
-        self.hidden.sample_params_(shape)
-        self.observable.sample_params_(shape)
