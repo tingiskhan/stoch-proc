@@ -8,8 +8,8 @@ from .stochastic_process import StructuralStochasticProcess
 from .state import TimeseriesState, StateSpaceModelState
 from .result import StateSpacePath
 
-DistBuilder = Callable[[TimeseriesState, Tuple[torch.Tensor, ...]], Distribution]
 
+DistBuilder = Callable[[TimeseriesState, Tuple[torch.Tensor, ...]], Distribution]
 
 class StateSpaceModel(StructuralStochasticProcess):
     r"""
