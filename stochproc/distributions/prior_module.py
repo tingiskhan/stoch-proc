@@ -20,7 +20,7 @@ def _recurse(obj: "_HasPriorsModule", name_):
 
     return _recurse(obj._modules[name_split[0]], ".".join(name_split[1:]))
 
-
+  
 class _HasPriorsModule(Module, ABC):
     """
     Abstract base class that allows registering priors.
