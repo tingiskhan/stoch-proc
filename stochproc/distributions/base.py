@@ -1,4 +1,4 @@
-from torch.distributions import Distribution, Independent
+from pyro.distributions import Distribution
 import torch
 from typing import Dict
 from .typing import DistributionOrBuilder
@@ -37,7 +37,7 @@ class _DistributionModule(torch.nn.Module, ABC):
         if self._reinterpreted_batch_ndims is None:
             return dist
 
-        return Independent(dist, self._reinterpreted_batch_ndims)
+        return dist.to_event(self._reinterpreted_batch_ndims)
 
     def _get_parameters(self) -> Dict[str, torch.Tensor]:
         """
