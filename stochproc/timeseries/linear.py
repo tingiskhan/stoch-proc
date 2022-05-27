@@ -1,17 +1,7 @@
 import torch
+
 from .affine import AffineProcess
 from ..typing import ParameterType
-
-
-def _f0d(x, a, b):
-    return b + a * x.values
-
-
-def _f1d(x, a, b):
-    return b + a.matmul(x.values.unsqueeze(-1)).squeeze(-1)
-
-
-_mapping = {0: _f0d, 1: _f1d}
 
 
 class LinearModel(AffineProcess):
@@ -26,7 +16,7 @@ class LinearModel(AffineProcess):
     :math:`A \in \mathbb{R}^{n \times n}`.
     """
 
-    def __init__(self, a: ParameterType, sigma: ParameterType, increment_dist, b: ParameterType = None, **kwargs):
+    def __init__(self, a: ParameterType, sigma: ParameterType, b: ParameterType = None, **kwargs):
         """
         Initializes the ``LinearModel`` class.
 
@@ -36,15 +26,17 @@ class LinearModel(AffineProcess):
             b: ``b`` vector in the class docs.
         """
 
-        initial_dist = kwargs.pop("initial_dist")
-        dimension = len(initial_dist.shape)
-
         if b is None:
-            b = torch.zeros(dimension) if dimension > 0 else 0.0
-
-        def _mean_scale(x, a_, b_, s_):
-            return _mapping[dimension](x, a_, b_), s_
+            b = torch.tensor(0.0)
 
         super(LinearModel, self).__init__(
-            _mean_scale, parameters=(a, b, sigma), initial_dist=initial_dist, increment_dist=increment_dist, **kwargs
+            self._mean_scale, parameters=(a, b, sigma), **kwargs
         )
+
+    def _mean_scale(self, x, a, b, s):
+        if x.event_dim.numel() > 1:
+            res = b + a.matmul(x.values.unsqueeze(-1)).squeeze(-1)
+        else:
+            res = b + a * x.values
+
+        return res, s
