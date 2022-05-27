@@ -67,7 +67,7 @@ class AffineJointStochasticProcess(AffineProcess):
          .. math::
              p(x^1_{t+1}, \dots, x^n_{t+1} \mid x^1_t, \dots, x^n_t) = \prod^n_{i=1} p( x^i_{t+1} \mid x^i_t ),
 
-    where every sub process :math:`X^i` is of affine type.
+    where every sub process :math:`X^i` is of affine nature.
     """
 
     def __init__(self, **processes: AffineProcess):
