@@ -1,7 +1,11 @@
+import itertools
+
+import pytest
 import torch
 
 from stochproc.timeseries import models as mods
 from .test_affine import SAMPLES
+from .constants import BATCH_SHAPES
 
 
 def models():
@@ -15,15 +19,9 @@ def models():
 
 
 class TestCustomModels(object):
-    def test_all_models(self):
-        for proc in models():
-            x = proc.sample_path(SAMPLES)
+    @pytest.mark.parametrize("batch_size, model", tuple(itertools.product(BATCH_SHAPES, models())))
+    def test_all_models(self, batch_size, model):
+        x = model.sample_states(SAMPLES, samples=batch_size).get_path()
 
-            assert (x.shape[0] == SAMPLES) and ~torch.isnan(x).any()
+        assert (x.shape == torch.Size([SAMPLES, *batch_size, *model.event_shape])) and ~torch.isnan(x).any()
 
-    def test_all_models_batched(self):
-        batch_size = torch.Size([15, 10])
-        for proc in models():
-            x = proc.sample_path(SAMPLES, batch_size)
-
-            assert (x.shape[:3] == torch.Size([SAMPLES, *batch_size]))
