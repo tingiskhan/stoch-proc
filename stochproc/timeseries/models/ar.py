@@ -10,9 +10,8 @@ from ...utils import enforce_named_parameter
 # TODO: Add beta for those where abs(beta) < 1.0
 def _build_init(alpha, beta, sigma, lags, **kwargs):
     base = _build_trans_dist(0.0, 1.0, lags, **kwargs)
-    std = sigma
 
-    return TransformedDistribution(base, AffineTransform(alpha, std.sqrt()))
+    return TransformedDistribution(base, AffineTransform(alpha, sigma))
 
 
 def _build_trans_dist(loc, scale, lags, **kwargs) -> Distribution:
