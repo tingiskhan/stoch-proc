@@ -1,5 +1,6 @@
 from math import sqrt
 
+from torch.distributions.utils import broadcast_all
 from pyro.distributions import Normal, TransformedDistribution
 from pyro.distributions.transforms import AbsTransform
 
@@ -7,7 +8,6 @@ from .ou import init_builder as ou_builder
 from ..diffusion import AffineEulerMaruyama
 from ...distributions import DistributionModule
 from ...typing import ParameterType
-from ...utils import enforce_named_parameter
 
 
 def _f(x, k, g, s):
@@ -41,7 +41,7 @@ class Verhulst(AffineEulerMaruyama):
             kwargs: see base.
         """
 
-        kappa, gamma, sigma = enforce_named_parameter(kappa=kappa, gamma=gamma, sigma=sigma)
+        kappa, gamma, sigma = broadcast_all(kappa, gamma, sigma)
 
         super().__init__(
             _f,

@@ -1,7 +1,7 @@
 import torch
 import pyro.distributions as tdists
 import pytest
-from stochproc import timeseries as ts, distributions as dists, NamedParameter
+from stochproc import timeseries as ts, distributions as dists
 from .test_affine import SAMPLES
 from .constants import BATCH_SHAPES
 
@@ -17,9 +17,9 @@ class TestLinear(object):
         a = torch.rand((initial_dist.shape[0], initial_dist.shape[0]))
         a /= a.sum(dim=-1).unsqueeze(0)
 
-        b = NamedParameter("b", a[0])
-        a = NamedParameter("a", a)
-        sigma = NamedParameter("scale", 0.05)
+        b = a[0]
+        a = a
+        sigma = 0.05
 
         proc = ts.LinearModel(a, sigma, b=b, initial_dist=initial_dist, increment_dist=increment_dist)
 

@@ -1,9 +1,9 @@
 from pyro.distributions import Normal
+from torch.distributions.utils import broadcast_all
 
 from ..linear import LinearModel
 from ...distributions import DistributionModule
 from ...typing import ParameterType
-from ...utils import enforce_named_parameter
 
 
 class RandomWalk(LinearModel):
@@ -26,9 +26,9 @@ class RandomWalk(LinearModel):
             kwargs: see base.
         """
 
-        a, scale, initial_mean = enforce_named_parameter(a=1.0, scale=scale, loc=initial_mean)
+        scale, initial_mean = broadcast_all(scale, initial_mean)
 
         initial_dist = DistributionModule(Normal, loc=initial_mean, scale=scale)
         inc_dist = DistributionModule(Normal, loc=0.0, scale=1.0)
 
-        super().__init__(a, scale, increment_dist=inc_dist, initial_dist=initial_dist, **kwargs)
+        super().__init__(1.0, scale, increment_dist=inc_dist, initial_dist=initial_dist, **kwargs)

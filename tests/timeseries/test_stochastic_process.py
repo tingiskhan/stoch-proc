@@ -2,7 +2,7 @@ import pytest as pt
 import torch
 from torch.distributions import Normal
 
-from stochproc import timeseries as ts, distributions as dists, NamedParameter
+from stochproc import timeseries as ts, distributions as dists
 
 
 @pt.fixture()
@@ -15,69 +15,60 @@ class TestStochasticProcess(object):
         val = torch.tensor(1.0)
 
         parameters = [
-            NamedParameter("alpha", val)
+            val
         ]
 
         sts = ts.StructuralStochasticProcess(parameters, initial_distribution)
 
-        assert "alpha" in sts.buffer_dict
-        assert sts.buffer_dict["alpha"] is val
+        assert "0" in sts.buffer_dict
+        assert sts.buffer_dict["0"] is val
 
         assert (sts.n_dim == 0) and (sts.num_vars == 1)
 
         initial_sample = sts.initial_sample()
         assert callable(initial_sample._values) and isinstance(initial_sample.values, torch.Tensor)
 
-    def test_initialize_sts_prior(self, initial_distribution: dists.DistributionModule):
-        val = dists.Prior(Normal, loc=0.0, scale=1.0)
+    def test_same_parameter_same_module(self, initial_distribution):
+        val = torch.nn.Parameter(torch.tensor(1.0), requires_grad=False)
 
         parameters = [
-            NamedParameter("alpha", val),
-            NamedParameter("beta", val)
+            val,
+            val
         ]
 
         sts = ts.StructuralStochasticProcess(parameters, initial_distribution)
 
-        assert ("alpha" in sts.parameter_dict) and ("alpha" not in sts.buffer_dict)
-        assert (
-                ("alpha" in sts.prior_dict) and
-                ("beta" in sts.prior_dict) and
-                (sts.prior_dict["alpha"] is sts.prior_dict["beta"])
-        )
+        val += 1.0
 
-        size = torch.Size([1_000, 10])
-        sts.sample_params_(size)
+        assert ("0" in sts.parameter_dict) and ("1" in sts.parameter_dict)
+        assert (sts.parameter_dict["0"] is val) and (sts.parameter_dict["1"] is sts.parameter_dict["0"])
 
-        assert (sts.parameter_dict["alpha"].shape == size)
+        val.data = torch.empty(2000).normal_()
 
-    def test_same_prior_same_parameter(self):
-        loc_parameter = NamedParameter("loc", dists.Prior(Normal, loc=0.0, scale=1.0))
-        scale_parameter = NamedParameter("scale", 0.05)
+        assert (sts.parameter_dict["0"] is val) and (sts.parameter_dict["1"] is sts.parameter_dict["0"])
+        assert (sts.parameter_dict["0"] is val) and (sts.parameter_dict["0"].shape == val.shape)
 
-        dist = dists.DistributionModule(Normal, loc=loc_parameter, scale=scale_parameter)
+        for true_p, pointer in zip(sts.parameters(), sts.functional_parameters()):
+            assert pointer is true_p
 
-        proc = ts.StructuralStochasticProcess((loc_parameter, scale_parameter), initial_dist=dist)
+    def test_same_parameter_different_module(self, initial_distribution):
+        val = torch.nn.Parameter(torch.tensor(1.0), requires_grad=False)
 
-        assert (
-                (proc.parameter_dict["loc"] is dist.parameter_dict["loc"]) and
-                (len(tuple(proc.parameters())) == 1) and
-                (proc.buffer_dict["scale"] is dist.buffer_dict["scale"])
-        )
+        parameters = [
+            val,
+        ]
 
-    def test_incongruent_names(self):
-        loc_parameter = NamedParameter("alpha", dists.Prior(Normal, loc=0.0, scale=1.0))
-        scale_parameter = NamedParameter("scale", 0.05)
+        sts_1 = ts.StructuralStochasticProcess(parameters, initial_distribution)
+        sts_2 = ts.StructuralStochasticProcess(parameters, initial_distribution)
 
-        with pt.raises(Exception):
-            dist = dists.DistributionModule(Normal, loc=loc_parameter, scale=scale_parameter)
+        assert (sts_1 is not sts_2) and (sts_2.parameter_dict["0"] is sts_1.parameter_dict["0"])
+        assert len(tuple(sts_1.parameter_dict)) == len(tuple(sts_2.parameter_dict)) == 1
 
-    def test_nested_parameters(self):
-        loc_parameter = NamedParameter("loc", dists.Prior(Normal, loc=0.0, scale=1.0))
-        scale_parameter = NamedParameter("scale", dists.Prior(Normal, loc=0.0, scale=1.0))
+        class CombinedModule(torch.nn.Module):
+            def __init__(self, a, b):
+                super().__init__()
+                self.a = a
+                self.b = b
 
-        dist = dists.DistributionModule(Normal, loc=loc_parameter, scale=1.0)
-        proc = ts.StructuralStochasticProcess((scale_parameter,), initial_dist=dist)
-
-        assert (
-            len(tuple(proc.parameters_and_priors())) == 2
-        )
+        combined = CombinedModule(sts_1, sts_2)
+        assert len(tuple(combined.parameters())) == 1

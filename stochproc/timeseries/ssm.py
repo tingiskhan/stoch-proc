@@ -11,6 +11,7 @@ from .result import StateSpacePath
 
 DistBuilder = Callable[[TimeseriesState, Tuple[torch.Tensor, ...]], Distribution]
 
+
 class StateSpaceModel(StructuralStochasticProcess):
     r"""
     Class representing a state space model, i.e. a dynamical system given by the pair stochastic processes
@@ -35,6 +36,14 @@ class StateSpaceModel(StructuralStochasticProcess):
     def initial_dist(self) -> Distribution:
         raise NotImplementedError("Cannot sample from initial distribution of SSM directly!")
 
+    def initial_sample(self, shape: torch.Size = torch.Size([])) -> StateSpaceModelState:
+        x_state = self.hidden.initial_sample(shape)
+        init_dist = self.build_density(x_state)
+
+        return StateSpaceModelState(
+            x=x_state, y=TimeseriesState(0.0, values=torch.tensor([]), event_dim=init_dist.event_shape)
+        )
+
     def build_density(self, x):
         return self._dist_builder(x, *self.functional_parameters())
 
@@ -42,25 +51,21 @@ class StateSpaceModel(StructuralStochasticProcess):
         if self._EXOGENOUS in self._tensor_tuples:
             x.add_exog(self.exog[(x.time_index - 1.0).int()])
 
-    def forward(self, x: TimeseriesState, time_increment=1.0) -> TimeseriesState:
-        self._add_exog_to_state(x)
-        dist = self.build_density(x)
+    def forward(self, x: StateSpaceModelState, time_increment=1.0) -> TimeseriesState:
+        x_state = x["x"]
+        hidden_state = self.hidden.propagate(x_state)
 
-        return TimeseriesState(x.time_index, dist.sample, event_dim=dist.event_shape)
+        self._add_exog_to_state(hidden_state)
+        dist = self.build_density(hidden_state)
+
+        return StateSpaceModelState(x=hidden_state, y=x["y"].propagate_from(values=dist.sample))
 
     def sample_states(
         self, steps: int, samples: torch.Size = torch.Size([]), x_s: TimeseriesState = None
     ) -> StateSpacePath:
-        x = x_s if x_s is not None else self.hidden.initial_sample(shape=samples)
+        path = super(StateSpaceModel, self).sample_states(steps, samples, x_s)
 
-        res = tuple()
-        for t in range(1, steps + 1):
-            x = self.hidden.propagate(x)
-            y = self.propagate(x)
-
-            res += (StateSpaceModelState(x=x, y=y),)
-
-        return StateSpacePath(*res)
+        return StateSpacePath(*path.path)
 
     def do_sample_pyro(
             self, pyro_lib: pyro, t_final: int = None, obs: torch.Tensor = None, mode: str = "approximate"

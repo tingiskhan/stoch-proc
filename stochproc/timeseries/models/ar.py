@@ -2,9 +2,10 @@ import torch
 from pyro.distributions import Delta, Normal, TransformedDistribution, Distribution
 from pyro.distributions.transforms import AffineTransform
 
+from torch.distributions.utils import broadcast_all
+
 from ..linear import LinearModel
 from ...distributions import DistributionModule, JointDistribution
-from ...utils import enforce_named_parameter
 
 
 # TODO: Add beta for those where abs(beta) < 1.0
@@ -44,9 +45,9 @@ class AR(LinearModel):
             kwargs: see base.
         """
 
-        alpha, beta, sigma = enforce_named_parameter(alpha=alpha, beta=beta, sigma=sigma)
+        alpha, beta, sigma = broadcast_all(alpha, beta, sigma)
 
-        if (lags > 1) and (beta.value.shape[-1] != lags):
+        if (lags > 1) and (beta.shape[-1] != lags):
             raise Exception(f"Mismatch between shapes: {alpha.value.shape[-1]} != {lags}")
 
         self.lags = lags

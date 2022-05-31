@@ -1,10 +1,10 @@
 import torch
 from pyro.distributions import Normal
+from torch.distributions.utils import broadcast_all
 
 from ..affine import AffineProcess
 from ...distributions import DistributionModule
 from ...typing import ParameterType
-from ...utils import enforce_named_parameter
 
 
 def init_builder(kappa, gamma, sigma):
@@ -34,7 +34,7 @@ class OrnsteinUhlenbeck(AffineProcess):
             kwargs: see base.
         """
 
-        kappa, gamma, sigma = enforce_named_parameter(kappa=kappa, gamma=gamma, sigma=sigma)
+        kappa, gamma, sigma = broadcast_all(kappa, gamma, sigma)
 
         dist = DistributionModule(Normal, loc=0.0, scale=1.0)
         initial_dist = DistributionModule(init_builder, kappa=kappa, gamma=gamma, sigma=sigma)

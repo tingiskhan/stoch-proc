@@ -1,10 +1,16 @@
+import warnings
+from collections import OrderedDict
+
+import torch.nn
+from torch.nn import ParameterDict
+
 from .base import _DistributionModule
-from stochproc.distributions.prior_module import _HasPriorsModule
 from .typing import DistributionOrBuilder
-from ..typing import ParameterType, NamedParameter
+from ..container import BufferDict
+from ..typing import ParameterType
 
 
-class DistributionModule(_DistributionModule, _HasPriorsModule):
+class DistributionModule(_DistributionModule):
     """
     See :class:`_DistributionModule`.
 
@@ -28,30 +34,28 @@ class DistributionModule(_DistributionModule, _HasPriorsModule):
             parameters: See ``parameters`` of :class:`stochproc.distributions.Prior`. With the addition that we can pass
                 :class:`stochproc.distributions.Prior` objects as parameters.
 
-        Example:
-            In this example we'll construct a distribution wrapper around a normal distribution where the location is a
-            prior:
-                >>> from torch.distributions import Normal
-                >>> import torch
-                >>> from stochproc.distributions import DistributionModule, Prior
-                >>>
-                >>> loc_prior = Prior(Normal, loc=0.0, scale=1.0)
-                >>> wrapped_normal_with_prior = DistributionModule(Normal, loc=loc_prior, scale=1.0)
-                >>>
-                >>> size = torch.Size([1000])
-                >>> wrapped_normal_with_prior.sample_params_(size)
-                >>> samples = wrapped_normal_with_prior.build_distribution().sample(size) # should be 1000 x 1000
         """
 
         super(DistributionModule, self).__init__(
             base_dist=base_dist, reinterpreted_batch_ndims=reinterpreted_batch_ndims
         )
 
-        for k, v in parameters.items():
-            if isinstance(v, NamedParameter) and (v.name != k):
-                raise Exception(f"Key != name of parameter: {k} != {v.name}")
+        # TODO: This is duplicate code, could perhaps move to one and the same
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
 
-            self._register_parameter_or_prior(k, v)
+            self.parameter_dict = ParameterDict()
+            self.buffer_dict = BufferDict()
+
+        self._helper_parameters = OrderedDict([])
+
+        for k, p in parameters.items():
+            if isinstance(p, torch.nn.Parameter):
+                self.parameter_dict[k] = v = p
+            else:
+                self.buffer_dict[k] = v = p if isinstance(p, torch.Tensor) else torch.tensor(p)
+
+            self._helper_parameters[k] = v
 
     def _get_parameters(self):
-        return self.parameters_and_buffers()
+        return self._helper_parameters

@@ -1,10 +1,10 @@
 import torch
-from pyro.distributions import Normal, Independent
+from pyro.distributions import Normal
+from torch.distributions.utils import broadcast_all
 
 from ..affine import AffineProcess
 from ...distributions import DistributionModule
 from ...typing import ParameterType
-from ...utils import enforce_named_parameter
 
 
 def f(x, sigma_volatility):
@@ -15,7 +15,7 @@ def f(x, sigma_volatility):
 
 
 def _init_builder(loc, sigma_volatility):
-    return Independent(Normal(loc=loc, scale=sigma_volatility), 1)
+    return Normal(loc=loc, scale=sigma_volatility).to_event(1)
 
 
 class UCSV(AffineProcess):
@@ -39,7 +39,8 @@ class UCSV(AffineProcess):
             kwargs: See base.
         """
 
-        sigma_volatility = enforce_named_parameter(sigma_volatility=sigma_volatility)[0]
+        sigma_volatility = broadcast_all(sigma_volatility)[0]
+
         initial_dist = DistributionModule(_init_builder, loc=initial_state_mean, sigma_volatility=sigma_volatility)
 
         increment_dist = DistributionModule(

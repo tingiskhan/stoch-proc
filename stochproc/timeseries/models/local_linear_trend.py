@@ -1,10 +1,10 @@
 import torch
 from pyro.distributions import Normal
+from torch.distributions.utils import broadcast_all
 
 from ..linear import LinearModel
 from ...distributions import DistributionModule
 from ...typing import ParameterType
-from ...utils import enforce_named_parameter
 
 
 class LocalLinearTrend(LinearModel):
@@ -27,7 +27,7 @@ class LocalLinearTrend(LinearModel):
             kwargs: see base.
         """
 
-        sigma = enforce_named_parameter(scale=sigma)[0]
+        sigma, initial_mean = broadcast_all(sigma, initial_mean)
 
         increment_dist = DistributionModule(
             Normal, loc=torch.zeros(2), scale=torch.ones(2), reinterpreted_batch_ndims=1
