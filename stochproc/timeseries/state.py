@@ -50,7 +50,7 @@ class TimeseriesState(dict):
     def values(self, x):
         self._values = x
 
-    def copy(self, values: torch.Tensor) -> "TimeseriesState":
+    def copy(self, values: LazyTensor) -> "TimeseriesState":
         """
         Copies self with specified ``values``, but with ``time_index`` of current instance.
 
@@ -62,7 +62,7 @@ class TimeseriesState(dict):
             time_index=self.time_index, values=values, event_dim=self.event_dim, exogenous=self.exogenous
         )
 
-    def propagate_from(self, values: torch.Tensor, time_increment=1.0):
+    def propagate_from(self, values: LazyTensor, time_increment=1.0):
         """
         Returns a new instance of :class:`TimeseriesState` with `values`` and ``time_index`` given by
         ``.time_index + time_increment``.
@@ -125,7 +125,7 @@ class JointState(TimeseriesState):
 
         return torch.cat(res, dim=-1)
 
-    def propagate_from(self, values: torch.Tensor, time_increment=1.0):
+    def propagate_from(self, values: LazyTensor, time_increment=1.0):
         # NB: This is a hard assumption that the values are in the correct order...
         result = dict()
 
