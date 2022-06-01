@@ -2,12 +2,11 @@ import pyro
 import pytest
 import torch
 
-from stochproc import NamedParameter
-from stochproc.timeseries import models, StateSpaceModel
-from pyro.distributions import LogNormal, Normal
+from stochproc.timeseries import models
+from pyro.distributions import LogNormal
 
 
-def do_infer_with_pyro(model, data):
+def do_infer_with_pyro(model, data, num_samples=1_000):
     guide = pyro.infer.autoguide.AutoDiagonalNormal(model)
     optim = pyro.optim.Adam({"lr": 0.01})
     svi = pyro.infer.SVI(model, guide, optim, loss=pyro.infer.Trace_ELBO())
@@ -18,7 +17,6 @@ def do_infer_with_pyro(model, data):
     for n in range(niter):
         loss = svi.step(data)
 
-    num_samples = 1_000
     posterior_predictive = pyro.infer.Predictive(
         model,
         guide=guide,
@@ -26,12 +24,6 @@ def do_infer_with_pyro(model, data):
     )
 
     return guide, posterior_predictive
-
-
-@pytest.fixture
-def linear_model():
-    true_sigma = NamedParameter("scale", 0.05)
-    return models.RandomWalk(true_sigma)
 
 
 class TestPyroIntegration(object):
@@ -45,7 +37,10 @@ class TestPyroIntegration(object):
 
         assert latent.shape == torch.Size([length])
 
-    def test_infer_parameters_only(self, linear_model):
+    def test_infer_parameters_only(self):
+        true_sigma = 0.05
+
+        linear_model = models.RandomWalk(true_sigma)
         x = linear_model.sample_states(100).get_path()
 
         def pyro_model(data):
@@ -60,4 +55,4 @@ class TestPyroIntegration(object):
         mean = posterior_draws["sigma"].mean()
         std = posterior_draws["sigma"].std()
 
-        assert (mean - std) <= linear_model.parameters_and_buffers()["scale"] <= (mean + std)
+        assert (mean - 2.0 * std) <= true_sigma <= (mean + 2.0 * std)

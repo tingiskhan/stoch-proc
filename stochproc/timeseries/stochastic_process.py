@@ -5,12 +5,13 @@ from typing import TypeVar, Callable, Union, Tuple, Sequence, Iterable
 import pyro
 import torch
 from pyro.distributions import Normal, Distribution
-from torch.nn import Module, Parameter
+from torch.nn import Module, Parameter, ParameterDict
+import warnings
 
 from .state import TimeseriesState
 from .result import TimeseriesPath
-from ..container import BufferIterable
-from ..distributions import DistributionModule, _HasPriorsModule
+from ..container import BufferIterable, BufferDict
+from ..distributions import DistributionModule
 from ..typing import ParameterType
 
 T = TypeVar("T")
@@ -407,7 +408,7 @@ class StochasticProcess(Module, ABC):
 _Parameters = Iterable[ParameterType]
 
 
-class StructuralStochasticProcess(StochasticProcess, _HasPriorsModule, ABC):
+class StructuralStochasticProcess(StochasticProcess, ABC):
     r"""
     Similar to ``StochasticProcess``, but where we assume that the conditional distribution
     :math:`p(x_k \mid  x_{1:k-1})` is further parameterized by a collection of parameters :math:`\theta`, s.t.
@@ -426,9 +427,21 @@ class StructuralStochasticProcess(StochasticProcess, _HasPriorsModule, ABC):
         """
 
         super().__init__(initial_dist=initial_dist, **kwargs)
+        self._functional_parameters = list()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+
+            self.parameter_dict = ParameterDict()
+            self.buffer_dict = BufferDict()
 
         for i, p in enumerate(parameters):
-            self._register_parameter_or_prior(f"parameter_{i}", p)
+            if isinstance(p, torch.nn.Parameter):
+                self.parameter_dict[str(i)] = v = p
+            else:
+                self.buffer_dict[str(i)] = v = p if isinstance(p, torch.Tensor) else torch.tensor(p)
+
+            self._functional_parameters.append(v)
 
     def functional_parameters(self, f: Callable[[torch.Tensor], torch.Tensor] = None) -> Tuple[Parameter, ...]:
         """
@@ -438,7 +451,7 @@ class StructuralStochasticProcess(StochasticProcess, _HasPriorsModule, ABC):
             f: Optional parameter, whether to apply some sort of transformation to the parameters prior to returning.
         """
 
-        res = self.parameters_and_buffers().values()
+        res = self._functional_parameters
         if f is not None:
             res = (f(v) for v in res)
 

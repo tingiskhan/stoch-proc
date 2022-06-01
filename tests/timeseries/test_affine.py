@@ -2,7 +2,7 @@ import pytest
 import torch
 from pyro.distributions import Normal
 
-from stochproc import distributions as dists, timeseries as ts, NamedParameter
+from stochproc import distributions as dists, timeseries as ts
 from .test_stochastic_process import initial_distribution   # flake8: noqa
 from .constants import SAMPLES, BATCH_SHAPES
 
@@ -15,8 +15,8 @@ class TestAffineTimeseriesOneDimensional(object):
     @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
     def test_affine_0d(self, initial_distribution, batch_shape):
         params = [
-            NamedParameter("alpha", 1.0),
-            NamedParameter("sigma", 0.05)
+            1.0,
+            0.05
         ]
 
         increment_dist = dists.DistributionModule(Normal, loc=0.0, scale=1.0)
@@ -35,8 +35,8 @@ class TestAffineTimeseriesMultiDimensional(object):
     @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
     def test_affine_2d(self, batch_shape):
         params = [
-            NamedParameter("alpha", torch.ones(2)),
-            NamedParameter("sigma", 0.05)
+            torch.ones(2),
+            0.05
         ]
 
         increment_dist = initial_dist = dists.DistributionModule(

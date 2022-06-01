@@ -2,9 +2,10 @@ import torch
 from pyro.distributions import Delta, Normal, TransformedDistribution, Distribution
 from pyro.distributions.transforms import AffineTransform
 
+from torch.distributions.utils import broadcast_all
+
 from ..linear import LinearModel
 from ...distributions import DistributionModule, JointDistribution
-from ...utils import enforce_named_parameter
 
 
 # TODO: Add beta for those where abs(beta) < 1.0
@@ -44,9 +45,10 @@ class AR(LinearModel):
             kwargs: see base.
         """
 
-        alpha, beta, sigma = enforce_named_parameter(alpha=alpha, beta=beta, sigma=sigma)
+        alpha, sigma = broadcast_all(alpha, sigma)
+        beta = broadcast_all(beta)[0]
 
-        if (lags > 1) and (beta.value.shape[-1] != lags):
+        if (lags > 1) and (beta.shape[-1] != lags):
             raise Exception(f"Mismatch between shapes: {alpha.value.shape[-1]} != {lags}")
 
         self.lags = lags
@@ -56,6 +58,10 @@ class AR(LinearModel):
         super().__init__(beta, sigma, increment_dist=inc_dist, b=alpha, initial_dist=initial_dist, **kwargs)
         self.mean_scale_fun = self._mean_scale_wrapper(self.mean_scale_fun)
 
+        bottom_shape = self.lags - 1, self.lags
+        self.register_buffer("_bottom", torch.eye(*bottom_shape))
+        self.register_buffer("_b_masker", torch.eye(self.lags, 1).squeeze(-1))
+
     def _mean_scale_wrapper(self, f):
         def _wrapper(x, a, b, s):
             if self.lags == 1:
@@ -63,11 +69,11 @@ class AR(LinearModel):
 
             batch_shape = a.shape[:-1]
 
-            bottom_shape = self.lags - 1, self.lags
-            mask = torch.ones((*batch_shape, *bottom_shape), device=a.device)
-            bottom = torch.eye(*bottom_shape, device=a.device) * mask
+            mask = torch.ones((*batch_shape, *self._bottom.shape), device=a.device)
+            bottom = self._bottom * mask
 
             a = torch.cat((a.unsqueeze(-2), bottom))
+            b = self._b_masker * b
 
             return f(x, a, b, s)
 

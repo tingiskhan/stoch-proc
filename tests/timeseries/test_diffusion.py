@@ -4,7 +4,7 @@ import pytest
 import torch
 import torch.distributions as tdists
 
-from stochproc import distributions as dists, timeseries as ts, NamedParameter
+from stochproc import distributions as dists, timeseries as ts
 from .constants import SAMPLES, BATCH_SHAPES
 
 
@@ -17,9 +17,9 @@ class TestDiffusionOneDimensional(object):
             return kappa * (gamma - x_.values), sigma
 
         parameters = (
-            NamedParameter("kappa", 0.05),
-            NamedParameter("gamma", 0.0),
-            NamedParameter("sigma", 0.075)
+           0.05,
+            0.0,
+            0.075
         )
 
         def builder(kappa, gamma, sigma):
@@ -49,8 +49,8 @@ class TestDiffusionOneDimensional(object):
             return kappa * (gamma - x_.values)
 
         parameters = (
-            NamedParameter("kappa", 0.05),
-            NamedParameter("gamma", 0.0),
+            0.05,
+            0.0,
         )
 
         for tuning_std in [False, 0.1]:
