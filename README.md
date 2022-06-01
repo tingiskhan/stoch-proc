@@ -17,7 +17,7 @@ pip install git+https://github.com/tingiskhan/stoch-proc
 The below code simulates a Lorenz-63 system utilizing the RK4 schema
 
 ```python
-from stochproc import timeseries as ts, NamedParameter
+from stochproc import timeseries as ts
 import torch
 import matplotlib.pyplot as plt
 
@@ -32,9 +32,9 @@ def f(x, s_, r_, b_):
 
 initial_values = torch.tensor([-5.91652, -5.52332, 24.5723])
 
-s = NamedParameter("sigma", 10.0)
-r = NamedParameter("rho", 28.0)
-b = NamedParameter("beta", 8.0 / 3.0)
+s = 10.0
+r = 28.0
+b = 8.0 / 3.0
 
 dt = 1e-3
 
@@ -44,7 +44,7 @@ x = model.sample_path(3_000)
 array = x.numpy()
 
 fig = plt.figure(figsize=(16, 9))
-ax = plt.axes(projection='3d')
+ax = plt.axes(projection="3d")
 
 ax.plot3D(array[:, 0], array[:, 1], array[:, 2])
 ```
