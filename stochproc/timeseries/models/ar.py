@@ -45,7 +45,8 @@ class AR(LinearModel):
             kwargs: see base.
         """
 
-        alpha, beta, sigma = broadcast_all(alpha, beta, sigma)
+        alpha, sigma = broadcast_all(alpha, sigma)
+        beta = broadcast_all(beta)[0]
 
         if (lags > 1) and (beta.shape[-1] != lags):
             raise Exception(f"Mismatch between shapes: {alpha.value.shape[-1]} != {lags}")
@@ -57,6 +58,9 @@ class AR(LinearModel):
         super().__init__(beta, sigma, increment_dist=inc_dist, b=alpha, initial_dist=initial_dist, **kwargs)
         self.mean_scale_fun = self._mean_scale_wrapper(self.mean_scale_fun)
 
+        bottom_shape = self.lags - 1, self.lags
+        self.register_buffer("bottom", torch.eye(*bottom_shape))
+
     def _mean_scale_wrapper(self, f):
         def _wrapper(x, a, b, s):
             if self.lags == 1:
@@ -64,11 +68,11 @@ class AR(LinearModel):
 
             batch_shape = a.shape[:-1]
 
-            bottom_shape = self.lags - 1, self.lags
-            mask = torch.ones((*batch_shape, *bottom_shape), device=a.device)
-            bottom = torch.eye(*bottom_shape, device=a.device) * mask
+            mask = torch.ones((*batch_shape, *self.bottom.shape), device=a.device)
+            bottom = self.bottom * mask
 
             a = torch.cat((a.unsqueeze(-2), bottom))
+            b = torch.eye(self.lags, 1, device=b.device).squeeze(-1) * b
 
             return f(x, a, b, s)
 
