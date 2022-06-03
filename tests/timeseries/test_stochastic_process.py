@@ -72,3 +72,19 @@ class TestStochasticProcess(object):
 
         combined = CombinedModule(sts_1, sts_2)
         assert len(tuple(combined.parameters())) == 1
+
+    def test_move_to_cuda(self, initial_distribution):
+        if not torch.cuda.is_available():
+            return
+
+        val = torch.nn.Parameter(torch.tensor(1.0), requires_grad=False)
+
+        parameters = [
+            val,
+            val ** 2.0,
+        ]
+
+        sts = ts.StructuralStochasticProcess(parameters, initial_distribution).cuda()
+
+        for p1, p2 in zip(sts.parameters(), sts.functional_parameters()):
+            assert p1 is p2

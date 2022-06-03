@@ -456,3 +456,15 @@ class StructuralStochasticProcess(StochasticProcess, ABC):
             res = (f(v) for v in res)
 
         return tuple(res)
+
+    def _apply(self, fn):
+        super(StructuralStochasticProcess, self)._apply(fn)
+
+        res = dict()
+        res.update(self.parameter_dict)
+        res.update(self.buffer_dict)
+
+        vals = sorted(res.items(), key=lambda u: u[0])
+        self._functional_parameters = [v for _, v in vals]
+
+        return self

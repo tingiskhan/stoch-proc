@@ -57,5 +57,16 @@ class DistributionModule(_DistributionModule):
 
             self._helper_parameters[k] = v
 
+    def _apply(self, fn):
+        super(DistributionModule, self)._apply(fn)
+
+        res = OrderedDict([])
+        res.update(self.parameter_dict)
+        res.update(self.buffer_dict)
+
+        self._helper_parameters = res
+
+        return self
+
     def _get_parameters(self):
         return self._helper_parameters
