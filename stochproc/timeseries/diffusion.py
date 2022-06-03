@@ -69,8 +69,7 @@ class StochasticDifferentialEquation(StructuralStochasticProcess, ABC):
         """
 
         super().__init__(parameters=parameters, initial_dist=initial_dist, **kwargs)
-
-        self.dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
+        self.register_buffer("dt", torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt)
 
     def forward(self, x, time_increment=1.0):
         # TODO: This is more correct, right?
@@ -136,7 +135,7 @@ class AffineEulerMaruyama(AffineProcess, StochasticDifferentialEquation):
 
     def mean_scale(self, x, parameters=None):
         drift, diffusion = self.mean_scale_fun(x, *(parameters or self.functional_parameters()))
-        return x.values + drift, diffusion
+        return x.values + drift * self.dt, diffusion
 
 
 class Euler(AffineEulerMaruyama):
