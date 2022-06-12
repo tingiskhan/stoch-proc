@@ -36,13 +36,16 @@ class StateSpaceModel(StructuralStochasticProcess):
     def initial_dist(self) -> Distribution:
         raise NotImplementedError("Cannot sample from initial distribution of SSM directly!")
 
-    def initial_sample(self, shape: torch.Size = torch.Size([])) -> StateSpaceModelState:
-        x_state = self.hidden.initial_sample(shape)
-        init_dist = self.build_density(x_state)
+    def _build_initial_state(self, x: TimeseriesState) -> StateSpaceModelState:
+        init_dist = self.build_density(x)
 
         return StateSpaceModelState(
-            x=x_state, y=TimeseriesState(0.0, values=torch.tensor([]), event_dim=init_dist.event_shape)
+            x=x, y=TimeseriesState(0.0, values=torch.tensor([]), event_dim=init_dist.event_shape)
         )
+
+    def initial_sample(self, shape: torch.Size = torch.Size([])) -> StateSpaceModelState:
+        x_state = self.hidden.initial_sample(shape)
+        return self._build_initial_state(x_state)
 
     def build_density(self, x):
         return self._dist_builder(x, *self.functional_parameters())
@@ -61,9 +64,12 @@ class StateSpaceModel(StructuralStochasticProcess):
         return StateSpaceModelState(x=hidden_state, y=x["y"].propagate_from(values=dist.sample))
 
     def sample_states(
-        self, steps: int, samples: torch.Size = torch.Size([]), x_s: TimeseriesState = None
+        self, steps: int, samples: torch.Size = torch.Size([]), x_0: TimeseriesState = None
     ) -> StateSpacePath:
-        path = super(StateSpaceModel, self).sample_states(steps, samples, x_s)
+        if (x_0 is not None) and isinstance(x_0, TimeseriesState):
+            x_0 = self._build_initial_state(x_0)
+
+        path = super(StateSpaceModel, self).sample_states(steps, samples, x_0)
 
         return StateSpacePath(*path.path)
 

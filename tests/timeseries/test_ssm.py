@@ -1,3 +1,5 @@
+import itertools
+
 import torch
 
 from stochproc import timeseries as ts
@@ -8,9 +10,12 @@ from .test_affine import SAMPLES
 from .constants import BATCH_SHAPES
 
 
+SAMPLE_INITIAL = [True, False]
+
+
 class TestSSM(object):
-    @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
-    def test_ssm(self, batch_shape):
+    @pytest.mark.parametrize("batch_shape, sample_initial", itertools.product(BATCH_SHAPES, SAMPLE_INITIAL))
+    def test_ssm(self, batch_shape, sample_initial):
         rw = ts.models.RandomWalk(0.05)
 
         def f(x_, a):
@@ -18,7 +23,9 @@ class TestSSM(object):
 
         ssm = ts.StateSpaceModel(rw, f, parameters=(torch.tensor([1.0, 0.01]),))
 
-        states = ssm.sample_states(SAMPLES, samples=batch_shape)
+        x_0 = rw.initial_sample(batch_shape) if sample_initial else None
+
+        states = ssm.sample_states(SAMPLES, samples=batch_shape, x_0=x_0)
         x, y = states.get_paths()
 
         assert x.shape == torch.Size([SAMPLES, *batch_shape])

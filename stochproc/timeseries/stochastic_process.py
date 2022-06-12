@@ -169,7 +169,7 @@ class StochasticProcess(Module, ABC):
         return self.__call__(x, time_increment=time_increment)
 
     def sample_states(
-        self, steps: int, samples: torch.Size = torch.Size([]), x_s: TimeseriesState = None
+        self, steps: int, samples: torch.Size = torch.Size([]), x_0: TimeseriesState = None
     ) -> TimeseriesPath:
         r"""
         Samples a trajectory from the stochastic process, i.e. samples the collection :math:`\{ X_j \}^T_{j = 0}`,
@@ -178,16 +178,16 @@ class StochasticProcess(Module, ABC):
         Args:
             steps: number of steps to sample.
             samples: parameter corresponding to the batch size to sample.
-            x_s: whether to use a pre-defined initial state or sample a new one. If ``None`` samples
+            x_0: whether to use a pre-defined initial state or sample a new one. If ``None`` samples
                 an initial state, else uses ``x_s``.
 
         Returns:
             Returns a tensor of shape ``(steps, [samples], [.n_dim])``.
         """
 
-        x_s = self.initial_sample(samples) if x_s is None else x_s
+        x_0 = self.initial_sample(samples) if x_0 is None else x_0
 
-        res = (x_s,)
+        res = (x_0,)
         for i in range(1, steps + 1):
             res += (self.propagate(res[-1]),)
 
