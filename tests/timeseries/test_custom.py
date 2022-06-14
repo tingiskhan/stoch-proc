@@ -10,7 +10,7 @@ from .constants import BATCH_SHAPES
 
 def models():
     yield mods.OrnsteinUhlenbeck(0.025, 0.0, 0.05)
-    yield mods.Verhulst(0.025, 1.0, 0.05, 0.1, num_steps=10)
+    yield mods.Verhulst(0.025, 1.0, 0.05, 0.1)
     yield mods.RandomWalk(0.05)
     yield mods.LocalLinearTrend(torch.tensor([0.01, 0.05]))
     yield mods.AR(0.0, 1.0, 0.05)

@@ -9,6 +9,9 @@ from .state import TimeseriesState, StateSpaceModelState
 from .result import StateSpacePath
 
 
+_NAN = float("nan")
+
+
 DistBuilder = Callable[[TimeseriesState, Tuple[torch.Tensor, ...]], Distribution]
 
 
@@ -21,17 +24,23 @@ class StateSpaceModel(StructuralStochasticProcess):
     .. _`here`: https://en.wikipedia.org/wiki/State-space_representation
     """
 
-    def __init__(self, hidden: StructuralStochasticProcess, f: DistBuilder, parameters, **kwargs):
+    def __init__(self, hidden: StructuralStochasticProcess, f: DistBuilder, parameters, observe_every_step=1, **kwargs):
         """
         Initializes the :class:`StateSpaceModel` class.
 
         Args:
             hidden: hidden process.
+            f: the function for building the observable distribution.
+            parameters: see :class:`StructuralStochasticProcess`.
+            observe_every_step: parameter for specifying the frequency at which we observe the data.
         """
 
         super().__init__(parameters=parameters, initial_dist=None, **kwargs)
         self.hidden = hidden
         self._dist_builder = f
+
+        self.observe_every_step = observe_every_step
+        self._event_shape = self.initial_sample()["y"].event_dim
 
     def initial_dist(self) -> Distribution:
         raise NotImplementedError("Cannot sample from initial distribution of SSM directly!")
@@ -58,10 +67,13 @@ class StateSpaceModel(StructuralStochasticProcess):
         x_state = x["x"]
         hidden_state = self.hidden.propagate(x_state)
 
-        self._add_exog_to_state(hidden_state)
-        dist = self.build_density(hidden_state)
+        if (hidden_state.time_index - 1) % self.observe_every_step == 0:
+            self._add_exog_to_state(hidden_state)
+            vals = self.build_density(hidden_state).sample
+        else:
+            vals = _NAN * torch.ones_like(x["y"].values)
 
-        return StateSpaceModelState(x=hidden_state, y=x["y"].propagate_from(values=dist.sample))
+        return StateSpaceModelState(x=hidden_state, y=x["y"].propagate_from(values=vals))
 
     def sample_states(
         self, steps: int, samples: torch.Size = torch.Size([]), x_0: TimeseriesState = None
@@ -79,12 +91,13 @@ class StateSpaceModel(StructuralStochasticProcess):
 
         assert mode != "parameters_only", f"Mode cannot be '{mode}'!"
 
-        t_final, obs = self._check_obs_and_t(t_final, obs)
+        if obs is not None:
+            t_final = obs.shape[0] * self.observe_every_step
 
         latent = self.hidden.do_sample_pyro(pyro_lib, t_final + 1, mode=mode)
-        time = torch.arange(1, latent.shape[0] + 1)
+        time = torch.arange(1, latent.shape[0] + 1, device=latent.device)
 
-        x = latent[self.hidden.num_steps :: self.hidden.num_steps]
+        x = latent[1 :: self.observe_every_step]
         state = self.hidden.initial_sample().propagate_from(values=x, time_increment=time)
         obs_dist = self.build_density(state)
 

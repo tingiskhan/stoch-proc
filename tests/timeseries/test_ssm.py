@@ -11,17 +11,20 @@ from .constants import BATCH_SHAPES
 
 
 SAMPLE_INITIAL = [True, False]
+SAMPLE_EVERY = [1, 5]
+
+PARAMS = itertools.product(BATCH_SHAPES, SAMPLE_INITIAL, SAMPLE_EVERY)
 
 
 class TestSSM(object):
-    @pytest.mark.parametrize("batch_shape, sample_initial", itertools.product(BATCH_SHAPES, SAMPLE_INITIAL))
-    def test_ssm(self, batch_shape, sample_initial):
+    @pytest.mark.parametrize("batch_shape, sample_initial, sample_every", PARAMS)
+    def test_ssm(self, batch_shape, sample_initial, sample_every):
         rw = ts.models.RandomWalk(0.05)
 
         def f(x_, a):
             return Normal(loc=x_.values.unsqueeze(-1) * a, scale=1.0).to_event(1)
 
-        ssm = ts.StateSpaceModel(rw, f, parameters=(torch.tensor([1.0, 0.01]),))
+        ssm = ts.StateSpaceModel(rw, f, parameters=(torch.tensor([1.0, 0.01]),), observe_every_step=sample_every)
 
         x_0 = rw.initial_sample(batch_shape) if sample_initial else None
 

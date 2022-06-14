@@ -1,9 +1,11 @@
+import itertools
+
 import pyro
 import pytest
 import torch
 
-from stochproc.timeseries import models
-from pyro.distributions import LogNormal
+from stochproc.timeseries import models, StateSpaceModel
+from pyro.distributions import LogNormal, Normal
 
 
 def do_infer_with_pyro(model, data, num_samples=1_000):
@@ -56,3 +58,18 @@ class TestPyroIntegration(object):
         std = posterior_draws["sigma"].std()
 
         assert (mean - 2.0 * std) <= true_sigma <= (mean + 2.0 * std)
+
+    @pytest.mark.parametrize("mode, observe_every_step", itertools.product(["full", "approximate"], [1, 5]))
+    def test_sample_ssm(self, mode, observe_every_step):
+        sigma = 0.05
+        model = models.RandomWalk(sigma)
+
+        def build_obs(x):
+            return Normal(loc=x.values, scale=0.1)
+
+        ssm = StateSpaceModel(model, build_obs, (), observe_every_step=observe_every_step)
+
+        length = 100
+        latent = ssm.do_sample_pyro(pyro, length, mode=mode)
+
+        assert latent.shape == torch.Size([length + 1])

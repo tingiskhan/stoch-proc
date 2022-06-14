@@ -85,10 +85,13 @@ class AffineJointStochasticProcess(AffineProcess):
             None,
             (),
             increment_dist=DistributionModule(self._inc_builder),
-            initial_dist=DistributionModule(self._init_builder),
+            initial_dist=None,
         )
 
         self.sub_processes = torch.nn.ModuleDict(processes)
+
+        self._initial_dist = DistributionModule(self._init_builder)
+        self._event_shape = self.initial_dist.event_shape
 
     def _inc_builder(self, **kwargs):
         return JointDistribution(*(sub_proc.increment_dist() for sub_proc in self.sub_processes.values()))

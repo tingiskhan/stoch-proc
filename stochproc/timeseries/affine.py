@@ -30,18 +30,18 @@ def _define_transdist(
 
 
 class AffineProcess(StructuralStochasticProcess):
-    """
+    r"""
     Class for defining stochastic processes of affine nature, i.e. where we can express the next state :math:`X_{t+1}`
     given the previous state :math:`X_t` as:
         .. math::
-            X_{t+1} = f(X_t, \\theta) + g(X_t, \\theta) \\cdot W_{t+1},
+            X_{t+1} = f(X_t, \theta) + g(X_t, \theta) \cdot W_{t+1},
 
     where :math:`\\theta` denotes the parameter set governing the functions :math:`f` and :math:`g`, and :math:`W_t`
     denotes random variable with arbitrary density (from which we can sample).
 
     Example:
         One example of an affine stochastic process is the AR(1) process. We define it by:
-            >>> from stochproc import timeseries as ts, distributions as dists, NamedParameter
+            >>> from stochproc import timeseries as ts, distributions as dists
             >>> from torch.distributions import Normal, TransformedDistribution, AffineTransform
             >>>
             >>> def mean_scale(x, alpha, beta, sigma):
@@ -50,9 +50,9 @@ class AffineProcess(StructuralStochasticProcess):
             >>> def initial_builder(alpha, beta, sigma):
             >>>     return Normal(loc=alpha, scale=sigma / (1 - beta ** 2).sqrt())
             >>>
-            >>> alpha = NamedParameter("alpha", 0.0)
-            >>> beta = NamedParameter("beta", 0.99)
-            >>> sigma = NamedParameter("sigma", 0.05)
+            >>> alpha = 0.0
+            >>> beta = 0.99
+            >>> sigma = 0.05
             >>>
             >>> initial_dist = dists.DistributionModule(initial_builder, alpha=alpha, beta=beta, sigma=sigma)
             >>> increment_dist = dists.DistributionModule(Normal, loc=0.0, scale=1.0)
@@ -102,14 +102,3 @@ class AffineProcess(StructuralStochasticProcess):
         mean, scale = self.mean_scale_fun(x, *(parameters or self.functional_parameters()))
 
         return torch.broadcast_tensors(mean, scale)
-
-    def propagate_conditional(
-        self, x: TimeseriesState, u: torch.Tensor, parameters=None, time_increment=1.0
-    ) -> TimeseriesState:
-        super(AffineProcess, self).propagate_conditional(x, u, parameters, time_increment)
-
-        for _ in range(self.num_steps):
-            loc, scale = self.mean_scale(x, parameters=parameters)
-            x = x.propagate_from(values=loc + scale * u, time_increment=time_increment)
-
-        return x
