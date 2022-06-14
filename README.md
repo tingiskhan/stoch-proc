@@ -36,9 +36,9 @@ s = 10.0
 r = 28.0
 b = 8.0 / 3.0
 
-dt = 1e-3
+dt = 1e-2
 
-model = ts.RungeKutta(f, (s, r, b), initial_values, dt=dt, event_dim=1, num_steps=10)
+model = ts.RungeKutta(f, (s, r, b), initial_values, dt=dt, event_dim=1)
 
 x = model.sample_path(3_000)
 array = x.numpy()
