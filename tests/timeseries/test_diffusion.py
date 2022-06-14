@@ -33,8 +33,7 @@ class TestDiffusionOneDimensional(object):
             parameters,
             dt=dt,
             initial_dist=initial_dist,
-            increment_dist=increment_dist,
-            num_steps=20
+            increment_dist=increment_dist
         )
 
         x = discretized_ou.sample_states(SAMPLES, samples=batch_shape).get_path()
