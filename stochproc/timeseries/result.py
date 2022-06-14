@@ -19,6 +19,7 @@ class TimeseriesPath(object):
         """
 
         self.path = sorted(states, key=lambda u: u.time_index)
+        self.time_indexes = torch.stack([s.time_index for s in self.path], dim=0)
 
     def get_path(self) -> torch.Tensor:
         """
