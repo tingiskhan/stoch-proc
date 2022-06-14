@@ -23,7 +23,7 @@ class StochasticProcess(Module, ABC):
     :math:`\{X_t\}_{t \in T}`, defined on a common probability space
     :math:`\{ \Omega, \mathcal{F}, \{ \mathcal{F}_t \}`, with joint distribution
         .. math::
-            p(x_1, ..., x_t) = p(x_1) \prod^t_{k=2} p(x_k \mid x_{1:k-1})
+            p(x_0, ..., x_t) = p(x_0) \prod^t_{k=1} p(x_k \mid x_{1:k-1})
 
     Derived classes should override the ``.build_distribution(...)`` method, which builds the distribution of
     :math:`X_{t+1}` given :math:`\{ X_j \}_{j \leq t}`.
@@ -33,9 +33,7 @@ class StochasticProcess(Module, ABC):
 
     def __init__(
         self,
-        initial_dist: DistributionModule,
-        initial_transform: Union[Callable[["StochasticProcess", Distribution], Distribution], None] = None,
-        num_steps: int = 1,
+        initial_dist: Union[None, DistributionModule],
         exogenous: Sequence[torch.Tensor] = None,
     ):
         """
@@ -45,21 +43,14 @@ class StochasticProcess(Module, ABC):
             initial_dist: initial distribution of the process. Corresponds to a
                 ``stochproc.distributions.DistributionModule`` rather than a ``pytorch`` distribution as we require
                 being able to move the distribution between devices.
-            initial_transform: parameter allowing for re-parameterizing the initial distribution with
-                parameters of the ``StochasticProcess`` object. One example is the Ornstein-Uhlenbeck process, where
-                the initial distribution is usually defined as the stationary process of the distribution, which in turn
-                is defined by the three parameters governing the process.
-            num_steps: parameter allowing to skip time steps when sampling. E.g. if we set ``num_steps`` to 5,
-                we only return every fifth sample when propagating the process.
             exogenous: parameter specifying exogenous data to include.
         """
 
         super().__init__()
         self._initial_dist = initial_dist
-        self._init_transform = initial_transform
-        self.num_steps = num_steps
 
         self._tensor_tuples = BufferIterable(**{self._EXOGENOUS: exogenous})
+        self._event_shape = None if initial_dist is None else self.initial_dist.event_shape
 
     @property
     def exogenous(self) -> torch.Tensor:
@@ -75,7 +66,7 @@ class StochasticProcess(Module, ABC):
         Returns the event shape of the process.
         """
 
-        return self.initial_dist.event_shape
+        return self._event_shape
 
     @property
     def n_dim(self) -> int:
@@ -101,11 +92,7 @@ class StochasticProcess(Module, ABC):
         Returns the initial distribution and any re-parameterization given by ``._init_transform``.
         """
 
-        dist = self._initial_dist()
-        if self._init_transform is not None:
-            dist = self._init_transform(self, dist)
-
-        return dist
+        return self._initial_dist()
 
     def initial_sample(self, shape: torch.Size = torch.Size([])) -> TimeseriesState:
         """
@@ -147,11 +134,8 @@ class StochasticProcess(Module, ABC):
     def forward(self, x: TimeseriesState, time_increment=1.0) -> TimeseriesState:
         self._add_exog_to_state(x)
 
-        for _ in range(self.num_steps):
-            density = self.build_density(x)
-            x = x.propagate_from(values=density.sample, time_increment=time_increment)
-
-        return x
+        density = self.build_density(x)
+        return x.propagate_from(values=density.sample, time_increment=time_increment)
 
     def propagate(self, x: TimeseriesState, time_increment=1.0) -> TimeseriesState:
         """
@@ -200,30 +184,6 @@ class StochasticProcess(Module, ABC):
 
         return deepcopy(self)
 
-    def propagate_conditional(
-        self, x: TimeseriesState, u: torch.Tensor, parameters=None, time_increment=1.0
-    ) -> TimeseriesState:
-        r"""
-        Propagate the process conditional on both state and draws from an incremental distribution. This method assumes
-        that we may perform the following parameterization:
-            .. math::
-                X_{t+1} = H(t, \{ X_j \}, W_t},
-
-        where :math:`H: \: T \times \mathcal{X}^t \times \mathcal{W} \rightarrow \mathcal{X}`, where :math:`W_t`
-        are samples drawn from the incremental distribution.
-
-        Args:
-            x: See ``.propagate(...)``
-            u: The samples from the incremental distribution.
-            parameters: when performing the re-parameterization we sometimes require the parameters
-                of self to be of another dimension. This parameter allows that.
-            time_increment: See ``.propagate(...)``.
-        """
-
-        self._add_exog_to_state(x)
-
-        return
-
     def append_exog(self, exogenous: torch.Tensor):
         """
         Appends and exogenous variable.
@@ -246,19 +206,6 @@ class StochasticProcess(Module, ABC):
 
         return obs
 
-    def _get_pyro_length(self, t_final: int) -> int:
-        """
-        Helper method for finding the total lenght.
-
-        Args:
-            t_final: The final lenght.
-
-        Returns:
-            The total length of samples to produce.
-        """
-
-        return (t_final - 1) * (self.num_steps - 1) + t_final
-
     def _pyro_full(self, pyro_lib: pyro, t_final: int, obs: torch.Tensor = None):
         """
         Implements the full joint distribution of the states. Not that this one is very slow.
@@ -276,15 +223,13 @@ class StochasticProcess(Module, ABC):
             state = self.initial_sample()
 
         x = pyro_lib.sample("x_0", self.initial_dist, obs=obs[0] if obs is not None else None)
-
-        length = self._get_pyro_length(t_final)
-        latent = torch.empty((length, *state.event_dim))
+        latent = torch.empty((t_final, *state.event_dim))
 
         latent[0] = x
-        for t in pyro_lib.markov(range(1, length)):
+        for t in pyro_lib.markov(range(1, latent.shape[0])):
             state = state.propagate_from(values=x)
 
-            obs_t = obs[t] if (t % self.num_steps == 0) and (obs is not None) else None
+            obs_t = obs[t] if obs is not None else None
             x = pyro.sample(f"x_{t}", self.build_density(state), obs=obs_t)
 
             latent[t] = x
@@ -317,7 +262,7 @@ class StochasticProcess(Module, ABC):
         with torch.no_grad():
             initial_state = self.initial_sample()
 
-        with pyro_lib.plate("time", self._get_pyro_length(t_final), dim=-1) as t:
+        with pyro_lib.plate("time", t_final, dim=-1) as t:
             # NB: This is a purely heuristic approach and I don't really know if you actually can do this...
             rw_dist = Normal(loc=loc, scale=scale).mask(False)
             auxiliary = pyro_lib.sample("_auxiliary", rw_dist.to_event(re_interpreted_dims)).cumsum(dim=0)
@@ -331,12 +276,7 @@ class StochasticProcess(Module, ABC):
 
         y_eval = auxiliary.clone()
         if obs is not None:
-            mask = t % self.num_steps == 0
-
-            if obs.dim() > 1:
-                mask.unsqueeze_(-1)
-
-            y_eval.masked_scatter_(mask, obs)
+            y_eval = obs
 
         tot_dist = self.build_density(state)
         log_prob = tot_dist.log_prob(y_eval[1:]).sum(dim=0) + self.initial_dist.log_prob(y_eval[0])
@@ -395,7 +335,7 @@ class StochasticProcess(Module, ABC):
         elif mode == "approximate":
             latent = self._pyro_approximate(pyro_lib, t_final, obs)
         elif mode == "parameters_only":
-            if (self.num_steps > 1) or (obs is None):
+            if obs is None:
                 raise Exception(f"'{mode}' only works with observable data and `num_steps` == 1")
 
             latent = self._pyro_params_only(pyro_lib, obs)
