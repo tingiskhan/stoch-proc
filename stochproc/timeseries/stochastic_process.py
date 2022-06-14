@@ -32,9 +32,7 @@ class StochasticProcess(Module, ABC):
     _EXOGENOUS = "exogenous"
 
     def __init__(
-        self,
-        initial_dist: Union[None, DistributionModule],
-        exogenous: Sequence[torch.Tensor] = None,
+        self, initial_dist: Union[None, DistributionModule], exogenous: Sequence[torch.Tensor] = None,
     ):
         """
         Initializes the ``StochasticProcess`` class.

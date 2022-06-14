@@ -82,10 +82,7 @@ class AffineJointStochasticProcess(AffineProcess):
             raise ValueError(f"All processes must be of type '{AffineProcess.__name__}'!")
 
         super(AffineJointStochasticProcess, self).__init__(
-            None,
-            (),
-            increment_dist=DistributionModule(self._inc_builder),
-            initial_dist=None,
+            None, (), increment_dist=DistributionModule(self._inc_builder), initial_dist=None,
         )
 
         self.sub_processes = torch.nn.ModuleDict(processes)

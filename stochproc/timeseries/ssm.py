@@ -86,7 +86,7 @@ class StateSpaceModel(StructuralStochasticProcess):
         return StateSpacePath(*path.path)
 
     def do_sample_pyro(
-            self, pyro_lib: pyro, t_final: int = None, obs: torch.Tensor = None, mode: str = "approximate"
+        self, pyro_lib: pyro, t_final: int = None, obs: torch.Tensor = None, mode: str = "approximate"
     ) -> torch.Tensor:
 
         assert mode != "parameters_only", f"Mode cannot be '{mode}'!"

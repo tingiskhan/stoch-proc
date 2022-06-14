@@ -29,7 +29,9 @@ class TimeseriesState(dict):
 
         super().__init__()
 
-        self.time_index: torch.IntTensor = (time_index if isinstance(time_index, torch.Tensor) else torch.tensor(time_index)).int()
+        self.time_index: torch.IntTensor = (
+            time_index if isinstance(time_index, torch.Tensor) else torch.tensor(time_index)
+        ).int()
         self.exogenous: torch.Tensor = exogenous
         self.event_dim = event_dim
 
