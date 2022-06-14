@@ -131,7 +131,7 @@ class StochasticProcess(Module, ABC):
         if self._EXOGENOUS in self._tensor_tuples:
             x.add_exog(self.exog[x.time_index.int()])
 
-    def forward(self, x: TimeseriesState, time_increment=1.0) -> TimeseriesState:
+    def forward(self, x: TimeseriesState, time_increment: int = 1) -> TimeseriesState:
         self._add_exog_to_state(x)
 
         density = self.build_density(x)

@@ -12,7 +12,7 @@ class TimeseriesState(dict):
 
     def __init__(
         self,
-        time_index: Union[float, torch.Tensor],
+        time_index: Union[int, torch.IntTensor],
         values: LazyTensor,
         event_dim: torch.Size,
         exogenous: torch.Tensor = None,
@@ -29,7 +29,7 @@ class TimeseriesState(dict):
 
         super().__init__()
 
-        self.time_index: torch.Tensor = time_index if isinstance(time_index, torch.Tensor) else torch.tensor(time_index)
+        self.time_index: torch.IntTensor = (time_index if isinstance(time_index, torch.Tensor) else torch.tensor(time_index)).int()
         self.exogenous: torch.Tensor = exogenous
         self.event_dim = event_dim
 
@@ -62,7 +62,7 @@ class TimeseriesState(dict):
             time_index=self.time_index, values=values, event_dim=self.event_dim, exogenous=self.exogenous
         )
 
-    def propagate_from(self, values: LazyTensor, time_increment=1.0):
+    def propagate_from(self, values: LazyTensor, time_increment: int = 1):
         """
         Returns a new instance of :class:`TimeseriesState` with `values`` and ``time_index`` given by
         ``.time_index + time_increment``.
