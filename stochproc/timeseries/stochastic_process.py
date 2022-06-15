@@ -107,7 +107,7 @@ class StochasticProcess(Module, ABC):
         if shape:
             dist = dist.expand(shape)
 
-        return TimeseriesState(0.0, dist.sample, event_dim=dist.event_shape)
+        return TimeseriesState(0, dist.sample, event_dim=dist.event_shape)
 
     def build_density(self, x: TimeseriesState) -> Distribution:
         r"""
