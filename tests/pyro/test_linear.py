@@ -40,6 +40,7 @@ class TestPyroIntegration(object):
         assert latent.shape == torch.Size([length])
 
     def test_infer_parameters_only(self):
+        pyro.set_rng_seed(123)
         true_sigma = 0.05
 
         linear_model = models.RandomWalk(true_sigma)
