@@ -72,8 +72,10 @@ class StochasticDifferentialEquation(StructuralStochasticProcess, ABC):
         self.register_buffer("dt", torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt)
 
     def forward(self, x, time_increment=1.0):
-        # TODO: This is more correct, right?
-        return super(StochasticDifferentialEquation, self).forward(x, time_increment=self.dt)
+        res = super(StochasticDifferentialEquation, self).forward(x)
+        res["dt"] = self.dt
+
+        return res
 
 
 class DiscretizedStochasticDifferentialEquation(StochasticDifferentialEquation):

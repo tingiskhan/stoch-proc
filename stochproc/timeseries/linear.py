@@ -29,9 +29,7 @@ class LinearModel(AffineProcess):
         if b is None:
             b = torch.tensor(0.0)
 
-        super(LinearModel, self).__init__(
-            self._mean_scale, parameters=(a, b, sigma), **kwargs
-        )
+        super(LinearModel, self).__init__(self._mean_scale, parameters=(a, b, sigma), **kwargs)
 
     def _mean_scale(self, x, a, b, s):
         if x.event_dim.numel() > 1:

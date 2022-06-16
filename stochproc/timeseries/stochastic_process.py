@@ -32,9 +32,7 @@ class StochasticProcess(Module, ABC):
     _EXOGENOUS = "exogenous"
 
     def __init__(
-        self,
-        initial_dist: Union[None, DistributionModule],
-        exogenous: Sequence[torch.Tensor] = None,
+        self, initial_dist: Union[None, DistributionModule], exogenous: Sequence[torch.Tensor] = None,
     ):
         """
         Initializes the ``StochasticProcess`` class.
@@ -109,7 +107,7 @@ class StochasticProcess(Module, ABC):
         if shape:
             dist = dist.expand(shape)
 
-        return TimeseriesState(0.0, dist.sample, event_dim=dist.event_shape)
+        return TimeseriesState(0, dist.sample, event_dim=dist.event_shape)
 
     def build_density(self, x: TimeseriesState) -> Distribution:
         r"""
@@ -131,7 +129,7 @@ class StochasticProcess(Module, ABC):
         if self._EXOGENOUS in self._tensor_tuples:
             x.add_exog(self.exog[x.time_index.int()])
 
-    def forward(self, x: TimeseriesState, time_increment=1.0) -> TimeseriesState:
+    def forward(self, x: TimeseriesState, time_increment: int = 1) -> TimeseriesState:
         self._add_exog_to_state(x)
 
         density = self.build_density(x)
