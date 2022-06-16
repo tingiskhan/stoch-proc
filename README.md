@@ -7,7 +7,7 @@ with pyro's inference algorithms.
 
 ## Getting started
 
-Follow the below steps in order to install stoch-proc.
+Follow the below steps in order to install the library.
 
 ### Prerequisites
 As mentioned earlier stoch-proc is built on top of pytorch (and pyro). While it's included in the `requirements.txt` 
