@@ -1,7 +1,7 @@
 ## About the project
 
 stoch-proc is a library that aims for users to easily define and infer structural time series models in 
-[pytorch](https://pytorch.org/) together with [pyro](http://pyro.ai/). `stoch-proc` was previously a submodule in 
+[pytorch](https://pytorch.org/) together with [pyro](http://pyro.ai/). stoch-proc was previously a submodule in 
 [pyfilter](https://github.com/tingiskhan/pyfilter), but was moved into a separate library in order to enable integration
 with pyro's inference algorithms.
 
