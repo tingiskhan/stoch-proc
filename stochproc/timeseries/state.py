@@ -60,9 +60,10 @@ class TimeseriesState(dict):
             values: see ``__init__``.
         """
 
-        return TimeseriesState(
-            time_index=self.time_index, values=values, event_dim=self.event_dim, exogenous=self.exogenous
-        )
+        prop = self.propagate_from(values=self.values, time_increment=0)
+        prop.exogenous = self.exogenous
+
+        return prop
 
     def propagate_from(self, values: LazyTensor, time_increment: int = 1):
         """
