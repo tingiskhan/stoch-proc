@@ -60,7 +60,7 @@ class TimeseriesState(dict):
             values: see ``__init__``.
         """
 
-        prop = self.propagate_from(values=self.values, time_increment=0)
+        prop = self.propagate_from(values=values, time_increment=0)
         prop.exogenous = self.exogenous
 
         return prop
