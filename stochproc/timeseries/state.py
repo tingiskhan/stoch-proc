@@ -136,7 +136,7 @@ class JointState(TimeseriesState):
         for sub_state_name in self._sub_states_order:
             sub_state: TimeseriesState = self[sub_state_name]
 
-            dimension = len(sub_state.event_dim)
+            dimension = sub_state.event_dim.numel()
             if callable(values):
                 sub_values = lambda: values()[..., last_ind : last_ind + dimension + 1].squeeze(-1)
             else:
