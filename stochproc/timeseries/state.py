@@ -60,9 +60,10 @@ class TimeseriesState(dict):
             values: see ``__init__``.
         """
 
-        return TimeseriesState(
-            time_index=self.time_index, values=values, event_dim=self.event_dim, exogenous=self.exogenous
-        )
+        prop = self.propagate_from(values=values, time_increment=0)
+        prop.exogenous = self.exogenous
+
+        return prop
 
     def propagate_from(self, values: LazyTensor, time_increment: int = 1):
         """
@@ -132,18 +133,17 @@ class JointState(TimeseriesState):
         result = dict()
 
         last_ind = 0
+
+        if callable(values):
+            values = values()
+
         for sub_state_name in self._sub_states_order:
             sub_state: TimeseriesState = self[sub_state_name]
 
-            dimension = len(sub_state.event_dim)
-            if callable(values):
-                sub_values = lambda: values()[..., last_ind : last_ind + dimension + 1].squeeze(-1)
-            else:
-                sub_values = values[..., last_ind : last_ind + dimension + 1].squeeze(-1)
+            dimension = sub_state.event_dim.numel()
+            sub_values = values[..., last_ind : last_ind + dimension].squeeze(-1)
 
-            new_sub_values = sub_values
-
-            result[sub_state_name] = sub_state.propagate_from(new_sub_values, time_increment=time_increment)
+            result[sub_state_name] = sub_state.propagate_from(sub_values, time_increment=time_increment)
             last_ind += dimension
 
         return JointState(**result)
