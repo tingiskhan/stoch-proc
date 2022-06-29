@@ -9,7 +9,9 @@ class Seasonal(LinearModel):
     r"""
     Defines a seasonal time series model, i.e. in which we have that
         .. math::
-            s_t = -\sum^{k}_{j=1} s_{t-j} + \epsilon_t, \: \epsilon_t \sim \mathcal{N}(0, \sigma).
+            s_{1, t} = -\sum^{k}_{j=1} s_{j, t-1} + \epsilon_t, \: \epsilon_t \sim \mathcal{N}(0, \sigma), \newline
+            s_{j, t} = s_{j-1, t-1}, j \gleq 2
+
     """
 
     def __init__(self, period: int, sigma: ParameterType, initial_sigma: ParameterType = None):
