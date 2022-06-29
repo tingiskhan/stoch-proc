@@ -99,4 +99,6 @@ class AffineProcess(StructuralStochasticProcess):
             Returns the tuple ``(mean, scale)``.
         """
 
-        return self.mean_scale_fun(x, *(parameters or self.functional_parameters()))
+        loc, scale = self.mean_scale_fun(x, *(parameters or self.functional_parameters()))
+
+        return torch.broadcast_tensors(loc, scale)
