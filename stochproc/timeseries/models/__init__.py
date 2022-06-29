@@ -4,6 +4,7 @@ from .ar import AR
 from .local_linear_trend import LocalLinearTrend
 from .random_walk import RandomWalk
 from .ucsv import UCSV
+from .seasonal import Seasonal
 
 __all__ = [
     "OrnsteinUhlenbeck",
@@ -12,5 +13,6 @@ __all__ = [
     "LocalLinearTrend",
     "RandomWalk",
     "UCSV",
+    "Seasonal"
     # "SmoothLinearTrend",
 ]
