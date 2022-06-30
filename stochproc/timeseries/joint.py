@@ -78,8 +78,8 @@ class AffineJointStochasticProcess(AffineProcess):
             processes: sub processes to combine into a single affine process.
         """
 
-        if not all(isinstance(p, AffineProcess) for p in processes.values()):
-            raise ValueError(f"All processes must be of type '{AffineProcess.__name__}'!")
+        msg = f"All processes must be of type '{AffineProcess.__name__}'!"
+        assert all(isinstance(p, AffineProcess) for p in processes.values()), msg
 
         super(AffineJointStochasticProcess, self).__init__(
             None, (), increment_dist=DistributionModule(self._inc_builder), initial_dist=None,
