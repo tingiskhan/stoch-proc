@@ -5,8 +5,34 @@ from . import AffineProcess, AffineJointStochasticProcess
 
 class AffineHierarchalProcess(AffineJointStochasticProcess):
     r"""
-    Defines a "hierarchal" affine process, by which we mean a process that ... TODO
+    Defines a "hierarchal" affine process, by which we mean a stochastic process that comprises two sub processes,
+    where one is completely independent of the other, whereas the other is conditionally independent; in theory similar
+    to :class:`stochproc.timeseries.StateSpaceModel`.
 
+    To clarify, assume that you have the stochastic processes :math:`\{ X_t \}` and :math:`\{ Y_t \}`, and that
+    :math:`X` is independent of :math:`Y`, but :math:`Y` is conditionally independent of :math:`X`.
+
+    Examples:
+        One example is the two factor `Hull-White model`_, which in code is defined as (with arbitrary parameters)
+        >>> from stochproc import timeseries as ts, distributions as dists
+        >>> from math import sqrt
+        >>> from pyro.distributions import Normal, LogNormal
+        >>>
+        >>> def mean_scale(x, kappa, theta, sigma):
+        >>>     return kappa * (theta - x["sub"].values / kappa - x["main"].values), sigma
+        >>>
+        >>> dt = 1.0
+        >>> u = ts.models.OrnsteinUhlenbeck(0.01, 0.0, 0.01, dt=dt)
+        >>>
+        >>> inc_dist = dists.DistributionModule(Normal, loc=0.0, scale=sqrt(dt))
+        >>> init_dist = dists.DistributionModule(LogNormal, loc=-2.0, scale=0.5)
+        >>> hull_white = ts.AffineEulerMaruyama(mean_scale, (0.01, 0.5, 0.05), init_dist, inc_dist, dt)
+        >>>
+        >>> x = hull_white.sample_states(500).get_path()
+        >>> x.shape
+        torch.Size([500, 2])
+
+    .. _`Hull-White model`: https://en.wikipedia.org/wiki/Hull–White_model
     """
 
     def __init__(self, sub_process: AffineProcess, main_process: AffineProcess):
@@ -22,7 +48,10 @@ class AffineHierarchalProcess(AffineJointStochasticProcess):
 
     def mean_scale(self, x, parameters=None):
         sub_mean, sub_scale = self.sub_processes["sub"].mean_scale(x["sub"])
-        main_mean, main_scale = self.sub_processes["main"].mean_scale(x)
+
+        main_state = x["main"]
+        main_state["sub"] = x["sub"]
+        main_mean, main_scale = self.sub_processes["main"].mean_scale(main_state)
 
         sub_unsqueeze = x["sub"].event_dim.numel() == 1
         main_unsqueeze = x["main"].event_dim.numel() == 1
