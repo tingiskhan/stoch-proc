@@ -21,13 +21,11 @@ class TestHierarchalProcess(object):
         sub = ts.models.AR(0.0, 0.99, 0.001)
 
         inc_dist = dists.DistributionModule(Normal, loc=0.0, scale=1.0)
-        main = ts.AffineProcess(mean_scale, (0.99, 0.05), initial_dist=inc_dist, increment_dist=inc_dist)
+        main = ts.AffineProcess(mean_scale, (0.99, 0.05), initial_dist=inc_dist, increment_dist=inc_dist).add_sub_process(sub)
 
-        hieararchal = ts.AffineHierarchalProcess(sub, main)
+        assert main.event_shape == torch.Size([2])
 
-        assert hieararchal.event_shape == torch.Size([2])
-
-        x = hieararchal.sample_states(SAMPLES, batch_shape).get_path()
+        x = main.sample_states(SAMPLES, batch_shape).get_path()
 
         assert x.shape == torch.Size([SAMPLES, *batch_shape, *hieararchal.event_shape])
 

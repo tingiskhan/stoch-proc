@@ -114,6 +114,6 @@ class AffineProcess(StructuralStochasticProcess):
             Returns an instance of :class:`stochproc.timeseries.AffineHierarchalProcess`.
         """
 
-        from . import AffineHierarchalProcess
+        from . import AffineHierarchicalProcess
 
-        return AffineHierarchalProcess(sub_process=sub_process, main_process=self)
+        return AffineHierarchicalProcess(sub_process=sub_process, main_process=self)

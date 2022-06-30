@@ -3,7 +3,7 @@ import torch
 from . import AffineProcess, AffineJointStochasticProcess
 
 
-class AffineHierarchalProcess(AffineJointStochasticProcess):
+class AffineHierarchicalProcess(AffineJointStochasticProcess):
     r"""
     Defines a "hierarchal" affine process, by which we mean a stochastic process that comprises two sub processes,
     where one is completely independent of the other, whereas the other is conditionally independent; in theory similar
@@ -44,7 +44,7 @@ class AffineHierarchalProcess(AffineJointStochasticProcess):
             main_process: main process.
         """
 
-        super(AffineHierarchalProcess, self).__init__(sub=sub_process, main=main_process)
+        super(AffineHierarchicalProcess, self).__init__(sub=sub_process, main=main_process)
 
     def mean_scale(self, x, parameters=None):
         sub_mean, sub_scale = self.sub_processes["sub"].mean_scale(x["sub"])
