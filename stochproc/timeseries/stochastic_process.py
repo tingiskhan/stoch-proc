@@ -103,7 +103,7 @@ class StochasticProcess(Module, ABC):
             Returns an initial sample of the process wrapped in a ``NewState`` object.
         """
 
-        dist = self.initial_dist
+        dist = self._initial_dist()
         if shape:
             dist = dist.expand(shape)
 
