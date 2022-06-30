@@ -102,7 +102,7 @@ class AffineEulerMaruyama(AffineProcess, StochasticDifferentialEquation):
         )
 
     def mean_scale(self, x, parameters=None):
-        drift, diffusion = self.mean_scale_fun(x, *(parameters or self.functional_parameters()))
+        drift, diffusion = super(AffineEulerMaruyama, self).mean_scale(x, parameters)
         return x.values + drift * self.dt, diffusion
 
 
