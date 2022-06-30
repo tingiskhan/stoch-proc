@@ -2,7 +2,6 @@ from . import models
 from .affine import AffineProcess
 from .diffusion import (
     AffineEulerMaruyama,
-    OneStepEulerMaruyma,
     Euler,
     DiscretizedStochasticDifferentialEquation,
     RungeKutta,
@@ -22,7 +21,6 @@ __all__ = [
     "AffineProcess",
     "StateSpaceModel",
     "AffineEulerMaruyama",
-    "OneStepEulerMaruyma",
     "models",
     "TimeseriesState",
     "Euler",

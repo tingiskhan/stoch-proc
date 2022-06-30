@@ -14,40 +14,6 @@ _info = torch.finfo(torch.get_default_dtype())
 EPS = math.sqrt(_info.eps)
 
 
-class OneStepEulerMaruyma(AffineProcess):
-    r"""
-    Implements a one-step Euler-Maruyama model, similar to PyMC3. I.e. where we perform one iteration of the
-    following recursion:
-        .. math::
-            X_{t+1} = X_t + a(X_t) \Delta t + b(X_t) \cdot \Delta W_t
-    """
-
-    def __init__(self, mean_scale, parameters, initial_dist, increment_dist, dt: float, **kwargs):
-        r"""
-        Initializes the :class:`OneStepEulerMaruyma` class.
-
-        Args:
-            mean_scale: see base.
-            parameters: see base.
-            initial_dist: see base.
-            increment_dist: see base. However, do not that you need to include the :math:`\Delta t` term yourself in
-               the ``DistributionModule`` class.
-            dt: The time delta to use.
-        """
-
-        super().__init__(mean_scale, parameters, initial_dist, increment_dist, **kwargs)
-        self.dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
-
-    def mean_scale(self, x, parameters=None):
-        drift, diffusion = super(OneStepEulerMaruyma, self).mean_scale(x, parameters=parameters)
-
-        return x.values + drift * self.dt, diffusion
-
-    def forward(self, x, time_increment=1.0):
-        # TODO: Can we inherit from Discretized instead...?
-        return super(OneStepEulerMaruyma, self).forward(x, time_increment=self.dt)
-
-
 class StochasticDifferentialEquation(StructuralStochasticProcess, ABC):
     r"""
     Abstract base class for stochastic differential equations, i.e. stochastic processes given by
