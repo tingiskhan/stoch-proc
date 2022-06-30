@@ -41,10 +41,8 @@ class TestHierarchalProcess(object):
 
         inc_dist = dists.DistributionModule(Normal, loc=0.0, scale=sqrt(dt))
         init_dist = dists.DistributionModule(LogNormal, loc=-2.0, scale=0.5)
-        hull_white = ts.AffineEulerMaruyama(mean_scale, (0.01, 0.5, 0.05), init_dist, inc_dist, dt)
+        hull_white = ts.AffineEulerMaruyama(mean_scale, (0.01, 0.5, 0.05), init_dist, inc_dist, dt).add_sub_process(u)
 
-        hull_white = ts.AffineHierarchalProcess(u, hull_white)
-
-        x = hull_white.sample_states(SAMPLES, batch_shape).get_path()
+        x = hull_white.sample_states(5 * SAMPLES, batch_shape).get_path()
 
         assert x.shape == torch.Size([SAMPLES, *batch_shape, *hull_white.event_shape])

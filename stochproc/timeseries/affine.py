@@ -102,3 +102,18 @@ class AffineProcess(StructuralStochasticProcess):
         mean, scale = self.mean_scale_fun(x, *(parameters or self.functional_parameters()))
 
         return torch.broadcast_tensors(mean, scale)
+
+    def add_sub_process(self, sub_process: "AffineProcess") -> "AffineProcess":
+        """
+        Adds a sub process to ``self`` and returns a :class:`stochproc.timeseries.AffineHierarchalProcess`.
+
+        Args:
+            sub_process: sub/child process to add.
+
+        Returns:
+            Returns an instance of :class:`stochproc.timeseries.AffineHierarchalProcess`.
+        """
+
+        from . import AffineHierarchalProcess
+
+        return AffineHierarchalProcess(sub_process=sub_process, main_process=self)
