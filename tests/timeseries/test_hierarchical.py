@@ -27,7 +27,7 @@ class TestHierarchalProcess(object):
 
         x = main.sample_states(SAMPLES, batch_shape).get_path()
 
-        assert x.shape == torch.Size([SAMPLES, *batch_shape, *hieararchal.event_shape])
+        assert x.shape == torch.Size([SAMPLES, *batch_shape, *main.event_shape])
 
     @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
     def test_hull_white(self, batch_shape):
@@ -41,6 +41,6 @@ class TestHierarchalProcess(object):
         init_dist = dists.DistributionModule(LogNormal, loc=-2.0, scale=0.5)
         hull_white = ts.AffineEulerMaruyama(mean_scale, (0.01, 0.5, 0.05), init_dist, inc_dist, dt).add_sub_process(u)
 
-        x = hull_white.sample_states(5 * SAMPLES, batch_shape).get_path()
+        x = hull_white.sample_states(SAMPLES, batch_shape).get_path()
 
         assert x.shape == torch.Size([SAMPLES, *batch_shape, *hull_white.event_shape])
