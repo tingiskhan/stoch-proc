@@ -2,7 +2,6 @@ from . import models
 from .affine import AffineProcess
 from .diffusion import (
     AffineEulerMaruyama,
-    OneStepEulerMaruyma,
     Euler,
     DiscretizedStochasticDifferentialEquation,
     RungeKutta,
@@ -13,6 +12,7 @@ from .linear import LinearModel
 from .ssm import StateSpaceModel
 from .state import TimeseriesState, JointState
 from .stochastic_process import StochasticProcess, StructuralStochasticProcess
+from .hierarchical import AffineHierarchicalProcess
 
 # TODO: Remove TimeseriesState and BatchedState
 __all__ = [
@@ -21,7 +21,6 @@ __all__ = [
     "AffineProcess",
     "StateSpaceModel",
     "AffineEulerMaruyama",
-    "OneStepEulerMaruyma",
     "models",
     "TimeseriesState",
     "Euler",
@@ -32,4 +31,5 @@ __all__ = [
     "AffineJointStochasticProcess",
     "models",
     "LinearModel",
+    "AffineHierarchicalProcess"
 ]

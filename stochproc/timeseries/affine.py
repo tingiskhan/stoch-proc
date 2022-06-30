@@ -36,7 +36,7 @@ class AffineProcess(StructuralStochasticProcess):
         .. math::
             X_{t+1} = f(X_t, \theta) + g(X_t, \theta) \cdot W_{t+1},
 
-    where :math:`\\theta` denotes the parameter set governing the functions :math:`f` and :math:`g`, and :math:`W_t`
+    where :math:`\theta` denotes the parameter set governing the functions :math:`f` and :math:`g`, and :math:`W_t`
     denotes random variable with arbitrary density (from which we can sample).
 
     Example:
@@ -102,3 +102,18 @@ class AffineProcess(StructuralStochasticProcess):
         mean, scale = self.mean_scale_fun(x, *(parameters or self.functional_parameters()))
 
         return torch.broadcast_tensors(mean, scale)
+
+    def add_sub_process(self, sub_process: "AffineProcess") -> "AffineProcess":
+        """
+        Adds a sub process to ``self`` and returns a :class:`stochproc.timeseries.AffineHierarchalProcess`.
+
+        Args:
+            sub_process: sub/child process to add.
+
+        Returns:
+            Returns an instance of :class:`stochproc.timeseries.AffineHierarchalProcess`.
+        """
+
+        from . import AffineHierarchicalProcess
+
+        return AffineHierarchicalProcess(sub_process=sub_process, main_process=self)
