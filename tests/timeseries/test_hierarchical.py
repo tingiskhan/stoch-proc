@@ -15,7 +15,7 @@ def mean_scale(x, beta, sigma):
     return x["sub"].values + beta * x.values, sigma
 
 
-class TestHierarchalProcess(object):
+class TestHierarchicalProcess(object):
     @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
     def test_hierarchal_processes(self, batch_shape):
         sub = ts.models.AR(0.0, 0.99, 0.001)
