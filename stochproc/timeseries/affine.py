@@ -36,7 +36,7 @@ class AffineProcess(StructuralStochasticProcess):
         .. math::
             X_{t+1} = f(X_t, \theta) + g(X_t, \theta) \cdot W_{t+1},
 
-    where :math:`\\theta` denotes the parameter set governing the functions :math:`f` and :math:`g`, and :math:`W_t`
+    where :math:`\theta` denotes the parameter set governing the functions :math:`f` and :math:`g`, and :math:`W_t`
     denotes random variable with arbitrary density (from which we can sample).
 
     Example:
