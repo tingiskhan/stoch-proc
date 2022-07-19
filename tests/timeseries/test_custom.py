@@ -17,6 +17,8 @@ def models():
     yield mods.AR(0.0, torch.tensor([0.25, 0.05, 0.01, 0.01, -0.02]), 0.05, lags=5)
     yield mods.UCSV(0.025)
     yield mods.Seasonal(12, 0.05)
+    yield mods.SmoothLinearTrend(mods.RandomWalk(0.05))
+    yield mods.SmoothLinearTrend(mods.OrnsteinUhlenbeck(0.025, 0.0, 0.05))
 
 
 class TestCustomModels(object):

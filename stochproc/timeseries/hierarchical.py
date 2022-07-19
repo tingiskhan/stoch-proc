@@ -1,6 +1,7 @@
 import torch
 
-from . import AffineProcess, AffineJointStochasticProcess
+from .affine import AffineProcess
+from .joint import AffineJointStochasticProcess
 
 
 class AffineHierarchicalProcess(AffineJointStochasticProcess):
@@ -19,7 +20,7 @@ class AffineHierarchicalProcess(AffineJointStochasticProcess):
             >>> from pyro.distributions import Normal, LogNormal
             >>>
             >>> def mean_scale(x, kappa, theta, sigma):
-            >>>     return kappa * (theta - x["sub"].values / kappa - x["main"].values), sigma
+            >>>     return kappa * (theta - x["sub"].values / kappa - x.values), sigma
             >>>
             >>> dt = 1.0
             >>> u = ts.models.OrnsteinUhlenbeck(0.01, 0.0, 0.01, dt=dt)
