@@ -32,7 +32,7 @@ class LinearModel(AffineProcess):
         super(LinearModel, self).__init__(self._mean_scale, parameters=(a, b, sigma), **kwargs)
 
     def _mean_scale(self, x, a, b, s):
-        if x.event_dim.numel() > 1:
+        if x.event_shape.numel() > 1:
             res = b + a.matmul(x.values.unsqueeze(-1)).squeeze(-1)
         else:
             res = b + a * x.values
