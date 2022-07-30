@@ -1,6 +1,7 @@
-from pyro.distributions import Distribution
+from pyro.distributions import Distribution, TorchDistribution
 import torch
-from typing import Dict
+from typing import Dict, OrderedDict as tOrderedDict, Any
+from collections import OrderedDict
 from .typing import DistributionOrBuilder
 from abc import ABC
 
@@ -10,19 +11,18 @@ class _DistributionModule(torch.nn.Module, ABC):
     Abstract base class for wrapping :class:`torch.distributions.Distribution` objects in a :class:`torch.nn.Module`.
     """
 
-    def __init__(self, base_dist: DistributionOrBuilder, reinterpreted_batch_ndims=None):
+    def __init__(self, base_dist: DistributionOrBuilder):
         """
         Initializes the :class:`_DistributionModule` class.
 
         Args:
             base_dist: The base distribution, or distribution builder.
-            reinterpreted_batch_ndims: See :class:`torch.distributions.Independent`.
         """
 
         super(_DistributionModule, self).__init__()
 
         self.base_dist = base_dist
-        self._reinterpreted_batch_ndims = reinterpreted_batch_ndims
+        self._funs: tOrderedDict[str, Any] = OrderedDict([])
 
     def build_distribution(self) -> Distribution:
         """
@@ -34,10 +34,10 @@ class _DistributionModule(torch.nn.Module, ABC):
     def forward(self):
         dist = self.base_dist(**self._get_parameters())
 
-        if self._reinterpreted_batch_ndims is None:
-            return dist
+        for f, v in self._funs.items():
+            dist = getattr(dist, f)(v)
 
-        return dist.to_event(self._reinterpreted_batch_ndims)
+        return dist
 
     def _get_parameters(self) -> Dict[str, torch.Tensor]:
         """
@@ -53,3 +53,11 @@ class _DistributionModule(torch.nn.Module, ABC):
         """
 
         return self.build_distribution().event_shape
+
+    def expand(self, batch_shape) -> "_DistributionModule":
+        self._funs["expand"] = batch_shape
+        return self
+
+    def to_event(self, reinterpreted_batch_ndims=None) -> "_DistributionModule":
+        self._funs["to_event"] = reinterpreted_batch_ndims
+        return self

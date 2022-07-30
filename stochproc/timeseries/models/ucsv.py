@@ -42,9 +42,6 @@ class UCSV(AffineProcess):
         sigma_volatility = broadcast_all(sigma_volatility)[0]
 
         initial_dist = DistributionModule(_init_builder, loc=initial_state_mean, sigma_volatility=sigma_volatility)
-
-        increment_dist = DistributionModule(
-            Normal, loc=torch.zeros(2), scale=torch.ones(2), reinterpreted_batch_ndims=1
-        )
+        increment_dist = DistributionModule(Normal, loc=0.0, scale=1.0).expand(torch.Size([2])).to_event(1)
 
         super().__init__(f, (sigma_volatility,), initial_dist, increment_dist, **kwargs)
