@@ -28,6 +28,9 @@ class TimeseriesPath(object):
 
         return torch.stack([s.values for s in self.path], dim=0)
 
+    def __iter__(self):
+        return (s for s in self.path)
+
 
 class StateSpacePath(TimeseriesPath):
     """
