@@ -39,9 +39,7 @@ class TestAffineTimeseriesMultiDimensional(object):
             0.05
         ]
 
-        increment_dist = initial_dist = dists.DistributionModule(
-            Normal, loc=torch.zeros(2), scale=torch.ones(2), reinterpreted_batch_ndims=1
-        )
+        increment_dist = initial_dist = dists.DistributionModule(Normal, loc=0.0, scale=1.0).expand(torch.Size([2])).to_event(1)
 
         process = ts.AffineProcess(mean_scale, params, initial_dist, increment_dist)
         x = process.initial_sample(batch_shape)

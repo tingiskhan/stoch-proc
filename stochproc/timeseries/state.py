@@ -14,7 +14,7 @@ class TimeseriesState(dict):
         self,
         time_index: Union[int, torch.IntTensor],
         values: LazyTensor,
-        event_dim: torch.Size,
+        event_shape: torch.Size,
         exogenous: torch.Tensor = None,
     ):
         """
@@ -23,7 +23,7 @@ class TimeseriesState(dict):
         Args:
             time_index: time index of the state.
             values: values of the state. Can be a lazy evaluated tensor as well.
-            event_dim: event dimension.
+            event_shape: event dimension.
             exogenous: whether to include any exogenous data.
         """
 
@@ -33,7 +33,7 @@ class TimeseriesState(dict):
             time_index if isinstance(time_index, torch.Tensor) else torch.tensor(time_index)
         ).int()
         self.exogenous: torch.Tensor = exogenous
-        self.event_dim = event_dim
+        self.event_shape = event_shape
 
         self._values = values
 
@@ -51,6 +51,17 @@ class TimeseriesState(dict):
     @values.setter
     def values(self, x):
         self._values = x
+
+    @property
+    def batch_shape(self) -> torch.Size:
+        """
+        Returns the batch shape.
+        """
+
+        tot_dim = self.values.dim()
+        event_dim = len(self.event_shape)
+
+        return self.values.shape[:tot_dim - event_dim]
 
     def copy(self, values: LazyTensor) -> "TimeseriesState":
         """
@@ -75,7 +86,7 @@ class TimeseriesState(dict):
             time_increment: how much to increase ``.time_index`` with for new state.
         """
 
-        return TimeseriesState(time_index=self.time_index + time_increment, values=values, event_dim=self.event_dim)
+        return TimeseriesState(time_index=self.time_index + time_increment, values=values, event_shape=self.event_shape)
 
     def add_exog(self, x: torch.Tensor):
         """
@@ -108,8 +119,8 @@ class JointState(TimeseriesState):
         """
 
         time_index = tuple(sub_states.values())[0].time_index
-        event_dim = torch.Size([sum(ss.event_dim[0] if any(ss.event_dim) else 1 for ss in sub_states.values())])
-        super(JointState, self).__init__(time_index=time_index, event_dim=event_dim, values=None)
+        event_dim = torch.Size([sum(ss.event_shape[0] if any(ss.event_shape) else 1 for ss in sub_states.values())])
+        super(JointState, self).__init__(time_index=time_index, event_shape=event_dim, values=None)
 
         self._sub_states_order = sub_states.keys()
         for name, sub_state in sub_states.items():
@@ -124,7 +135,7 @@ class JointState(TimeseriesState):
 
         for sub_state_name in self._sub_states_order:
             sub_state: TimeseriesState = self[sub_state_name]
-            res += (sub_state.values if any(sub_state.event_dim) else sub_state.values.unsqueeze(-1),)
+            res += (sub_state.values if any(sub_state.event_shape) else sub_state.values.unsqueeze(-1),)
 
         return torch.cat(res, dim=-1)
 
@@ -140,7 +151,7 @@ class JointState(TimeseriesState):
         for sub_state_name in self._sub_states_order:
             sub_state: TimeseriesState = self[sub_state_name]
 
-            dimension = sub_state.event_dim.numel()
+            dimension = sub_state.event_shape.numel()
             sub_values = values[..., last_ind : last_ind + dimension].squeeze(-1)
 
             result[sub_state_name] = sub_state.propagate_from(sub_values, time_increment=time_increment)

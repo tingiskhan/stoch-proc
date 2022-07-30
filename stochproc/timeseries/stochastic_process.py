@@ -107,7 +107,7 @@ class StochasticProcess(Module, ABC):
         if shape:
             dist = dist.expand(shape)
 
-        return TimeseriesState(0, dist.sample, event_dim=dist.event_shape)
+        return TimeseriesState(0, dist.sample, event_shape=dist.event_shape)
 
     def build_density(self, x: TimeseriesState) -> Distribution:
         r"""
@@ -221,7 +221,7 @@ class StochasticProcess(Module, ABC):
             state = self.initial_sample()
 
         x = pyro_lib.sample("x_0", self.initial_dist, obs=obs[0] if obs is not None else None)
-        latent = torch.empty((t_final, *state.event_dim))
+        latent = torch.empty((t_final, *state.event_shape))
 
         latent[0] = x
         for t in pyro_lib.markov(range(1, latent.shape[0])):

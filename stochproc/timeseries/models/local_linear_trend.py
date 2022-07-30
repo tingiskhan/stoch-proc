@@ -29,11 +29,8 @@ class LocalLinearTrend(LinearModel):
 
         sigma, initial_mean = broadcast_all(sigma, initial_mean)
 
-        increment_dist = DistributionModule(
-            Normal, loc=torch.zeros(2), scale=torch.ones(2), reinterpreted_batch_ndims=1
-        )
-
-        initial_dist = DistributionModule(Normal, loc=initial_mean, scale=sigma, reinterpreted_batch_ndims=1)
+        increment_dist = DistributionModule(Normal, loc=0.0, scale=1.0).expand(torch.Size([2])).to_event(1)
+        initial_dist = DistributionModule(Normal, loc=initial_mean, scale=sigma).to_event(1)
         a = torch.tensor([[1.0, 0.0], [1.0, 1.0]])
 
         super().__init__(a, sigma, increment_dist=increment_dist, initial_dist=initial_dist, **kwargs)

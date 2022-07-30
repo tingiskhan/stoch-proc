@@ -54,8 +54,8 @@ class AffineHierarchicalProcess(AffineJointStochasticProcess):
         main_state["sub"] = x["sub"]
         main_mean, main_scale = self.sub_processes["main"].mean_scale(main_state)
 
-        sub_unsqueeze = x["sub"].event_dim.numel() == 1
-        main_unsqueeze = x["main"].event_dim.numel() == 1
+        sub_unsqueeze = x["sub"].event_shape.numel() == 1
+        main_unsqueeze = x["main"].event_shape.numel() == 1
 
         mean = (
             sub_mean.unsqueeze(-1) if sub_unsqueeze else sub_mean,

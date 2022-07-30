@@ -25,7 +25,7 @@ class DistributionModule(_DistributionModule):
         >>> cuda_samples = wrapped_normal_cuda.build_distribution().sample((1000,)) # device cuda
     """
 
-    def __init__(self, base_dist: DistributionOrBuilder, reinterpreted_batch_ndims=None, **parameters: ParameterType):
+    def __init__(self, base_dist: DistributionOrBuilder, **parameters: ParameterType):
         """
         Initializes the :class:`DistributionModule` class.
 
@@ -36,9 +36,7 @@ class DistributionModule(_DistributionModule):
 
         """
 
-        super(DistributionModule, self).__init__(
-            base_dist=base_dist, reinterpreted_batch_ndims=reinterpreted_batch_ndims
-        )
+        super(DistributionModule, self).__init__(base_dist=base_dist)
 
         # TODO: This is duplicate code, could perhaps move to one and the same
         with warnings.catch_warnings():

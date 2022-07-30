@@ -24,7 +24,9 @@ def models():
 class TestCustomModels(object):
     @pytest.mark.parametrize("batch_size, model", tuple(itertools.product(BATCH_SHAPES, models())))
     def test_all_models(self, batch_size, model):
-        x = model.sample_states(SAMPLES, samples=batch_size).get_path()
+        states = model.sample_states(SAMPLES, samples=batch_size)
+        x = states.get_path()
 
+        assert all(s.batch_shape == batch_size for s in states)
         assert (x.shape == torch.Size([SAMPLES, *batch_size, *model.event_shape])) and ~torch.isnan(x).any()
 
