@@ -79,7 +79,7 @@ class AffineJointStochasticProcess(AffineProcess):
         """
 
         msg = f"All processes must be of type '{AffineProcess.__name__}'!"
-        assert all(isinstance(p, AffineProcess) for p in processes.values()), msg
+        assert all(issubclass(p.__class__, AffineProcess) for p in processes.values()), msg
 
         super(AffineJointStochasticProcess, self).__init__(
             None, (), increment_dist=DistributionModule(self._inc_builder), initial_dist=None,
