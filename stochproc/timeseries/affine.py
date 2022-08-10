@@ -79,12 +79,7 @@ class AffineProcess(StructuralStochasticProcess):
         super().__init__(parameters=parameters, initial_dist=initial_dist, **kwargs)
 
         self.mean_scale_fun = mean_scale
-
-        if self._functional_parameters:
-            device = self._functional_parameters[0].device
-            self.increment_dist = increment_dist.to(device) if increment_dist is not None else increment_dist
-        else:
-            self.increment_dist = increment_dist
+        self.increment_dist = increment_dist
 
     def build_density(self, x):
         loc, scale = self.mean_scale(x)

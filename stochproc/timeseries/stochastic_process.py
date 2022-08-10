@@ -382,11 +382,6 @@ class StructuralStochasticProcess(StochasticProcess, ABC):
 
             self._functional_parameters.append(v)
 
-        if self._functional_parameters and self._initial_dist is not None:
-            device = self._functional_parameters[0].device
-            assert all(device == fp.device for fp in self._functional_parameters), "Inconsistent devices for parameters!"
-            self._initial_dist = self._initial_dist.to(device)
-
     def functional_parameters(self, f: Callable[[torch.Tensor], torch.Tensor] = None) -> Tuple[Parameter, ...]:
         """
         Returns the functional parameters of the process.
