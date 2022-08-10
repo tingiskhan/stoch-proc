@@ -1,5 +1,6 @@
 import torch
 from stochproc.distributions import DistributionModule
+from torch.distributions.utils import broadcast_all
 
 from ..linear import LinearModel, ParameterType
 from .ar import _build_init, _build_trans_dist
@@ -24,8 +25,10 @@ class Seasonal(LinearModel):
             initial_sigma: optional, initial standard deviation. If ``None`` uses ``sigma``.
         """
 
-        mat = torch.eye(period - 1, period)
-        mat = torch.cat((-torch.ones((1, period)), mat), dim=0)
+        sigma = broadcast_all(sigma)[0]
+
+        mat = torch.eye(period - 1, period, device=sigma.device)
+        mat = torch.cat((-torch.ones((1, period), device=sigma.device), mat), dim=0)
 
         inc_dist = DistributionModule(_build_trans_dist, loc=0.0, scale=1.0, lags=period)
         initial_dist = DistributionModule(

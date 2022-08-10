@@ -374,10 +374,11 @@ class StructuralStochasticProcess(StochasticProcess, ABC):
             self.buffer_dict = BufferDict()
 
         for i, p in enumerate(parameters):
+            key = str(i)
             if isinstance(p, torch.nn.Parameter):
-                self.parameter_dict[str(i)] = v = p
+                self.parameter_dict[key] = v = p
             else:
-                self.buffer_dict[str(i)] = v = p if isinstance(p, torch.Tensor) else torch.tensor(p)
+                self.buffer_dict[key] = v = p if isinstance(p, torch.Tensor) else torch.tensor(p)
 
             self._functional_parameters.append(v)
 
