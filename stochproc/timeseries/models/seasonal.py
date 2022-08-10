@@ -28,7 +28,7 @@ class Seasonal(LinearModel):
         sigma = broadcast_all(sigma)[0]
 
         mat = torch.eye(period - 1, period, device=sigma.device)
-        mat = torch.cat((-torch.ones((1, period)), mat), dim=0)
+        mat = torch.cat((-torch.ones((1, period), device=sigma.device), mat), dim=0)
 
         inc_dist = DistributionModule(_build_trans_dist, loc=0.0, scale=1.0, lags=period)
         initial_dist = DistributionModule(
