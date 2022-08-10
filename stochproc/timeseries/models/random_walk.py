@@ -1,3 +1,4 @@
+import torch
 from pyro.distributions import Normal
 from torch.distributions.utils import broadcast_all
 
@@ -30,5 +31,6 @@ class RandomWalk(LinearModel):
 
         initial_dist = DistributionModule(Normal, loc=initial_mean, scale=scale)
         inc_dist = DistributionModule(Normal, loc=0.0, scale=1.0)
+        a = torch.tensor(1.0, device=scale.device, dtype=scale.dtype)
 
-        super().__init__(1.0, scale, increment_dist=inc_dist, initial_dist=initial_dist, **kwargs)
+        super().__init__(a, scale, increment_dist=inc_dist, initial_dist=initial_dist, **kwargs)

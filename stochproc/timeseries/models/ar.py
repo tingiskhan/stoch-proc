@@ -59,8 +59,8 @@ class AR(LinearModel):
         self.mean_scale_fun = self._mean_scale_wrapper(self.mean_scale_fun)
 
         bottom_shape = self.lags - 1, self.lags
-        self.register_buffer("_bottom", torch.eye(*bottom_shape))
-        self.register_buffer("_b_masker", torch.eye(self.lags, 1).squeeze(-1))
+        self.register_buffer("_bottom", torch.eye(*bottom_shape, device=alpha.device))
+        self.register_buffer("_b_masker", torch.eye(self.lags, 1, device=alpha.device).squeeze(-1))
 
     def _mean_scale_wrapper(self, f):
         def _wrapper(x, a, b, s):
