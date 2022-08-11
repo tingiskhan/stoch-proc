@@ -20,7 +20,7 @@ def _build_trans_dist(loc, scale, lags, **kwargs) -> Distribution:
     if lags == 1:
         return base
 
-    return JointDistribution(base, Delta(torch.zeros(lags - 1), event_dim=1), **kwargs)
+    return JointDistribution(base, Delta(torch.zeros(lags - 1, device=base.loc.device), event_dim=1), **kwargs)
 
 
 class AR(LinearModel):
