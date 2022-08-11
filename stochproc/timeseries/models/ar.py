@@ -10,7 +10,7 @@ from ...distributions import DistributionModule, JointDistribution
 
 # TODO: Add beta for those where abs(beta) < 1.0
 def _build_init(alpha, beta, sigma, lags, **kwargs):
-    base = _build_trans_dist(0.0, 1.0, lags, **kwargs)
+    base = _build_trans_dist(torch.zeros_like(sigma), torch.ones_like(sigma), lags, **kwargs)
 
     return TransformedDistribution(base, AffineTransform(alpha, sigma))
 
@@ -20,7 +20,7 @@ def _build_trans_dist(loc, scale, lags, **kwargs) -> Distribution:
     if lags == 1:
         return base
 
-    return JointDistribution(base, Delta(torch.zeros(lags - 1, device=base.loc.device), event_dim=1), **kwargs)
+    return JointDistribution(base, Delta(torch.zeros(lags - 1, device=loc.device), event_dim=1), **kwargs)
 
 
 class AR(LinearModel):
