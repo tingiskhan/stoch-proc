@@ -43,7 +43,8 @@ class OrnsteinUhlenbeck(AffineProcess):
         self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
 
     def _mean_scale(self, x, k, g, s):
-        loc = g + (x.values - g) * (-k * self._dt).exp()
-        scale = s / (2 * k).sqrt() * (1 - (-2 * k * self._dt).exp()).sqrt()
+        d = (-k * self._dt).exp()
+        loc = g + (x.values - g) * d
+        scale = s / (2.0 * k).sqrt() * (1.0 - d.pow(2.0)).sqrt()
 
         return loc, scale
