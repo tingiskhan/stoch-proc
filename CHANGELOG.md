@@ -2,6 +2,9 @@
 
 ## Versions
 
+### v0.0.21
+ - Adds the Trending OU process
+
 ### v0.0.14
  - Adds the `batch_shape` property to `TimeseriesState`.
  - Renames `event_dim` property of `TimeseriesState` to `event_shape`.

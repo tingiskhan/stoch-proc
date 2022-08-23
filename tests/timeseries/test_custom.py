@@ -19,6 +19,7 @@ def models():
     yield mods.Seasonal(12, 0.05)
     yield mods.SmoothLinearTrend(mods.RandomWalk(0.05))
     yield mods.SmoothLinearTrend(mods.OrnsteinUhlenbeck(0.025, 0.0, 0.05))
+    yield mods.TrendingOU(0.01, 0.03, 0.2, 1.0)
 
 
 class TestCustomModels(object):

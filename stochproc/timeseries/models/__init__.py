@@ -6,6 +6,7 @@ from .random_walk import RandomWalk
 from .ucsv import UCSV
 from .seasonal import Seasonal
 from .smooth_trend import SmoothLinearTrend
+from .trending_ou import TrendingOU
 
 __all__ = [
     "OrnsteinUhlenbeck",
@@ -16,4 +17,5 @@ __all__ = [
     "UCSV",
     "Seasonal",
     "SmoothLinearTrend",
+    "TrendingOU"
 ]
