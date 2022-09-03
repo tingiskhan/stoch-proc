@@ -10,25 +10,6 @@ from .typing import MeanScaleFun
 from ..distributions import DistributionModule
 
 
-def _define_transdist(
-    loc: torch.Tensor, scale: torch.Tensor, n_dim: int, dist: Distribution
-) -> TransformedDistribution:
-    """
-    Helper method for defining an affine transition density given the location and scale.
-
-    Args:
-        loc: location of the distribution.
-        scale: scale of the distribution.
-        n_dim: dimension of space of the distribution.
-        dist: base distribution to apply the location-scale transform..
-
-    Returns:
-        The resulting affine transformed distribution.
-    """
-
-    return TransformedDistribution(dist, AffineTransform(loc, scale, event_dim=n_dim), validate_args=False)
-
-
 class AffineProcess(StructuralStochasticProcess):
     r"""
     Class for defining stochastic processes of affine nature, i.e. where we can express the next state :math:`X_{t+1}`
@@ -81,14 +62,27 @@ class AffineProcess(StructuralStochasticProcess):
         self.mean_scale_fun = mean_scale
         self.increment_dist = increment_dist
 
-    def build_density(self, x):
+    def _define_transdist(self, x: TimeseriesState):
+        """
+        Helper method for defining an affine transition density given the location and scale.
+
+        Args:
+            x: state of the process.
+
+        Returns:
+            The resulting affine transformed distribution.
+        """
+
         loc, scale = self.mean_scale(x)
 
-        return _define_transdist(loc, scale, self.n_dim, self.increment_dist())
+        return TransformedDistribution(self.increment_dist(), AffineTransform(loc, scale, event_dim=self.n_dim))
+
+    def build_density(self, x):
+        return self._define_transdist(x)
 
     def mean_scale(self, x: TimeseriesState, parameters=None) -> Tuple[torch.Tensor, torch.Tensor]:
         """
-        Returns the mean and scale of the process evaluated at ``x`` and ``.functional_parameters()`` or ``parameters``.
+        Returns the mean and scale of the process evaluated at ``x`` and :meth:`functional_parameters` or ``parameters``.
 
         Args:
             x: previous state of the process.
