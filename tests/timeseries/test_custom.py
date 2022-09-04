@@ -20,6 +20,7 @@ def models():
     yield mods.SmoothLinearTrend(mods.RandomWalk(0.05))
     yield mods.SmoothLinearTrend(mods.OrnsteinUhlenbeck(0.025, 0.0, 0.05))
     yield mods.TrendingOU(0.01, 0.03, 0.2, 1.0)
+    yield mods.BivariateTrendingOU(0.01, 0.01, 0.2, 0.0, 0.02, 5e-2, 0.15, lamda=-0.15)
 
 
 class TestCustomModels(object):
