@@ -19,7 +19,7 @@ def _build_init(kappa, v_0, sigma, delta, x_0, sigma_x, lam, eta):
 
     kpd = kappa + delta
     kkd = kappa * kpd
-    var_v = sigma.pow(2.0) / (2.0 * kappa) + lam * eta * sigma * sigma_x / kkd + (lam * sigma_x).pow(2.0) / 2.0 / delta / kkd
+    var_v = sigma.pow(2.0) / (2.0 * kappa) + lam * eta * sigma * sigma_x / kkd + (lam * sigma_x).pow(2.0) / (2.0 * delta * kkd)
     covariance = eta * sigma * sigma_x / kpd + lam * sigma_x.pow(2.0) / (2.0 * delta * kpd)
 
     cov_1 = torch.stack((var_x, covariance), dim=-1)
