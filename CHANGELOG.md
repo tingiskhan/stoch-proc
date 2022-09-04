@@ -2,6 +2,9 @@
 
 ## Versions
 
+### v0.0.22
+ - Adds the bivariate Trending OU process.
+
 ### v0.0.21
  - Adds the Trending OU process
 
