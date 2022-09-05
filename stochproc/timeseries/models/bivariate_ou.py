@@ -104,18 +104,19 @@ class BivariateTrendingOU(LowerCholeskyAffineProcess):
         var_1 = s.pow(2.0) / (2.0 * k) * (1.0 - d_v_2)
 
         # TODO: Add the auxiliary variables for 1 - d_x etc.
+        d_v_x = d_v * d_x
         var_2_1 = 2.0 * lamda * eta * s * s_x / k_m_d
-        var_2_2 = (1.0 - d_v * d_x) / k_p_d + (d_v_2 - 1.0) / 2.0 / k
+        var_2_2 = (1.0 - d_v_x) / k_p_d + (d_v_2 - 1.0) / 2.0 / k
 
         var_3_1 = (lamda * s_x / k_m_d).pow(2.0)
-        var_3_2 = (1.0 - d_x_2) / 2.0 / delta + 2.0 * (d_x * d_v - 1.0) / k_p_d + (1.0 - d_v_2) / 2.0 / k
+        var_3_2 = (1.0 - d_x_2) / 2.0 / delta + 2.0 * (d_v_x - 1.0) / k_p_d + (1.0 - d_v_2) / 2.0 / k
 
         var = var_1 + var_2_1 * var_2_2 + var_3_1 * var_3_2
 
         # Covar
-        covar_1 = eta * s * s_x / k_p_d * (1.0 - d_x * d_v)
+        covar_1 = eta * s * s_x / k_p_d * (1.0 - d_v_x)
         covar_2 = lamda * s_x.pow(2.0) / (2.0 * delta * k_p_d)
-        covar_3 = (k * (1.0 - d_x_2) - delta * (1.0 - 2.0 * d_x * d_v + d_x_2)) / k_m_d
+        covar_3 = (k * (1.0 - d_x_2) - delta * (1.0 - 2.0 * d_v_x + d_x_2)) / k_m_d
 
         covar = covar_1 + covar_2 * covar_3
 
