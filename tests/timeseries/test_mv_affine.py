@@ -20,7 +20,7 @@ class TestAffineTimeseriesOneDimensional(object):
         ]
 
         increment_dist = initial_distribution = dists.DistributionModule(Normal, loc=0.0, scale=1.0).expand(torch.Size([2])).to_event(1)
-        process = ts.MultivariateAffineProcess(mean_scale, params, initial_distribution, increment_dist)
+        process = ts.LowerCholeskyAffineProcess(mean_scale, params, initial_distribution, increment_dist)
 
         x = process.initial_sample(batch_shape)
 

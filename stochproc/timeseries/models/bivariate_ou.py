@@ -3,7 +3,7 @@ from pyro.distributions import Normal, MultivariateNormal
 from torch.distributions.utils import broadcast_all
 from torch.linalg import cholesky_ex
 
-from ..mv_affine import MultivariateAffineProcess
+from ..chol_affine import LowerCholeskyAffineProcess
 from ...distributions import DistributionModule
 from ...typing import ParameterType
 
@@ -29,7 +29,7 @@ def _build_init(kappa, v_0, sigma, delta, x_0, sigma_x, lam, eta):
     return MultivariateNormal(loc, cov)
 
 
-class BivariateTrendingOU(MultivariateAffineProcess):
+class BivariateTrendingOU(LowerCholeskyAffineProcess):
     """
     Implements the (solved) bivariate `Trending OU process`_ of Chapter 4.
 
@@ -82,14 +82,12 @@ class BivariateTrendingOU(MultivariateAffineProcess):
         ou_var = s_x.pow(2.0) / (2.0 * delta) * (1.0 - d_x.pow(2.0))
 
         # Trend loc-var
+        k_p_d = k + delta
         k_m_d = k - delta
         if k_m_d == 0.0:
             # TODO: Might cause issues...
             k_m_d.fill_(EPS)
 
-        k_p_d = k + delta
-
-        # TODO: Need to fix the initial term
         trend_loc = v_0 + g * (x.time_index + self._dt) + (x.values[..., 1] - g * x.time_index - v_0) * d_v
         loc = trend_loc + lamda / k_m_d * (d_x - d_v) * x.values[..., 0]
 

@@ -13,7 +13,7 @@ from .ssm import StateSpaceModel
 from .state import TimeseriesState, JointState
 from .stochastic_process import StochasticProcess, StructuralStochasticProcess
 from .hierarchical import AffineHierarchicalProcess
-from .mv_affine import MultivariateAffineProcess
+from .chol_affine import LowerCholeskyAffineProcess
 
 # TODO: Remove TimeseriesState and BatchedState
 __all__ = [
@@ -33,5 +33,5 @@ __all__ = [
     "models",
     "LinearModel",
     "AffineHierarchicalProcess",
-    "MultivariateAffineProcess"
+    "LowerCholeskyAffineProcess"
 ]
