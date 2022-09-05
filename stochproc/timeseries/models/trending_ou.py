@@ -15,7 +15,15 @@ class TrendingOU(AffineProcess):
     .. _`Trending OU process`: https://deanstreetlab.github.io/papers/papers/Statistical%20Methods/Trending%20Ornstein-Uhlenbeck%20Process%20and%20its%20Applications%20in%20Mathematical%20Finance.pdf
     """
 
-    def __init__(self, kappa: ParameterType, gamma: ParameterType, sigma: ParameterType, v_0: ParameterType, dt: float = 1.0, **kwargs):
+    def __init__(
+        self,
+        kappa: ParameterType,
+        gamma: ParameterType,
+        sigma: ParameterType,
+        v_0: ParameterType,
+        dt: float = 1.0,
+        **kwargs
+    ):
         """
         Initializes the :class:`TrendingOU` object.
 

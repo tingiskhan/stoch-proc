@@ -19,5 +19,5 @@ __all__ = [
     "Seasonal",
     "SmoothLinearTrend",
     "TrendingOU",
-    "BivariateTrendingOU"
+    "BivariateTrendingOU",
 ]

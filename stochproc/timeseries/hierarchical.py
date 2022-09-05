@@ -59,12 +59,12 @@ class AffineHierarchicalProcess(AffineJointStochasticProcess):
 
         mean = (
             sub_mean.unsqueeze(-1) if sub_unsqueeze else sub_mean,
-            main_mean.unsqueeze(-1) if main_unsqueeze else main_mean
+            main_mean.unsqueeze(-1) if main_unsqueeze else main_mean,
         )
 
         scale = (
             sub_scale.unsqueeze(-1) if sub_unsqueeze else sub_scale,
-            main_scale.unsqueeze(-1) if main_unsqueeze else main_scale
+            main_scale.unsqueeze(-1) if main_unsqueeze else main_scale,
         )
 
         return torch.cat(mean, dim=-1), torch.cat(scale, dim=-1)

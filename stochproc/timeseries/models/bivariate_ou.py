@@ -19,7 +19,11 @@ def _build_init(kappa, v_0, sigma, delta, x_0, sigma_x, lam, eta):
 
     kpd = kappa + delta
     kkd = kappa * kpd
-    var_v = sigma.pow(2.0) / (2.0 * kappa) + lam * eta * sigma * sigma_x / kkd + (lam * sigma_x).pow(2.0) / (2.0 * delta * kkd)
+    var_v = (
+        sigma.pow(2.0) / (2.0 * kappa)
+        + lam * eta * sigma * sigma_x / kkd
+        + (lam * sigma_x).pow(2.0) / (2.0 * delta * kkd)
+    )
     covariance = eta * sigma * sigma_x / kpd + lam * sigma_x.pow(2.0) / (2.0 * delta * kpd)
 
     cov_1 = torch.stack((var_x, covariance), dim=-1)
@@ -37,17 +41,17 @@ class BivariateTrendingOU(LowerCholeskyAffineProcess):
     """
 
     def __init__(
-            self,
-            kappa: ParameterType,
-            gamma: ParameterType,
-            sigma: ParameterType,
-            v_0: ParameterType,
-            delta: ParameterType,
-            sigma_x: ParameterType,
-            eta: ParameterType,
-            lamda: ParameterType = 1.0,
-            dt: float = 1.0,
-            **kwargs
+        self,
+        kappa: ParameterType,
+        gamma: ParameterType,
+        sigma: ParameterType,
+        v_0: ParameterType,
+        delta: ParameterType,
+        sigma_x: ParameterType,
+        eta: ParameterType,
+        lamda: ParameterType = 1.0,
+        dt: float = 1.0,
+        **kwargs
     ):
         """
         Initializes the :class:`BivariateTrendingOU` class.
@@ -65,10 +69,14 @@ class BivariateTrendingOU(LowerCholeskyAffineProcess):
             **kwargs:
         """
 
-        params = kappa, gamma, sigma, v_0, delta, x_0, sigma_x, eta, lamda = broadcast_all(kappa, gamma, sigma, v_0, delta, 0.0, sigma_x, eta, lamda)
+        params = kappa, gamma, sigma, v_0, delta, x_0, sigma_x, eta, lamda = broadcast_all(
+            kappa, gamma, sigma, v_0, delta, 0.0, sigma_x, eta, lamda
+        )
 
         dist = DistributionModule(Normal, loc=0.0, scale=1.0).expand(torch.Size([2])).to_event(1)
-        initial_dist = DistributionModule(_build_init, kappa=kappa, v_0=v_0, sigma=sigma, delta=delta, x_0=x_0, sigma_x=sigma_x, lam=lamda, eta=eta)
+        initial_dist = DistributionModule(
+            _build_init, kappa=kappa, v_0=v_0, sigma=sigma, delta=delta, x_0=x_0, sigma_x=sigma_x, lam=lamda, eta=eta
+        )
 
         super(BivariateTrendingOU, self).__init__(self._mean_scale, params, initial_dist, dist, **kwargs)
         self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt

@@ -33,5 +33,5 @@ __all__ = [
     "models",
     "LinearModel",
     "AffineHierarchicalProcess",
-    "LowerCholeskyAffineProcess"
+    "LowerCholeskyAffineProcess",
 ]

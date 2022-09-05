@@ -61,7 +61,7 @@ class TimeseriesState(dict):
         tot_dim = self.values.dim()
         event_dim = len(self.event_shape)
 
-        return self.values.shape[:tot_dim - event_dim]
+        return self.values.shape[: tot_dim - event_dim]
 
     def copy(self, values: LazyTensor) -> "TimeseriesState":
         """
