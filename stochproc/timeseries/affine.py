@@ -17,8 +17,9 @@ class AffineProcess(StructuralStochasticProcess):
         .. math::
             X_{t+1} = f(X_t, \theta) + g(X_t, \theta) \cdot W_{t+1},
 
-    where :math:`\theta` denotes the parameter set governing the functions :math:`f` and :math:`g`, and :math:`W_t`
-    denotes random variable with arbitrary density (from which we can sample).
+    where :math:`X \in \mathbb{R}^n`, :math:`\theta \in \Theta \subset \mathbb{R}^m`,
+    :math:`f, g : \: \mathbb{R}^n \times \Theta \rightarrow \mathbb{R}^n`, and :math:`W_t` denotes a random variable
+    with arbitrary density (from which we can sample).
 
     Example:
         One example of an affine stochastic process is the AR(1) process. We define it by:
