@@ -63,23 +63,10 @@ class AffineProcess(StructuralStochasticProcess):
         self.mean_scale_fun = mean_scale
         self.increment_dist = increment_dist
 
-    def _define_transdist(self, x: TimeseriesState):
-        """
-        Helper method for defining an affine transition density given the location and scale.
-
-        Args:
-            x: state of the process.
-
-        Returns:
-            The resulting affine transformed distribution.
-        """
-
+    def build_density(self, x):
         loc, scale = self.mean_scale(x)
 
         return TransformedDistribution(self.increment_dist(), AffineTransform(loc, scale, event_dim=self.n_dim))
-
-    def build_density(self, x):
-        return self._define_transdist(x)
 
     def mean_scale(self, x: TimeseriesState, parameters=None) -> Tuple[torch.Tensor, torch.Tensor]:
         """
