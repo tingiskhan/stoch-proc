@@ -44,7 +44,7 @@ class TrendingOU(AffineProcess):
 
     def _mean_scale(self, x, k, g, v_0, s):
         d = (-k * self._dt).exp()
-        loc = v_0 + g * (x.time_index + self._dt) + (x.values - g * x.time_index - v_0) * d
+        loc = v_0 + g * ((x.time_index + 1.0) * self._dt) + (x.values - g * x.time_index * self._dt - v_0) * d
         scale = s / (2.0 * k).sqrt() * (1.0 - d.pow(2.0)).sqrt()
 
         return loc, scale
