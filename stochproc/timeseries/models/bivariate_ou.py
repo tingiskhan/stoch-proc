@@ -96,7 +96,9 @@ class BivariateTrendingOU(LowerCholeskyAffineProcess):
             # TODO: Might cause issues...
             k_m_d.fill_(EPS)
 
-        trend_loc = v_0 + g * ((x.time_index + 1.0) * self._dt) + (x.values[..., 1] - g * x.time_index * self._dt - v_0) * d_v
+        trend_loc = (
+            v_0 + g * ((x.time_index + 1.0) * self._dt) + (x.values[..., 1] - g * x.time_index * self._dt - v_0) * d_v
+        )
         loc = trend_loc + lamda / k_m_d * (d_x - d_v) * x.values[..., 0]
 
         d_v_2 = d_v.pow(2.0)
