@@ -13,7 +13,7 @@ EPS = _info.eps
 
 
 def _build_init(kappa, v_0, sigma, delta, x_0, sigma_x, lam, eta):
-    loc = torch.stack((x_0, v_0), dim=-1)
+    loc = torch.stack(torch.broadcast_tensors(x_0, v_0), dim=-1)
 
     var_x = sigma_x.pow(2.0) / (2 * delta)
 
@@ -92,9 +92,9 @@ class BivariateTrendingOU(LowerCholeskyAffineProcess):
         # Trend loc-var
         k_p_d = k + delta
         k_m_d = k - delta
-        if k_m_d == 0.0:
-            # TODO: Might cause issues...
-            k_m_d.fill_(EPS)
+
+        zero_mask = k_m_d == 0.0
+        k_m_d.masked_fill_(zero_mask, EPS)
 
         trend_loc = (
             v_0 + g * ((x.time_index + 1.0) * self._dt) + (x.values[..., 1] - g * x.time_index * self._dt - v_0) * d_v
