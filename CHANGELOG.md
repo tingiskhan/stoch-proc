@@ -2,6 +2,11 @@
 
 ## Versions
 
+### v0.0.22
+ - Adds the bivariate Trending OU process.
+ - Adds `JointStochasticProcess` for joint processes of arbitrary dynamics.
+ - `JointDistribution` now coerces all of the distributions to have the same `batch_shape`
+
 ### v0.0.21
  - Adds the Trending OU process
 

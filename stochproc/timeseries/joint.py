@@ -2,61 +2,59 @@ import functools
 
 import torch
 from torch.distributions import Distribution
-from .stochastic_process import StochasticProcess
+from .stochastic_process import StructuralStochasticProcess
 from .affine import AffineProcess
 from .state import TimeseriesState, JointState
 from ..distributions import JointDistribution, DistributionModule
 
 
-# class JointStochasticProcess(StochasticProcess):
-#     """
-#     A stochastic process comprising multiple separate stochastic processes by assuming independence between them. That
-#     is, given :math:`n` stochastic processes :math:`\\{X^i_t\\}, i = 1, \\dots, n` we have
-#         .. math::
-#             p(x^1_{t+1}, \\dots, x^n_{t+1} \\mid x^1_t, \\dots, x^n_t) = \\prod^n_{i=1} p(x^i_{t+1} \\mid x^i_t)
-#
-#     Example:
-#         In this example we'll construct a joint process of a random walk and an Ornstein-Uhlenbeck process.
-#             >>> from pyfilter.timeseries import models as m, JointStochasticProcess
-#             >>>
-#             >>> ou = m.OrnsteinUhlenbeck(0.01, 0.0, 0.05, 1, 1.0)
-#             >>> rw = m.RandomWalk(0.05)
-#             >>>
-#             >>> joint = JointStochasticProcess(ou=ou, rw=rw)
-#             >>> x = joint.sample_path(1000)
-#             >>> x.shape
-#             torch.Size([1000, 2])
-#     """
-#
-#     def __init__(self, **processes: StochasticProcess):
-#         """
-#         Initializes the ``JointStochasticProcess`` class.
-#
-#         Args:
-#             processes: Key-worded processes, where the process will be registered as a module with key.
-#         """
-#
-#         if any(not isinstance(v, StochasticProcess) for v in processes.values()):
-#             raise Exception(f"All kwargs were not of type ``{StochasticProcess.__name__}``!")
-#
-#         joint_dist = JointDistribution(*(p.initial_dist for p in processes.values()))
-#         self.indices = joint_dist.indices
-#
-#         super().__init__(DistributionModule(lambda **u: joint_dist))
-#
-#         self._proc_names = processes.keys()
-#         for name, proc in processes.items():
-#             self.add_module(name, proc)
-#
-#     def initial_sample(self, shape=None) -> JointState:
-#         return JointState(
-#             *(self._modules[name].initial_sample(shape) for name in self._proc_names), indices=self.indices
-#         )
-#
-#     def build_density(self, x: JointState) -> Distribution:
-#         return JointDistribution(
-#             *(self._modules[name].build_density(x[i]) for i, name in enumerate(self._proc_names)), indices=self.indices
-#         )
+# TODO: Perhaps unify with AffineJointStochasticProcess but I dislike multiple inheritance...
+class JointStochasticProcess(StructuralStochasticProcess):
+    """
+    A stochastic process comprising multiple separate stochastic processes by assuming independence between them. That
+    is, given :math:`n` stochastic processes :math:`\\{X^i_t\\}, i = 1, \\dots, n` we have
+        .. math::
+            p(x^1_{t+1}, \\dots, x^n_{t+1} \\mid x^1_t, \\dots, x^n_t) = \\prod^n_{i=1} p(x^i_{t+1} \\mid x^i_t)
+
+    Example:
+        In this example we'll construct a joint process of a random walk and an Ornstein-Uhlenbeck process.
+            >>> from stochproc.timeseries import models as m, JointStochasticProcess
+            >>>
+            >>> ou = m.OrnsteinUhlenbeck(0.01, 0.0, 0.05, 1, 1.0)
+            >>> rw = m.RandomWalk(0.05)
+            >>>
+            >>> joint = JointStochasticProcess(ou=ou, rw=rw)
+            >>> x = joint.sample_path(1000)
+            >>> x.shape
+            torch.Size([1000, 2])
+    """
+
+    def __init__(self, **processes: AffineProcess):
+        """
+        Initializes the :class:`AffineJointStochasticProcess` class.
+
+        Args:
+            processes: sub processes to combine into a single affine process.
+        """
+
+        super(JointStochasticProcess, self).__init__(parameters=(), initial_dist=None)
+
+        self.sub_processes = torch.nn.ModuleDict(processes)
+
+        self._initial_dist = DistributionModule(self._init_builder)
+        self._event_shape = self.initial_dist.event_shape
+
+    def _init_builder(self, **kwargs):
+        return JointDistribution(*(sub_proc.initial_dist for sub_proc in self.sub_processes.values()))
+
+    def initial_sample(self, shape: torch.Size = torch.Size([])) -> JointState:
+        return JointState(**{proc_name: proc.initial_sample(shape) for proc_name, proc in self.sub_processes.items()})
+
+    def functional_parameters(self, **kwargs):
+        return tuple((proc.functional_parameters(**kwargs) for proc in self.sub_processes.values()))
+
+    def build_density(self, x: TimeseriesState) -> Distribution:
+        return JointDistribution(*(sub_proc.build_density(x[k]) for k, sub_proc in self.sub_processes.items()))
 
 
 class AffineJointStochasticProcess(AffineProcess):

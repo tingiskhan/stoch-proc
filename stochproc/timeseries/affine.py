@@ -10,25 +10,6 @@ from .typing import MeanScaleFun
 from ..distributions import DistributionModule
 
 
-def _define_transdist(
-    loc: torch.Tensor, scale: torch.Tensor, n_dim: int, dist: Distribution
-) -> TransformedDistribution:
-    """
-    Helper method for defining an affine transition density given the location and scale.
-
-    Args:
-        loc: location of the distribution.
-        scale: scale of the distribution.
-        n_dim: dimension of space of the distribution.
-        dist: base distribution to apply the location-scale transform..
-
-    Returns:
-        The resulting affine transformed distribution.
-    """
-
-    return TransformedDistribution(dist, AffineTransform(loc, scale, event_dim=n_dim), validate_args=False)
-
-
 class AffineProcess(StructuralStochasticProcess):
     r"""
     Class for defining stochastic processes of affine nature, i.e. where we can express the next state :math:`X_{t+1}`
@@ -36,8 +17,9 @@ class AffineProcess(StructuralStochasticProcess):
         .. math::
             X_{t+1} = f(X_t, \theta) + g(X_t, \theta) \cdot W_{t+1},
 
-    where :math:`\theta` denotes the parameter set governing the functions :math:`f` and :math:`g`, and :math:`W_t`
-    denotes random variable with arbitrary density (from which we can sample).
+    where :math:`X \in \mathbb{R}^n`, :math:`\theta \in \Theta \subset \mathbb{R}^m`,
+    :math:`f, g : \: \mathbb{R}^n \times \Theta \rightarrow \mathbb{R}^n`, and :math:`W_t` denotes a random variable
+    with arbitrary density (from which we can sample).
 
     Example:
         One example of an affine stochastic process is the AR(1) process. We define it by:
@@ -84,11 +66,11 @@ class AffineProcess(StructuralStochasticProcess):
     def build_density(self, x):
         loc, scale = self.mean_scale(x)
 
-        return _define_transdist(loc, scale, self.n_dim, self.increment_dist())
+        return TransformedDistribution(self.increment_dist(), AffineTransform(loc, scale, event_dim=self.n_dim))
 
     def mean_scale(self, x: TimeseriesState, parameters=None) -> Tuple[torch.Tensor, torch.Tensor]:
         """
-        Returns the mean and scale of the process evaluated at ``x`` and ``.functional_parameters()`` or ``parameters``.
+        Returns the mean and scale of the process evaluated at ``x`` and :meth:`functional_parameters` or ``parameters``.
 
         Args:
             x: previous state of the process.

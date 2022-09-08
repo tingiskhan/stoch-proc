@@ -1,13 +1,12 @@
 import pytest
 import torch
-from torch.distributions import (
+from pyro.distributions import (
     Exponential,
     StudentT,
     Independent,
-    AffineTransform,
     TransformedDistribution,
-    ExpTransform,
 )
+from pyro.distributions.transforms import AffineTransform, ExpTransform
 
 from stochproc.distributions import JointDistribution
 
@@ -94,3 +93,14 @@ class TestJointDistribution(object):
 
         assert joint_distribution_inverted.indices[2] == 3
         assert joint_distribution_inverted.indices[3] == slice(4, 6)
+
+    def test_joint_distribution_different_batch_shapes(self):
+        shape = [10]
+
+        dist_1 = Exponential(rate=torch.ones(shape + [1, 5]))
+        dist_2 = StudentT(3.0 * torch.ones(shape + [5, 5]))
+
+        joint = JointDistribution(dist_1, dist_2)
+
+        assert joint.batch_shape == dist_2.batch_shape
+
