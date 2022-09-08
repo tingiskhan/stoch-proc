@@ -4,6 +4,7 @@
 
 ### v0.0.22
  - Adds the bivariate Trending OU process.
+ - Adds `JointStochasticProcess` for joint processes of arbitrary dynamics.
 
 ### v0.0.21
  - Adds the Trending OU process
