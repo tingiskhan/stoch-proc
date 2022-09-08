@@ -39,11 +39,11 @@ class JointDistribution(Distribution):
             [sum(1 if not isinstance(inds, slice) else inds.stop - inds.start for inds in _indices)]
         )
 
-        batch_shape = distributions[0].batch_shape
-        if any(d.batch_shape != batch_shape for d in distributions):
-            raise NotImplementedError(f"All batch shapes must be congruent!")
+        batch_shapes = [(d.batch_shape.numel(), d.batch_shape) for d in distributions]
+        single_batch_shape = sorted(batch_shapes, key=lambda u: u[0])[-1][1]
+        distributions = [d.expand(single_batch_shape) for d in distributions]
 
-        super(JointDistribution, self).__init__(event_shape=event_shape, batch_shape=batch_shape, **kwargs)
+        super(JointDistribution, self).__init__(event_shape=event_shape, batch_shape=single_batch_shape, **kwargs)
 
         if any(len(d.event_shape) > 1 for d in distributions):
             raise NotImplementedError(f"Currently cannot handle matrix valued distributions!")
