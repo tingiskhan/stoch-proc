@@ -36,7 +36,7 @@ class TestAffineTimeseriesOneDimensional(object):
 
     @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
     def test_mv_affine_hierarchical(self, batch_shape, process):
-        process = ts.LowerCholeskyJointStochasticProcess(sub=ts.models.RandomWalk(0.05), main=process)
+        process = ts.joint_process(sub=ts.models.RandomWalk(0.05), main=process)
 
         x = process.initial_sample(batch_shape)
 
