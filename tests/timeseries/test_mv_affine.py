@@ -25,7 +25,7 @@ def process() -> ts.AffineProcess:
 
 class TestAffineTimeseriesOneDimensional(object):
     @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
-    def test_mv_affine(self, batch_shape, process):
+    def test_cholesky(self, batch_shape, process):
         x = process.initial_sample(batch_shape)
 
         for t in range(SAMPLES):
@@ -35,8 +35,20 @@ class TestAffineTimeseriesOneDimensional(object):
         assert path.shape == torch.Size([SAMPLES, *batch_shape, *process.event_shape])
 
     @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
-    def test_mv_affine_hierarchical(self, batch_shape, process):
+    def test_cholesky_joint(self, batch_shape, process):
         process = ts.joint_process(sub=ts.models.RandomWalk(0.05), main=process)
+
+        x = process.initial_sample(batch_shape)
+
+        for t in range(SAMPLES):
+            x = process.propagate(x)
+
+        path = process.sample_states(SAMPLES, samples=batch_shape).get_path()
+        assert path.shape == torch.Size([SAMPLES, *batch_shape, *process.event_shape])
+
+    @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+    def test_cholesky_hierarchical(self, batch_shape, process):
+        process = process.add_sub_process(ts.models.RandomWalk(0.05))
 
         x = process.initial_sample(batch_shape)
 
