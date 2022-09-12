@@ -34,7 +34,7 @@ class JointStochasticProcess(StructuralStochasticProcess):
 
     def __init__(self, **processes: AffineProcess):
         """
-        Initializes the :class:`AffineJointStochasticProcess` class.
+        Initializes the :class:`JointStochasticProcess` class.
 
         Args:
             processes: sub processes to combine into a single affine process.
@@ -118,7 +118,7 @@ class AffineJointStochasticProcess(AffineProcess):
         return tuple((proc.functional_parameters(**kwargs) for proc in self.sub_processes.values()))
 
 
-def _multiplier(s: torch.Tensor, eye: torch.Tensor, proc: StructuralStochasticProcess) -> torch.Tensor:
+def _multiplier(s: torch.Tensor, eye: torch.Tensor, proc: StructuralStochasticProcess, batch_shape: torch.Size) -> torch.Tensor:
     """
     Helper method for performing multiplying operation.
 
@@ -128,15 +128,18 @@ def _multiplier(s: torch.Tensor, eye: torch.Tensor, proc: StructuralStochasticPr
     """
 
     if isinstance(proc, LowerCholeskyAffineProcess):
-        return s @ eye
+        res = s @ eye
+    else:
+        res = eye * (s.unsqueeze(-1) if proc.event_shape.numel() > 1 else s.view(*s.shape, 1, 1))
 
-    return eye * (s if proc.event_shape.numel() == 0 else s.view(*s.shape, 1, 1))
+    return torch.broadcast_to(res, batch_shape + eye.shape)
 
 
 class LowerCholeskyJointStochasticProcess(AffineJointStochasticProcess):
     r"""
     Similar to :class:`AffineJointStochasticProcess` but instead uses the
-    :class:`pyro.distributions.transforms.LowerCholeskyAffine`.
+    :class:`pyro.distributions.transforms.LowerCholeskyAffine` of
+    :class:`pyro.distributions.transforms.AffineTransform`.
     """
 
     def mean_scale(self, x: TimeseriesState, parameters=None):
@@ -155,9 +158,7 @@ class LowerCholeskyJointStochasticProcess(AffineJointStochasticProcess):
             numel = proc.event_shape.numel()
             eye_slice = eye[left:left + numel]
 
-            temp = torch.broadcast_to(_multiplier(s, eye_slice, proc), x.batch_shape + eye_slice.shape)
-            scale += (temp,)
-
+            scale += (_multiplier(s, eye_slice, proc, x.batch_shape),)
             left += numel
 
         return torch.cat(mean, dim=-1), torch.cat(scale, dim=-2)
