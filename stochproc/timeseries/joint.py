@@ -130,7 +130,7 @@ def _multiplier(s: torch.Tensor, eye: torch.Tensor, proc: StructuralStochasticPr
     if isinstance(proc, LowerCholeskyAffineProcess):
         return s @ eye
 
-    return eye * (s if proc.event_shape.numel() == 0 else s.unsqueeze(-1))
+    return eye * (s if proc.event_shape.numel() == 0 else s.view(*s.shape, 1, 1))
 
 
 class LowerCholeskyJointStochasticProcess(AffineJointStochasticProcess):
@@ -155,7 +155,9 @@ class LowerCholeskyJointStochasticProcess(AffineJointStochasticProcess):
             numel = proc.event_shape.numel()
             eye_slice = eye[left:left + numel]
 
-            scale += (_multiplier(s, eye_slice, proc),)
+            temp = torch.broadcast_to(_multiplier(s, eye_slice, proc), x.batch_shape + eye_slice.shape)
+            scale += (temp,)
+
             left += numel
 
         return torch.cat(mean, dim=-1), torch.cat(scale, dim=-2)
@@ -178,3 +180,13 @@ def joint_process(**processes: StructuralStochasticProcess) -> StructuralStochas
         Returns a suitable joint stochastic process.
     """
 
+    chol_procs = (LowerCholeskyAffineProcess, LowerCholeskyJointStochasticProcess)
+    all_affine = all(isinstance(p, AffineProcess) for p in processes.values())
+
+    if any(isinstance(p, chol_procs) for p in processes.values()) and all_affine:
+        return LowerCholeskyJointStochasticProcess(**processes)
+
+    elif all_affine:
+        return AffineJointStochasticProcess(**processes)
+
+    return JointStochasticProcess(**processes)
