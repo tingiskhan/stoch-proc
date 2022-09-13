@@ -20,7 +20,7 @@ class LowerCholeskyAffineProcess(AffineProcess):
 
     def __init__(self, mean_scale, parameters, initial_dist, increment_dist, **kwargs):
         """
-        Initializes the :class:`MultivariateAffineProcess`.
+        Initializes the :class:`LowerCholeskyAffineProcess`.
 
         Args:
             mean_scale: see base.
@@ -42,4 +42,6 @@ class LowerCholeskyAffineProcess(AffineProcess):
         return self.mean_scale_fun(x, *(parameters or self.functional_parameters()))
 
     def add_sub_process(self, sub_process):
-        raise NotImplementedError("Currently does not support adding sub processes!")
+        from .hierarchical import LowerCholeskyHierarchicalProcess
+
+        return LowerCholeskyHierarchicalProcess(sub_process=sub_process, main_process=self)

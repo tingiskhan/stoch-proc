@@ -2,6 +2,11 @@
 
 ## Versions
 
+### v0.0.23
+ - Adds `LowerCholeskyJointStochasticProcess`
+ - Adds `LowerCholeskyHierarchicalProcess`
+ - Adds primitive `joint_processes` to facilitate joining processes
+
 ### v0.0.22
  - Adds the bivariate Trending OU process.
  - Adds `JointStochasticProcess` for joint processes of arbitrary dynamics.
