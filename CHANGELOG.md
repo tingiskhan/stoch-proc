@@ -2,6 +2,9 @@
 
 ## Versions
 
+### v0.0.24
+ - Adds support for scaling sub process in `SmoothLinearTrend`
+
 ### v0.0.23
  - Adds `LowerCholeskyJointStochasticProcess`
  - Adds `LowerCholeskyHierarchicalProcess`
