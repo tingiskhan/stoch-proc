@@ -1,4 +1,5 @@
 from pyro.distributions import Normal
+from torch.distributions.utils import broadcast_all
 
 from ..affine import AffineProcess
 from ..hierarchical import AffineHierarchicalProcess
@@ -6,8 +7,8 @@ from ...distributions import DistributionModule
 from ...typing import ParameterType
 
 
-def _mean_scale(x, s):
-    return x.values + x["sub"].values, s
+def _mean_scale(x, s, lam):
+    return x.values + lam * x["sub"].values, s
 
 
 class SmoothLinearTrend(AffineHierarchicalProcess):
@@ -21,18 +22,20 @@ class SmoothLinearTrend(AffineHierarchicalProcess):
     Delta distribution, we use a very low variance Gaussian distribution.
     """
 
-    def __init__(self, trend_process: AffineProcess, l_0: ParameterType = 0.0):
+    def __init__(self, trend_process: AffineProcess, l_0: ParameterType = 0.0, scaling: float = 1.0, eps: float = 1e-5):
         """
         Initializes the :class:`SmoothLinearTrend` class.
 
         Args:
             trend_process: model to use for modelling the trend component.
             l_0: initial level value.
+            scaling: factor to apply to sub process.
         """
-        scale = 1e-5
 
-        init_dist = DistributionModule(Normal, loc=l_0, scale=scale)
+        l_0, scaling, eps = broadcast_all(l_0, scaling, eps)
+
+        init_dist = DistributionModule(Normal, loc=l_0, scale=eps)
         inc_dist = DistributionModule(Normal, loc=0.0, scale=1.0)
-        level_process = AffineProcess(_mean_scale, (scale,), init_dist, inc_dist)
+        level_process = AffineProcess(_mean_scale, (eps, scaling), init_dist, inc_dist)
 
         super().__init__(trend_process, level_process)
