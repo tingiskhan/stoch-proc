@@ -122,7 +122,7 @@ class JointState(TimeseriesState):
         event_dim = torch.Size([sum(ss.event_shape[0] if any(ss.event_shape) else 1 for ss in sub_states.values())])
         super(JointState, self).__init__(time_index=time_index, event_shape=event_dim, values=None)
 
-        self._sub_states_order = sub_states.keys()
+        self._sub_states_order = list(sub_states.keys())
         for name, sub_state in sub_states.items():
             if self._ENFORCE_SAME_TIME_INDEX:
                 assert (sub_state.time_index == time_index).all()
