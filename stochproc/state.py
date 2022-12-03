@@ -1,10 +1,8 @@
-from typing import TypeVar, Generic
+from typing import Generic
 
-from .typing import ShapeLike
+from .typing import ShapeLike, TArray
 from .utils import lazy_property
 
-
-TArray = TypeVar("TArray")
 
 
 class TimeseriesState(dict, Generic[TArray]):

@@ -1,11 +1,9 @@
 from abc import ABC
 from typing import TypeVar, Generic
 
-from .typing import ShapeLike
-from .state import TimeseriesState, TArray
+from .typing import ShapeLike, TArray, TDistribution
+from .state import TimeseriesState
 
-
-TDistribution = TypeVar("TDistribution")
 
 
 class StructuralStochasticProcess(Generic[TDistribution, TArray]):
