@@ -1,6 +1,7 @@
 from abc import ABC
 from typing import TypeVar, Generic
 
+from .typing import ShapeLike
 from .state import TimeseriesState, TArray
 
 
@@ -23,6 +24,39 @@ class StructuralStochasticProcess(Generic[TDistribution, TArray]):
     Derived classes should override the ``.build_distribution(...)`` method, which builds the distribution of
     :math:`X_{t+1}` given :math:`\{ X_j \}_{j \leq t}`.
     """
+
+    @property
+    def event_shape(self) -> ShapeLike:
+        """
+        Returns the event shape of the process.
+        """
+
+        raise NotImplementedError()
+
+    @property
+    def n_dim(self) -> int:
+        """
+        Returns the dimension of the process. If it's univariate it returns a 0, 1 for a vector etc, just like
+        ``torch``.
+        """
+
+        return len(self.event_shape)
+
+    @property
+    def num_vars(self) -> int:
+        """
+        Returns the number of variables of the stochastic process. E.g. if it's a univariate process it returns 1, and
+        if it's a multivariate process it returns the number of elements in the vector or matrix.
+        """
+
+        return self.event_shape.numel()
+
+    def initial_distribution(self) -> TDistribution:
+        """
+        Returns the initial distribution and any re-parameterization given by ``._init_transform``.
+        """
+
+        raise NotImplementedError()
 
     def build_distribution(self, x: TimeseriesState[TArray]) -> TDistribution:
         r"""
