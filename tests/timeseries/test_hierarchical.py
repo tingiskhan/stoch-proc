@@ -1,7 +1,7 @@
 import torch
 from torch.distributions import Normal
 
-from stochproc import timeseries as ts, distributions as dists
+from stochproc.torch import timeseries as ts, distributions as dists
 from .test_affine import SAMPLES
 import pytest
 

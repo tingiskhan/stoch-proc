@@ -4,7 +4,7 @@ import pytest
 import torch
 import torch.distributions as tdists
 
-from stochproc import distributions as dists, timeseries as ts
+from stochproc.torch import distributions as dists, timeseries as ts
 from .constants import SAMPLES, BATCH_SHAPES
 
 

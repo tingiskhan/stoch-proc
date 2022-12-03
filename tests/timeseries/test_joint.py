@@ -1,6 +1,6 @@
 import torch
 
-from stochproc import timeseries as ts
+from stochproc.torch import timeseries as ts
 from .test_affine import SAMPLES
 import pytest
 

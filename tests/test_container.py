@@ -2,7 +2,7 @@ import pytest
 import torch
 from torch.nn import Module
 
-from stochproc.container import BufferIterable, BufferDict
+from stochproc.torch.container import BufferIterable, BufferDict
 
 
 class ModuleWithContainer(Module):

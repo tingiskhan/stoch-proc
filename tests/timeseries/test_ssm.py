@@ -2,7 +2,7 @@ import itertools
 
 import torch
 
-from stochproc import timeseries as ts
+from stochproc.torch import timeseries as ts
 from pyro.distributions import Normal
 import pytest
 

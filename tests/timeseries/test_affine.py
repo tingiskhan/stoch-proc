@@ -2,7 +2,7 @@ import pytest
 import torch
 from pyro.distributions import Normal
 
-from stochproc import distributions as dists, timeseries as ts
+from stochproc.torch import distributions as dists, timeseries as ts
 from .test_stochastic_process import initial_distribution   # flake8: noqa
 from .constants import SAMPLES, BATCH_SHAPES
 
