@@ -29,11 +29,7 @@ class StochasticProcess(Module, ABC):
     :math:`X_{t+1}` given :math:`\{ X_j \}_{j \leq t}`.
     """
 
-    _EXOGENOUS = "exogenous"
-
-    def __init__(
-        self, initial_dist: Union[None, DistributionModule], exogenous: Sequence[torch.Tensor] = None,
-    ):
+    def __init__(self, initial_dist: Union[None, DistributionModule]):
         """
         Initializes the ``StochasticProcess`` class.
 
@@ -41,22 +37,12 @@ class StochasticProcess(Module, ABC):
             initial_dist: initial distribution of the process. Corresponds to a
                 ``stochproc.distributions.DistributionModule`` rather than a ``pytorch`` distribution as we require
                 being able to move the distribution between devices.
-            exogenous: parameter specifying exogenous data to include.
         """
 
         super().__init__()
+
         self._initial_dist = initial_dist
-
-        self._tensor_tuples = BufferIterable(**{self._EXOGENOUS: exogenous})
         self._event_shape = None if initial_dist is None else self.initial_dist.event_shape
-
-    @property
-    def exogenous(self) -> torch.Tensor:
-        """
-        The exogenous variables.
-        """
-
-        return self._tensor_tuples.get_as_tensor(self._EXOGENOUS)
 
     @property
     def event_shape(self) -> torch.Size:
@@ -125,13 +111,7 @@ class StochasticProcess(Module, ABC):
 
         raise NotImplementedError()
 
-    def _add_exog_to_state(self, x: TimeseriesState):
-        if self._EXOGENOUS in self._tensor_tuples:
-            x.add_exog(self.exog[x.time_index.int()])
-
     def forward(self, x: TimeseriesState, time_increment: int = 1) -> TimeseriesState:
-        self._add_exog_to_state(x)
-
         density = self.build_density(x)
         return x.propagate_from(values=density.sample, time_increment=time_increment)
 
@@ -181,16 +161,6 @@ class StochasticProcess(Module, ABC):
         """
 
         return deepcopy(self)
-
-    def append_exog(self, exogenous: torch.Tensor):
-        """
-        Appends and exogenous variable.
-
-        Args:
-            exogenous: new exogenous variable to add.
-        """
-
-        self._tensor_tuples[self._EXOGENOUS] += (exogenous,)
 
     def _pyro_params_only(self, pyro_lib: pyro, obs: torch.Tensor):
         time_index = torch.arange(1, obs.shape[0])

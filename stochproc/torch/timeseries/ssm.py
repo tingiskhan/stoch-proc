@@ -60,16 +60,11 @@ class StateSpaceModel(StructuralStochasticProcess):
     def build_density(self, x):
         return self._dist_builder(x, *self.functional_parameters())
 
-    def _add_exog_to_state(self, x: TimeseriesState):
-        if self._EXOGENOUS in self._tensor_tuples:
-            x.add_exog(self.exog[(x.time_index - 1.0).int()])
-
     def forward(self, x: StateSpaceModelState, time_increment=1.0) -> TimeseriesState:
         x_state = x["x"]
         hidden_state = self.hidden.propagate(x_state)
 
         if (hidden_state.time_index - 1) % self.observe_every_step == 0:
-            self._add_exog_to_state(hidden_state)
             vals = self.build_density(hidden_state).sample
         else:
             vals = _NAN * torch.ones_like(x["y"].values)
