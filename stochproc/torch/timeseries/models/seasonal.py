@@ -1,9 +1,11 @@
 import torch
-from stochproc.distributions import DistributionModule
 from torch.distributions.utils import broadcast_all
+from stochproc.torch.distributions import DistributionModule
 
-from ..linear import LinearModel, ParameterType
 from .ar import _build_init, _build_trans_dist
+from ..linear import LinearModel, ParameterType
+
+
 
 
 class Seasonal(LinearModel):

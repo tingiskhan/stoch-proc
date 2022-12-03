@@ -4,7 +4,7 @@ import pyro
 import pytest
 import torch
 
-from stochproc.timeseries import models, StateSpaceModel
+from stochproc.torch.timeseries import models, StateSpaceModel
 from pyro.distributions import LogNormal, Normal
 
 

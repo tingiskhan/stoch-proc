@@ -8,7 +8,7 @@ from torch.distributions import (
     Normal,
 )
 
-from stochproc.distributions import SinhArcsinhTransform
+from stochproc.torch.distributions import SinhArcsinhTransform
 
 
 @pytest.fixture

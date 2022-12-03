@@ -1,6 +1,6 @@
 import torch
 
-from stochproc.distributions import DistributionModule
+from stochproc.torch.distributions import DistributionModule
 from pyro.distributions import Normal, Independent
 
 

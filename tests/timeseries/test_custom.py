@@ -3,7 +3,7 @@ import itertools
 import pytest
 import torch
 
-from stochproc.timeseries import models as mods
+from stochproc.torch.timeseries import models as mods
 from .test_affine import SAMPLES
 from .constants import BATCH_SHAPES
 

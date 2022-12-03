@@ -8,7 +8,7 @@ from pyro.distributions import (
 )
 from pyro.distributions.transforms import AffineTransform, ExpTransform
 
-from stochproc.distributions import JointDistribution
+from stochproc.torch.distributions import JointDistribution
 
 
 @pytest.fixture
