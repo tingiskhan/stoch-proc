@@ -23,15 +23,18 @@ class StructuralStochasticProcess(Generic[TDistribution, TArray]):
 
     Derived classes should override the ``.build_distribution(...)`` method, which builds the distribution of
     :math:`X_{t+1}` given :math:`\{ X_j \}_{j \leq t}`.
-    """
+    """    
 
-    @property
-    def event_shape(self) -> ShapeLike:
+    def __init__(self, event_shape: ShapeLike) -> None:
         """
-        Returns the event shape of the process.
+        Internal initializer for :class:`StructuralStochasticProcess`.
+
+        Args:
+            event_shape (ShapeLike): event shape
         """
 
-        raise NotImplementedError()
+        super().__init__()
+        self.event_shape = event_shape
 
     @property
     def n_dim(self) -> int:
