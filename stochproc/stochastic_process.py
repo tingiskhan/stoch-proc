@@ -58,7 +58,7 @@ class _StructuralStochasticProcess(Generic[TDistribution, TArray]):
 
     def initial_distribution(self) -> TDistribution:
         """
-        Returns the initial distribution and any re-parameterization given by ``._init_transform``.
+        Returns the initial distribution.
         """
 
         raise NotImplementedError()
