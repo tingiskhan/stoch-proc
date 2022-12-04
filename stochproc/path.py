@@ -6,12 +6,12 @@ from .state import _TimeseriesState
 
 
 @dataclass(frozen=True)
-class CombinedPath(Generic[TArray]):
+class ArrayPath(Generic[TArray]):
     time_indexes: TArray
     path: TArray
 
 
-class StochasticProcessPath(Generic[TArray]):
+class _StochasticProcessPath(Generic[TArray]):
     """
     Base container object for storing sampled paths from a stochastic process.
     """
@@ -24,9 +24,9 @@ class StochasticProcessPath(Generic[TArray]):
             states (TimeseriesState): timeseries states to combine.
         """
 
-        self.path = sorted(states, key=lambda u: u.time_index)
+        self.path = tuple(sorted(states, key=lambda u: u.time_index))
     
-    def get_path(self) -> CombinedPath:
+    def get_path(self) -> ArrayPath[TArray]:
         """
         Returns the time indexes together with the sampled path.
 
@@ -35,5 +35,3 @@ class StochasticProcessPath(Generic[TArray]):
         """
 
         raise NotImplementedError()
-
-    
