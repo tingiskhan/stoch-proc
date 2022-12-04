@@ -34,12 +34,12 @@ class StructuralStochasticProcess(_StructuralStochasticProcess[Distribution, jnp
         aux_data = (self.kernel, self.initial_distribution())
 
         return (children, aux_data)
-    
+
     @classmethod
     def tree_unflatten(cls, aux_data, children):
-        kernel, init_dist = aux_data        
+        kernel, init_dist = aux_data
         return cls(kernel, children[0], init_dist)
-    
+
     def initial_distribution(self):
         return self._initial_distribution
 
@@ -54,7 +54,7 @@ class StructuralStochasticProcess(_StructuralStochasticProcess[Distribution, jnp
         density = self.build_distribution(x)
 
         return x.propagate_from(density.sample(key), 1)
-    
+
     def sample_states(self, steps, key: KeyArray, shape=(), x_0: TimeseriesState = None) -> StochasticProcessPath:
         state = x_0 if x_0 else self.initial_state(key, shape)
         states = (state,)
