@@ -56,4 +56,3 @@ class _TimeseriesState(dict, Generic[TArray]):
         """
         
         raise NotImplementedError()
-
