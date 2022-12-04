@@ -1,9 +1,10 @@
-from stochproc.jax import timeseries as ts
 from numpyro.distributions import Normal
-from jax.random import PRNGKey, split
+from jax.random import PRNGKey
 import jax.numpy as jnp
 import jax
 import pytest as pt
+
+from stochproc.jax import timeseries as ts
 
 
 @jax.jit
@@ -43,6 +44,6 @@ class TestTimeseries(object):
         proc = ts.StructuralStochasticProcess(prop, (a, b), init_dist)
 
         key = PRNGKey(0)
-        path = proc.sample_states(100, key, shape=shape).get_path()
+        path = proc.sample_states(1000, key, shape=shape).get_path()
         
         assert (path.time_indexes.shape[0] == path.path.shape[0]) and (path.time_indexes.shape[0] == 101)
