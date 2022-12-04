@@ -1,13 +1,12 @@
-from abc import ABC
-from typing import TypeVar, Generic
+from typing import Generic
 
 from .typing import ShapeLike, TArray, TDistribution
-from .state import TimeseriesState
+from .state import _TimeseriesState
 from .path import StochasticProcessPath
 
 
 
-class StructuralStochasticProcess(Generic[TDistribution, TArray]):
+class _StructuralStochasticProcess(Generic[TDistribution, TArray]):
     r"""
     Abstract base class for structural stochastic processes. By "stochastic process" we mean a sequence of random variables,
     :math:`\{X_t\}_{t \in T}`, defined on a common probability space
@@ -59,7 +58,7 @@ class StructuralStochasticProcess(Generic[TDistribution, TArray]):
 
         raise NotImplementedError()
 
-    def initial_state(self, *args, shape: ShapeLike = ()) -> TimeseriesState[TArray]:
+    def initial_state(self, *args, shape: ShapeLike = ()) -> _TimeseriesState[TArray]:
         """
         Samples the initial state.
 
@@ -72,7 +71,7 @@ class StructuralStochasticProcess(Generic[TDistribution, TArray]):
 
         raise NotImplementedError()
 
-    def build_distribution(self, x: TimeseriesState[TArray]) -> TDistribution:        
+    def build_distribution(self, x: _TimeseriesState[TArray]) -> TDistribution:        
         r"""
         Method to be overridden by derived classes. Defines how to construct the transition density to :math:`X_{t+1}`
         given the state at :math:`t`, i.e. this method corresponds to building the density:
@@ -88,7 +87,7 @@ class StructuralStochasticProcess(Generic[TDistribution, TArray]):
 
         raise NotImplementedError()
 
-    def sample_states(self, steps: int, *args, shape: ShapeLike = (), x0: TimeseriesState[TArray] = None) -> StochasticProcessPath:
+    def sample_states(self, steps: int, *args, shape: ShapeLike = (), x_0: _TimeseriesState[TArray] = None) -> StochasticProcessPath:
         r"""
         Samples a trajectory from the stochastic process, i.e. samples the collection :math:`\{ X_j \}^T_{j = 0}`,
         where :math:`T` corresponds to ``steps``.

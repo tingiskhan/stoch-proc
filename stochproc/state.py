@@ -5,7 +5,7 @@ from .utils import lazy_property
 
 
 
-class TimeseriesState(dict, Generic[TArray]):
+class _TimeseriesState(dict, Generic[TArray]):
     """
     State object for timeseries objects.
     """
@@ -35,9 +35,8 @@ class TimeseriesState(dict, Generic[TArray]):
     def time_index(self) -> TArray:
         return self["_time_index"]
 
-    # TODO: Fix lazy evaluation
     @lazy_property("_values")
-    def values(self) -> TArray:
+    def value(self) -> TArray:
         return self["_values"]
     
     @property
@@ -45,9 +44,9 @@ class TimeseriesState(dict, Generic[TArray]):
         return self["_event_shape"]
 
     def __repr__(self):
-        return f"TimeseriesState at t={self.time_index} containing: {self.values.__repr__()}"
+        return f"TimeseriesState at t={self.time_index} containing: {self.value.__repr__()}"
     
-    def propagate_from(self, values: TArray, time_increment: int = 1) -> "TimeseriesState[TArray]":
+    def propagate_from(self, values: TArray, time_increment: int = 1) -> "_TimeseriesState[TArray]":
         """
         Returns a new instance of :class:`TimeseriesState` with `values`` and ``time_index`` given by
         ``.time_index + time_increment``.
@@ -57,4 +56,4 @@ class TimeseriesState(dict, Generic[TArray]):
             time_increment: how much to increase ``.time_index`` with for new state.
         """
         
-        return TimeseriesState(time_index=self.time_index + time_increment, values=values, event_shape=self.event_shape)
+        return _TimeseriesState(time_index=self.time_index + time_increment, values=values, event_shape=self.event_shape)

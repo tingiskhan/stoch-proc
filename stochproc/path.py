@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Generic, Tuple
 
 from .typing import TArray
-from .state import TimeseriesState
+from .state import _TimeseriesState
 
 
 @dataclass(frozen=True)
@@ -16,7 +16,7 @@ class StochasticProcessPath(Generic[TArray]):
     Base container object for storing sampled paths from a stochastic process.
     """
 
-    def __init__(self, states: TimeseriesState[TArray]):
+    def __init__(self, states: _TimeseriesState[TArray]):
         """
         Internal initializer for :class:`ProcessPath`.
 
