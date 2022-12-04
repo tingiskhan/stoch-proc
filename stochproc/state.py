@@ -4,7 +4,6 @@ from .typing import ShapeLike, TArray
 from .utils import lazy_property
 
 
-
 class _TimeseriesState(dict, Generic[TArray]):
     """
     State object for timeseries objects.
