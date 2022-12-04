@@ -1,9 +1,11 @@
-from typing import Generic
+from typing import Generic, Sequence, Callable
 
 from .typing import ShapeLike, TArray, TDistribution
 from .state import _TimeseriesState
 from .path import StochasticProcessPath
 
+
+Kernel = Callable[[_TimeseriesState[TArray], Sequence[TArray]], TDistribution]
 
 
 class _StructuralStochasticProcess(Generic[TDistribution, TArray]):
@@ -23,15 +25,18 @@ class _StructuralStochasticProcess(Generic[TDistribution, TArray]):
     :math:`X_{t+1}` given :math:`\{ X_j \}_{j \leq t}`.
     """    
 
-    def __init__(self, event_shape: ShapeLike) -> None:
+    def __init__(self, kernel: Kernel, parameters: Sequence[TArray], event_shape: ShapeLike) -> None:
         """
         Internal initializer for :class:`StructuralStochasticProcess`.
 
         Args:
-            event_shape (ShapeLike): event shape
+            kernel (Kernel): kernel used for propagating state from :math:`t` to :math:`t+1`.
+            parameters (Tuple[TArray, ...]): parameters of the model
+            event_shape (ShapeLike): event shape.
         """
 
-        super().__init__()
+        self.kernel = kernel
+        self.parameters = tuple(parameters)
         self.event_shape = event_shape
 
     @property
@@ -71,7 +76,7 @@ class _StructuralStochasticProcess(Generic[TDistribution, TArray]):
 
         raise NotImplementedError()
 
-    def build_distribution(self, x: _TimeseriesState[TArray]) -> TDistribution:        
+    def build_distribution(self, x: _TimeseriesState[TArray]) -> TDistribution:
         r"""
         Method to be overridden by derived classes. Defines how to construct the transition density to :math:`X_{t+1}`
         given the state at :math:`t`, i.e. this method corresponds to building the density:
@@ -83,6 +88,19 @@ class _StructuralStochasticProcess(Generic[TDistribution, TArray]):
 
         Returns:
             TDistribution: Returns the density of the state at :math:`t+1`.
+        """
+
+        return self.kernel(x, *self.parameters)
+
+    def propagate_state(self, x: _TimeseriesState[TArray], *args) -> _TimeseriesState[TArray]:
+        """
+        Propagates state conditional on previous.
+
+        Args:
+            x (_TimeseriesState[TArray]): previous state of the process.
+
+        Returns:
+            _TimeseriesState[TArray]: new state f the process.
         """
 
         raise NotImplementedError()
