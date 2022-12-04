@@ -14,3 +14,6 @@ class TimeseriesState(_TimeseriesState[jnp.ndarray]):
     @classmethod
     def tree_unflatten(cls, aux_data, children):
         return cls(*children, *aux_data)
+
+    def propagate_from(self, values, time_increment):
+        return TimeseriesState(time_index=self.time_index + time_increment, value=values, event_shape=self.event_shape)
