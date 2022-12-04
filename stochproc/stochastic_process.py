@@ -3,6 +3,7 @@ from typing import TypeVar, Generic
 
 from .typing import ShapeLike, TArray, TDistribution
 from .state import TimeseriesState
+from .path import StochasticProcessPath
 
 
 
@@ -37,8 +38,7 @@ class StructuralStochasticProcess(Generic[TDistribution, TArray]):
     @property
     def n_dim(self) -> int:
         """
-        Returns the dimension of the process. If it's univariate it returns a 0, 1 for a vector etc, just like
-        ``torch``.
+        Returns the dimension of the process. If it's univariate it returns a 0, 1 for a vector etc.
         """
 
         return len(self.event_shape)
@@ -59,7 +59,20 @@ class StructuralStochasticProcess(Generic[TDistribution, TArray]):
 
         raise NotImplementedError()
 
-    def build_distribution(self, x: TimeseriesState[TArray]) -> TDistribution:
+    def initial_state(self, *args, shape: ShapeLike = ()) -> TimeseriesState[TArray]:
+        """
+        Samples the initial state.
+
+        Args:
+            shape (ShapeLike): batch shape to sample.
+
+        Returns:
+            TimeseriesState[TArray]: initial state of the process.
+        """
+
+        raise NotImplementedError()
+
+    def build_distribution(self, x: TimeseriesState[TArray]) -> TDistribution:        
         r"""
         Method to be overridden by derived classes. Defines how to construct the transition density to :math:`X_{t+1}`
         given the state at :math:`t`, i.e. this method corresponds to building the density:
@@ -70,7 +83,23 @@ class StructuralStochasticProcess(Generic[TDistribution, TArray]):
             x: previous state of the process.
 
         Returns:
-            Returns the density of the state at :math:`t+1`.
+            TDistribution: Returns the density of the state at :math:`t+1`.
+        """
+
+        raise NotImplementedError()
+
+    def sample_states(self, steps: int, *args, shape: ShapeLike = (), x0: TimeseriesState[TArray] = None) -> StochasticProcessPath:
+        r"""
+        Samples a trajectory from the stochastic process, i.e. samples the collection :math:`\{ X_j \}^T_{j = 0}`,
+        where :math:`T` corresponds to ``steps``.
+
+        Args:
+            steps: number of steps to sample.
+            samples: batch shape to sample.
+            x0: initial sample to use, if ``None``, samples one.
+
+        Returns:
+            StochasticProcessPath: Returns a path sampled from the stochastic process.
         """
 
         raise NotImplementedError()
