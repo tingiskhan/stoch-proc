@@ -1,10 +1,12 @@
-from stochproc.state import _TimeseriesState
 import jax.numpy as jnp
 import pytest as pt
 import torch
+from stochproc.state import _TimeseriesState
+
 
 JAX_ARRAY = jnp.ones(10)
 TORCH_ARRAY = torch.ones(10)
+
 
 class TestState(object): 
     @pt.mark.parametrize("array", [JAX_ARRAY, lambda: JAX_ARRAY])
