@@ -55,4 +55,5 @@ class _TimeseriesState(dict, Generic[TArray]):
             time_increment: how much to increase ``.time_index`` with for new state.
         """
         
-        return _TimeseriesState(time_index=self.time_index + time_increment, value=values, event_shape=self.event_shape)
+        raise NotImplementedError()
+
