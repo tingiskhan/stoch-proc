@@ -1,10 +1,11 @@
 import jax.numpy as jnp
 from numpyro.distributions import Distribution
-from jax.random import KeyArray
+from jax.random import KeyArray, split
 import jax
 from jax.tree_util import register_pytree_node_class
 
 from .state import TimeseriesState
+from .path import StochasticProcessPath
 from ...stochastic_process import _StructuralStochasticProcess
 from ...typing import ShapeLike
 
@@ -53,4 +54,14 @@ class StructuralStochasticProcess(_StructuralStochasticProcess[Distribution, jnp
         density = self.build_distribution(x)
 
         return x.propagate_from(density.sample(key), 1)
- 
+    
+    def sample_states(self, steps, key: KeyArray, shape=(), x_0: TimeseriesState = None) -> StochasticProcessPath:
+        state = x_0 if x_0 else self.initial_state(key, shape)
+        states = (state,)
+
+        for __ in range(steps):
+            _, key = split(key)
+            state = self.propagate_state(state, key)
+            states += (state,)
+
+        return StochasticProcessPath(states)
