@@ -1,8 +1,6 @@
 import os
-
 from setuptools import setup, find_packages
 
-from stochproc.torch.timeseries import models
 
 NAME = "stochproc"
 
