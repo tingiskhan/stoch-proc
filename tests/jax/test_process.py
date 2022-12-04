@@ -1,6 +1,6 @@
 from stochproc.jax import timeseries as ts
 from numpyro.distributions import Normal
-from jax.random import PRNGKey
+from jax.random import PRNGKey, split
 import jax.numpy as jnp
 import jax
 import pytest as pt
@@ -15,7 +15,10 @@ class TestTimeseries(object):
     @pt.mark.parametrize("shape", [(), (10,), (10, 10), (2_000, 500)])
     def test_initialize_and_sample(self, shape):
         init_dist = Normal()
-        proc = ts.StructuralStochasticProcess(init_dist)
+
+        a = jnp.ones(shape)
+        b = jnp.ones(shape)
+        proc = ts.StructuralStochasticProcess(prop, (a, b), init_dist)
 
         assert proc.event_shape == ()
 
@@ -23,9 +26,10 @@ class TestTimeseries(object):
         init_state = proc.initial_state(key, shape=shape)
 
         assert init_state.value.shape == shape
+        dist = proc.build_distribution(init_state)
 
-        a = jnp.ones(shape)
-        b = jnp.ones(shape)
+        assert isinstance(dist, Normal) and (dist.batch_shape == shape) and (dist.event_shape == proc.event_shape)
 
-        j = prop(init_state, a, b)
-        print()
+        new_state = proc.propagate_state(init_state, key)
+
+        assert isinstance(new_state, init_state.__class__) and (new_state.value == dist.sample(key)).all() and (new_state.value.shape == shape)
