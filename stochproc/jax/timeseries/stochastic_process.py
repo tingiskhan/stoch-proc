@@ -1,28 +1,56 @@
 import jax.numpy as jnp
 from numpyro.distributions import Distribution
-from jax.random import PRNGKey
+from jax.random import KeyArray
+import jax
+from jax.tree_util import register_pytree_node_class
 
-from ...stochastic_process import StructuralStochasticProcess
+from .state import TimeseriesState
+from ...stochastic_process import _StructuralStochasticProcess
 from ...typing import ShapeLike
-from ...state import TimeseriesState
-from ...path import ProcessPath
 
 
-class JaxProcess(StructuralStochasticProcess[Distribution, jnp.ndarray]):
+@register_pytree_node_class
+class StructuralStochasticProcess(_StructuralStochasticProcess[Distribution, jnp.ndarray]):
     """
-    Base class for JAX based stochastic processes.
+    Sub class of :class:`_StructuralStochasticProcess`.
     """
 
-    def __init__(self, initial_distribution: Distribution):
+    def __init__(self, kernel, parameters, initial_distribution: Distribution):
         """
-        Internal initializer for :class:`JaxProcess`.
+        Internal initializer for :class:`StructuralStochasticProcess`.
 
         Args:
+            kernel: see base.
+            parameters: see base.
             initial_distribution (Distribution): initial distribution.
         """
 
-        super().__init__(initial_distribution.event_shape)
+        super().__init__(kernel, parameters, initial_distribution.event_shape)
         self._initial_distribution = initial_distribution
+
+    def tree_flatten(self):
+        children = (self.parameters,)
+        aux_data = (self.kernel, self.initial_distribution())
+
+        return (children, aux_data)
+    
+    @classmethod
+    def tree_unflatten(cls, aux_data, children):
+        kernel, init_dist = aux_data        
+        return cls(kernel, children[0], init_dist)
     
     def initial_distribution(self):
         return self._initial_distribution
+
+    def initial_state(self, key: KeyArray, shape: ShapeLike = ()):
+        initial_dist = self.initial_distribution()
+        x_0 = initial_dist.sample(key, shape)
+
+        return TimeseriesState(jnp.array(0, dtype=jnp.int16), x_0, event_shape=self.event_shape)
+
+    @jax.jit
+    def propagate_state(self, x: TimeseriesState, key: KeyArray) -> TimeseriesState:
+        density = self.build_distribution(x)
+
+        return x.propagate_from(density.sample(key), 1)
+ 
