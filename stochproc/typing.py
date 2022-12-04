@@ -1,8 +1,5 @@
-from typing import Tuple
+from typing import Sequence, TypeVar
 
-
-from typing import Tuple, TypeVar
-
-ShapeLike = Tuple[int, ...]
-TArray = TypeVar("TArray")
+ShapeLike = Sequence[int]
 TDistribution = TypeVar("TDistribution")
+TArray = TypeVar("TArray")
