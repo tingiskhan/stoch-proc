@@ -33,3 +33,16 @@ class TestTimeseries(object):
         new_state = proc.propagate_state(init_state, key)
 
         assert isinstance(new_state, init_state.__class__) and (new_state.value == dist.sample(key)).all() and (new_state.value.shape == shape)
+
+    @pt.mark.parametrize("shape", [(), (10,), (10, 10), (500, 10)])
+    def test_sample_path(self, shape):
+        init_dist = Normal()
+
+        a = jnp.ones(shape)
+        b = jnp.ones(shape)
+        proc = ts.StructuralStochasticProcess(prop, (a, b), init_dist)
+
+        key = PRNGKey(0)
+        path = proc.sample_states(100, key, shape=shape).get_path()
+        
+        assert (path.time_indexes.shape[0] == path.path.shape[0]) and (path.time_indexes.shape[0] == 101)
