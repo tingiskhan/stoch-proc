@@ -11,7 +11,7 @@ class CombinedPath(Generic[TArray]):
     path: TArray
 
 
-class ProcessPath(Generic[TArray]):
+class StochasticProcessPath(Generic[TArray]):
     """
     Base container object for storing sampled paths from a stochastic process.
     """
