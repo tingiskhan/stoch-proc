@@ -2,7 +2,7 @@ from typing import Generic, Sequence, Callable
 
 from .typing import ShapeLike, TArray, TDistribution
 from .state import _TimeseriesState
-from .path import StochasticProcessPath
+from .path import _StochasticProcessPath
 
 
 Kernel = Callable[[_TimeseriesState[TArray], Sequence[TArray]], TDistribution]
@@ -105,7 +105,7 @@ class _StructuralStochasticProcess(Generic[TDistribution, TArray]):
 
         raise NotImplementedError()
 
-    def sample_states(self, steps: int, *args, shape: ShapeLike = (), x_0: _TimeseriesState[TArray] = None) -> StochasticProcessPath:
+    def sample_states(self, steps: int, *args, shape: ShapeLike = (), x_0: _TimeseriesState[TArray] = None) -> _StochasticProcessPath:
         r"""
         Samples a trajectory from the stochastic process, i.e. samples the collection :math:`\{ X_j \}^T_{j = 0}`,
         where :math:`T` corresponds to ``steps``.
