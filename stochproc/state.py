@@ -13,7 +13,7 @@ class _TimeseriesState(dict, Generic[TArray]):
     def __init__(
         self,
         time_index: TArray,
-        values: TArray,
+        value: TArray,
         event_shape: ShapeLike,
     ):
         """
@@ -28,16 +28,16 @@ class _TimeseriesState(dict, Generic[TArray]):
         super().__init__()
 
         self["_time_index"] = time_index
-        self["_values"] = values
+        self["_value"] = value
         self["_event_shape"] = event_shape
 
     @property
     def time_index(self) -> TArray:
         return self["_time_index"]
 
-    @lazy_property("_values")
+    @lazy_property("_value")
     def value(self) -> TArray:
-        return self["_values"]
+        return self["_value"]
     
     @property
     def event_shape(self) -> ShapeLike:
@@ -56,4 +56,4 @@ class _TimeseriesState(dict, Generic[TArray]):
             time_increment: how much to increase ``.time_index`` with for new state.
         """
         
-        return _TimeseriesState(time_index=self.time_index + time_increment, values=values, event_shape=self.event_shape)
+        return _TimeseriesState(time_index=self.time_index + time_increment, value=values, event_shape=self.event_shape)
