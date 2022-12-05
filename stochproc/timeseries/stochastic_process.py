@@ -155,7 +155,7 @@ class StructuralStochasticProcess(ABC):
         x_0 = self.initial_sample(samples) if x_0 is None else x_0
 
         res = (x_0,)
-        for i in range(1, steps + 1):
+        for _ in range(1, steps + 1):
             res += (self.propagate(res[-1]),)
 
         return TimeseriesPath(*res[1:])
