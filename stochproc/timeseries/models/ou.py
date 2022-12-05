@@ -3,7 +3,6 @@ from pyro.distributions import Normal
 from torch.distributions.utils import broadcast_all
 
 from ..affine import AffineProcess
-from ...distributions import DistributionModule
 from ...typing import ParameterType
 
 
@@ -35,11 +34,9 @@ class OrnsteinUhlenbeck(AffineProcess):
         """
 
         kappa, gamma, sigma = broadcast_all(kappa, gamma, sigma)
+        increment_distribution = Normal(torch.zeros_like(kappa), torch.ones_like(gamma))
 
-        dist = DistributionModule(Normal, loc=0.0, scale=1.0)
-        initial_dist = DistributionModule(init_builder, kappa=kappa, gamma=gamma, sigma=sigma)
-
-        super().__init__(self._mean_scale, (kappa, gamma, sigma), initial_dist, dist, **kwargs)
+        super().__init__(self._mean_scale, increment_distribution, parameters=(kappa, gamma, sigma), initial_kernel=init_builder, **kwargs)
         self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
 
     def _mean_scale(self, x, k, g, s):
