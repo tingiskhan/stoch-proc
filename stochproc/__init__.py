@@ -1,8 +1,4 @@
-__version__ = "0.0.25"
-
-from torch.distributions import Distribution
-
-Distribution.set_default_validate_args(False)
+__version__ = "0.1.0"
 
 from . import distributions
 from . import timeseries
