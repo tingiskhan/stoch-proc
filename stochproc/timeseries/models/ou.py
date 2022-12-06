@@ -6,7 +6,7 @@ from ..affine import AffineProcess
 from ...typing import ParameterType
 
 
-def init_builder(kappa, gamma, sigma):
+def initial_kernel(kappa, gamma, sigma):
     return Normal(loc=gamma, scale=sigma / (2 * kappa).sqrt())
 
 
@@ -36,7 +36,7 @@ class OrnsteinUhlenbeck(AffineProcess):
         kappa, gamma, sigma = broadcast_all(kappa, gamma, sigma)
         increment_distribution = Normal(torch.zeros_like(kappa), torch.ones_like(gamma))
 
-        super().__init__(self._mean_scale, increment_distribution, parameters=(kappa, gamma, sigma), initial_kernel=init_builder, **kwargs)
+        super().__init__(self._mean_scale, increment_distribution, parameters=(kappa, gamma, sigma), initial_kernel=initial_kernel, **kwargs)
         self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
 
     def _mean_scale(self, x, k, g, s):
