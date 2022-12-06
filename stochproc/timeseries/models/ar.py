@@ -13,7 +13,7 @@ from ...distributions import DistributionModule, JointDistribution
 def _initial_kernel(alpha, beta, sigma, lags):
     base = _build_trans_dist(torch.zeros_like(beta), torch.ones_like(beta), lags)
 
-    return TransformedDistribution(base, AffineTransform(alpha, sigma.unsqueeze(-1) if lags > 1 else sigma))
+    return TransformedDistribution(base, AffineTransform(beta.unsqueeze(-1) if lags > 1 else beta, sigma.unsqueeze(-1) if lags > 1 else sigma))
 
 
 def _build_trans_dist(loc, scale, lags) -> Distribution:
