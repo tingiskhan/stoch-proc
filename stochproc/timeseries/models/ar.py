@@ -1,3 +1,4 @@
+from functools import partial
 import torch
 from pyro.distributions import Delta, Normal, TransformedDistribution, Distribution
 from pyro.distributions.transforms import AffineTransform
@@ -9,19 +10,19 @@ from ...distributions import DistributionModule, JointDistribution
 
 
 # TODO: Add beta for those where abs(beta) < 1.0
-def _build_init(alpha, beta, sigma, lags, **kwargs):
-    base = _build_trans_dist(torch.zeros_like(sigma), torch.ones_like(sigma), lags, **kwargs)
+def _initial_kernel(alpha, beta, sigma, lags):
+    base = _build_trans_dist(torch.zeros_like(sigma), torch.ones_like(sigma), lags)
 
     return TransformedDistribution(base, AffineTransform(alpha, sigma))
 
 
-def _build_trans_dist(loc, scale, lags, **kwargs) -> Distribution:
-    base = Normal(loc=loc, scale=scale, **kwargs)
+def _build_trans_dist(loc, scale, lags) -> Distribution:
+    base = Normal(loc=loc, scale=scale)
     if lags == 1:
         return base
 
     zeros = torch.zeros((*loc.shape, lags - 1), device=loc.device)
-    return JointDistribution(base, Delta(zeros, event_dim=1), **kwargs)
+    return JointDistribution(base, Delta(zeros, event_dim=1))
 
 
 class AR(LinearModel):
@@ -34,7 +35,7 @@ class AR(LinearModel):
     where :math:`W_t` is a univariate zero mean, unit variance Gaussian random variable.
     """
 
-    def __init__(self, alpha, beta, sigma, lags=1, **kwargs):
+    def __init__(self, alpha, beta, sigma, lags=1):
         """
         Initializes the :class:`AR` class.
 
@@ -53,10 +54,9 @@ class AR(LinearModel):
             raise Exception(f"Mismatch between shapes: {alpha.value.shape[-1]} != {lags}")
 
         self.lags = lags
-        inc_dist = DistributionModule(_build_trans_dist, loc=0.0, scale=1.0, lags=self.lags)
-        initial_dist = DistributionModule(_build_init, alpha=alpha, beta=beta, sigma=sigma, lags=self.lags)
+        inc_dist = _build_trans_dist(loc=torch.zeros_like(alpha), scale=torch.ones_like(alpha), lags=self.lags)
 
-        super().__init__(beta, sigma, increment_dist=inc_dist, b=alpha, initial_dist=initial_dist, **kwargs)
+        super().__init__(beta, sigma, b=alpha, increment_distribution=inc_dist, initial_kernel=partial(_initial_kernel, lags=self.lags))
         self.mean_scale_fun = self._mean_scale_wrapper(self.mean_scale_fun)
 
         bottom_shape = self.lags - 1, self.lags
