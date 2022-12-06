@@ -7,6 +7,10 @@ from ...distributions import DistributionModule
 from ...typing import ParameterType
 
 
+def initial_kernel(x_0, sigma):
+    return Normal(x_0, sigma).to_event(1)
+
+
 class LocalLinearTrend(LinearModel):
     r"""
     Implements a Local Linear Trend model, i.e. a model with the following dynamics
@@ -17,7 +21,7 @@ class LocalLinearTrend(LinearModel):
     where :math:`\sigma_i > 0``, and :math:`W_t, V_t` are two independent zero mean and unit variance Gaussians.
     """
 
-    def __init__(self, sigma: ParameterType, initial_mean: ParameterType = torch.zeros(2), **kwargs):
+    def __init__(self, sigma: ParameterType, initial_mean: ParameterType = None):
         r"""
         Initializes the :class:`LocalLinearTrend` class.
 
@@ -27,10 +31,18 @@ class LocalLinearTrend(LinearModel):
             kwargs: see base.
         """
 
-        sigma, initial_mean = broadcast_all(sigma, initial_mean)
+        sigma = broadcast_all(sigma)[0]
 
-        increment_dist = DistributionModule(Normal, loc=0.0, scale=1.0).expand(torch.Size([2])).to_event(1)
-        initial_dist = DistributionModule(Normal, loc=initial_mean, scale=sigma).to_event(1)
+        if not initial_mean:
+            initial_mean = torch.zeros_like(sigma)
+        else:
+            sigma, initial_mean = broadcast_all(sigma, initial_mean)
+
+        increment_dist = Normal(
+            loc=torch.tensor(0.0, device=sigma.device),
+            scale=torch.tensor(1.0, device=sigma.device)
+        ).expand(torch.Size([2])).to_event(1)
+
         a = torch.tensor([[1.0, 0.0], [1.0, 1.0]], device=sigma.device)
 
-        super().__init__(a, sigma, increment_dist=increment_dist, initial_dist=initial_dist, **kwargs)
+        super().__init__(a, sigma, increment_distribution=increment_dist, initial_kernel=initial_kernel, initial_parameters=(initial_mean, sigma))
