@@ -45,7 +45,7 @@ class AffineHierarchicalProcess(AffineJointStochasticProcess):
             main_process: main process.
         """
 
-        super(AffineHierarchicalProcess, self).__init__(sub=sub_process, main=main_process)
+        super().__init__(sub=sub_process, main=main_process)
 
     def mean_scale(self, x, parameters=None):
         sub_mean, sub_scale = self.sub_processes["sub"].mean_scale(x["sub"])
@@ -79,14 +79,14 @@ class LowerCholeskyHierarchicalProcess(LowerCholeskyJointStochasticProcess):
 
     def __init__(self, sub_process: AffineProcess, main_process: AffineProcess):
         """
-        Initializes the :class:`AffineHierarchalProcess` class.
+        Initializes the :class:`LowerCholeskyHierarchicalProcess` class.
 
         Args:
             sub_process: child/sub process.
             main_process: main process.
         """
 
-        super(LowerCholeskyHierarchicalProcess, self).__init__(sub=sub_process, main=main_process)
+        super().__init__(sub=sub_process, main=main_process)
 
     def mean_scale(self, x, parameters=None):
         sub_mean, sub_scale = self.sub_processes["sub"].mean_scale(x["sub"])
