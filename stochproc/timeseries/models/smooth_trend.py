@@ -4,7 +4,6 @@ import torch
 
 from ..affine import AffineProcess
 from ..hierarchical import AffineHierarchicalProcess
-from ...distributions import DistributionModule
 from ...typing import ParameterType
 
 

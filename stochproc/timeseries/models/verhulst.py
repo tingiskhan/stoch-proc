@@ -7,7 +7,6 @@ import torch
 
 from .ou import initial_kernel as ou_builder
 from ..diffusion import AffineEulerMaruyama
-from ...distributions import DistributionModule
 from ...typing import ParameterType
 
 

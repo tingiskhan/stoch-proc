@@ -7,7 +7,6 @@ from pyro.distributions.transforms import AffineTransform
 from .state import TimeseriesState
 from .stochastic_process import StructuralStochasticProcess
 from .typing import MeanScaleFun
-from ..distributions import DistributionModule
 
 
 class AffineProcess(StructuralStochasticProcess):

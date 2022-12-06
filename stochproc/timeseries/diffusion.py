@@ -6,8 +6,7 @@ from pyro.distributions import Normal, Delta
 
 from .affine import AffineProcess, MeanScaleFun
 from .stochastic_process import StructuralStochasticProcess
-from .typing import DiffusionFunction, Drift
-from ..distributions import DistributionModule
+from .typing import Drift
 from ..typing import ParameterType
 
 _info = torch.finfo(torch.get_default_dtype())

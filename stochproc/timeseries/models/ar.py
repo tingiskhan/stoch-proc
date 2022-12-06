@@ -6,7 +6,7 @@ from pyro.distributions.transforms import AffineTransform
 from torch.distributions.utils import broadcast_all
 
 from ..linear import LinearModel
-from ...distributions import DistributionModule, JointDistribution
+from ...distributions import JointDistribution
 
 
 # TODO: Add beta for those where abs(beta) < 1.0

@@ -1,11 +1,11 @@
 import pytest as pt
 import torch
-from torch.distributions import Normal
+from pyro.distributions import Normal
 
 from stochproc import timeseries as ts, distributions as dists
 
 
-def initial_distribution(*args) -> dists.DistributionModule:
+def initial_distribution(*args):
     return Normal(loc=0.0, scale=1.0)
 
 
