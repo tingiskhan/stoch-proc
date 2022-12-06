@@ -7,7 +7,6 @@ from .ucsv import UCSV
 from .seasonal import Seasonal
 from .smooth_trend import SmoothLinearTrend
 from .trending_ou import TrendingOU
-from .bivariate_ou import BivariateTrendingOU
 
 __all__ = [
     "OrnsteinUhlenbeck",
@@ -19,5 +18,4 @@ __all__ = [
     "Seasonal",
     "SmoothLinearTrend",
     "TrendingOU",
-    "BivariateTrendingOU",
 ]
