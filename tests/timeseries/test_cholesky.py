@@ -8,7 +8,7 @@ from .constants import SAMPLES, BATCH_SHAPES
 
 
 def mean_scale(x_, alpha, sigma):
-    return alpha * x_.values, sigma * torch.eye(2, device=x_.values.device)
+    return alpha * x_.value, sigma * torch.eye(2, device=x_.value.device)
 
 
 @pytest.fixture()

@@ -66,7 +66,7 @@ class TestPyroIntegration(object):
         model = models.RandomWalk(sigma)
 
         def build_obs(x):
-            return Normal(loc=x.values, scale=0.1)
+            return Normal(loc=x.value, scale=0.1)
 
         ssm = StateSpaceModel(model, build_obs, (), observe_every_step=observe_every_step)
 

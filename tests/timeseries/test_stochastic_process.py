@@ -26,7 +26,7 @@ class TestStochasticProcess(object):
         assert (sts.n_dim == 0) and (sts.num_vars == 1)
 
         initial_sample = sts.initial_sample()
-        assert callable(initial_sample._values) and isinstance(initial_sample.values, torch.Tensor)
+        assert callable(initial_sample._values) and isinstance(initial_sample.value, torch.Tensor)
 
     def test_same_parameter_same_module(self, initial_distribution):
         val = torch.nn.Parameter(torch.tensor(1.0), requires_grad=False)

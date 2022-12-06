@@ -8,7 +8,7 @@ from .constants import SAMPLES, BATCH_SHAPES
 
 
 def mean_scale(x_, alpha, sigma):
-    return alpha * x_.values, sigma
+    return alpha * x_.value, sigma
 
 
 class TestAffineTimeseriesOneDimensional(object):

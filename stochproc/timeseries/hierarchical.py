@@ -20,7 +20,7 @@ class AffineHierarchicalProcess(AffineJointStochasticProcess):
             >>> from pyro.distributions import Normal, LogNormal
             >>>
             >>> def mean_scale(x, kappa, theta, sigma):
-            >>>     return kappa * (theta - x["sub"].values / kappa - x.values), sigma
+            >>>     return kappa * (theta - x["sub"].value / kappa - x.value), sigma
             >>>
             >>> dt = 1.0
             >>> u = ts.models.OrnsteinUhlenbeck(0.01, 0.0, 0.01, dt=dt)
@@ -102,7 +102,7 @@ class LowerCholeskyHierarchicalProcess(LowerCholeskyJointStochasticProcess):
             main_mean,
         )
 
-        eye = torch.eye(self.event_shape.numel(), device=x.values.device)
+        eye = torch.eye(self.event_shape.numel(), device=x.value.device)
 
         scale = (
             _multiplier(sub_scale, eye[:sub_numel], self.sub_processes["sub"], x.batch_shape),

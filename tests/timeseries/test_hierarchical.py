@@ -12,7 +12,7 @@ from .constants import BATCH_SHAPES
 
 
 def mean_scale(x, beta, sigma):
-    return x["sub"].values + beta * x.values, sigma
+    return x["sub"].value + beta * x.value, sigma
 
 
 class TestHierarchicalProcess(object):
@@ -32,7 +32,7 @@ class TestHierarchicalProcess(object):
     @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
     def test_hull_white(self, batch_shape):
         def mean_scale(x, kappa, theta, sigma):
-            return kappa * (theta - x["sub"].values / kappa - x.values), sigma
+            return kappa * (theta - x["sub"].value / kappa - x.value), sigma
 
         dt = 1.0
         u = ts.models.OrnsteinUhlenbeck(0.01, 0.0, 0.01, dt=dt)

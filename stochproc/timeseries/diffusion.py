@@ -84,7 +84,7 @@ class AffineEulerMaruyama(AffineProcess, StochasticDifferentialEquation):
 
     def mean_scale(self, x, parameters=None):
         drift, diffusion = super().mean_scale(x, parameters)
-        return x.values + drift * self.dt, diffusion
+        return x.value + drift * self.dt, diffusion
 
 
 class Euler(AffineEulerMaruyama):
@@ -136,7 +136,7 @@ class Euler(AffineEulerMaruyama):
             return Delta(v=initial_values, event_dim=event_dim)
 
         def mean_scale(x, *args, **kwargs):
-            return dynamics(x, *args, **kwargs), tuning_std * torch.ones_like(x.values)
+            return dynamics(x, *args, **kwargs), tuning_std * torch.ones_like(x.value)
 
         if not tuning_std:
             dist = Delta(v=torch.zeros_like(initial_values), event_dim=event_dim)
@@ -158,8 +158,8 @@ class RungeKutta(Euler):
         params = parameters or self.parameters
 
         k1, g = self.mean_scale_fun(x, *params)
-        k2 = self.f(x.propagate_from(time_increment=self.dt / 2, values=x.values + self.dt * k1 / 2), *params)
-        k3 = self.f(x.propagate_from(time_increment=self.dt / 2, values=x.values + self.dt * k2 / 2), *params)
-        k4 = self.f(x.propagate_from(time_increment=self.dt, values=x.values + self.dt * k3), *params)
+        k2 = self.f(x.propagate_from(time_increment=self.dt / 2, values=x.value + self.dt * k1 / 2), *params)
+        k3 = self.f(x.propagate_from(time_increment=self.dt / 2, values=x.value + self.dt * k2 / 2), *params)
+        k4 = self.f(x.propagate_from(time_increment=self.dt, values=x.value + self.dt * k3), *params)
 
-        return x.values + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4), g
+        return x.value + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4), g

@@ -146,7 +146,7 @@ class LowerCholeskyJointStochasticProcess(AffineJointStochasticProcess):
         mean = tuple()
         scale = tuple()
 
-        eye = torch.eye(self.event_shape.numel(), device=x.values.device)
+        eye = torch.eye(self.event_shape.numel(), device=x.value.device)
 
         left = 0
         for i, (proc_name, proc) in enumerate(self.sub_processes.items()):

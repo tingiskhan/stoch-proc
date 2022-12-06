@@ -27,7 +27,7 @@ class AffineProcess(StructuralStochasticProcess):
             >>> from torch.distributions import Normal, TransformedDistribution, AffineTransform
             >>>
             >>> def mean_scale(x, alpha, beta, sigma):
-            >>>     return alpha + beta * x.values, sigma
+            >>>     return alpha + beta * x.value, sigma
             >>>
             >>> def initial_builder(alpha, beta, sigma):
             >>>     return Normal(loc=alpha, scale=sigma / (1 - beta ** 2).sqrt())

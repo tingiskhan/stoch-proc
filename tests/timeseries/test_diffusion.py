@@ -14,7 +14,7 @@ class TestDiffusionOneDimensional(object):
         dt = 0.05
 
         def dynamics(x_, kappa, gamma, sigma):
-            return kappa * (gamma - x_.values), sigma
+            return kappa * (gamma - x_.value), sigma
 
         parameters = (
            0.05,
@@ -45,7 +45,7 @@ class TestDiffusionOneDimensional(object):
         dt = 0.05
 
         def dynamics(x_, kappa, gamma):
-            return kappa * (gamma - x_.values)
+            return kappa * (gamma - x_.value)
 
         parameters = (
             0.05,
