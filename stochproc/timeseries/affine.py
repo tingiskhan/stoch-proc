@@ -45,7 +45,7 @@ class AffineProcess(StructuralStochasticProcess):
     """
 
     def __init__(
-        self, mean_scale: MeanScaleFun, increment_distribution: Distribution, *args, **kwargs
+        self, mean_scale: MeanScaleFun, increment_distribution: Distribution, parameters, initial_kernel, initial_parameters=None
     ):
         """
         Initializes the :class:`AffineProcess` class.
@@ -57,7 +57,7 @@ class AffineProcess(StructuralStochasticProcess):
             increment_dist: distribution that we location-scale transform.
         """
 
-        super().__init__(self.kernel, *args, **kwargs)
+        super().__init__(self.kernel, parameters=parameters, initial_kernel=initial_kernel, initial_parameters=initial_parameters)
 
         self.mean_scale_fun = mean_scale
         self.increment_distribution = increment_distribution
