@@ -75,7 +75,7 @@ class AR(LinearModel):
             bottom = self._bottom * mask
 
             a = torch.cat((a.unsqueeze(-2), bottom), dim=-2)
-            b = (self._b_masker * b).unsqueeze(-1)
+            b = self._b_masker * b
 
             return f(x, a, b, s.unsqueeze(-1))
 
