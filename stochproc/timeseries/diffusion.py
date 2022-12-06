@@ -57,7 +57,7 @@ class DiscretizedStochasticDifferentialEquation(StochasticDifferentialEquation):
         return self._kernel(x, *(self.parameters + (self.dt,)))
 
 
-class AffineEulerMaruyama(AffineProcess, StochasticDifferentialEquation):
+class AffineEulerMaruyama(AffineProcess):
     r"""
     Defines the Euler-Maruyama scheme for an SDE of affine nature, i.e. in which the dynamics are given by the
     functional pair of the drift and diffusion, such that we have
@@ -67,7 +67,7 @@ class AffineEulerMaruyama(AffineProcess, StochasticDifferentialEquation):
     where :math:`W_t` is an arbitrary random variable from which we can sample.
     """
 
-    def __init__(self, dynamics: MeanScaleFun, increment_distribution, dt, **kwargs):
+    def __init__(self, dynamics: MeanScaleFun, parameters, increment_distribution, dt, initial_kernel, initial_parameters=None):
         """
         Initializes the :class:`AffineEulerMaruyama` class.
 
@@ -80,7 +80,16 @@ class AffineEulerMaruyama(AffineProcess, StochasticDifferentialEquation):
             kwargs: see base.
         """
 
-        super().__init__(mean_scale=dynamics, increment_distribution=increment_distribution, dt=dt, **kwargs)
+        super().__init__(dynamics, increment_distribution, parameters, initial_kernel, initial_parameters=initial_parameters)
+
+        # TODO: Code duplication...
+        self.dt = dt
+    
+    def propagate(self, x, time_increment=1):
+        res = super().propagate(x, time_increment=time_increment)
+        res["dt"] = self.dt
+
+        return res
 
     def mean_scale(self, x, parameters=None):
         drift, diffusion = super().mean_scale(x, parameters)
