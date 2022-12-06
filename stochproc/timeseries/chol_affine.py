@@ -36,7 +36,7 @@ class LowerCholeskyAffineProcess(AffineProcess):
     def kernel(self, x, *args):
         loc, scale = self.mean_scale(x)
 
-        return TransformedDistribution(self.increment_distribution), t.LowerCholeskyAffine(loc, scale)
+        return TransformedDistribution(self.increment_distribution, t.LowerCholeskyAffine(loc, scale))
 
     def mean_scale(self, x, parameters=None):
         return self.mean_scale_fun(x, *(parameters or self.parameters))
