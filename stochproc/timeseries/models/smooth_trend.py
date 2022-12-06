@@ -1,5 +1,6 @@
 from pyro.distributions import Normal
 from torch.distributions.utils import broadcast_all
+import torch
 
 from ..affine import AffineProcess
 from ..hierarchical import AffineHierarchicalProcess
@@ -9,6 +10,10 @@ from ...typing import ParameterType
 
 def _mean_scale(x, s, lam):
     return x.values + lam * x["sub"].values, s
+
+
+def initial_kernel(l_0, eps):
+    return Normal(l_0, eps)
 
 
 class SmoothLinearTrend(AffineHierarchicalProcess):
@@ -34,8 +39,7 @@ class SmoothLinearTrend(AffineHierarchicalProcess):
 
         l_0, scaling, eps = broadcast_all(l_0, scaling, eps)
 
-        init_dist = DistributionModule(Normal, loc=l_0, scale=eps)
-        inc_dist = DistributionModule(Normal, loc=0.0, scale=1.0)
-        level_process = AffineProcess(_mean_scale, (eps, scaling), init_dist, inc_dist)
+        inc_dist = Normal(loc=torch.zeros_like(l_0), scale=torch.ones_like(l_0))
+        level_process = AffineProcess(_mean_scale, inc_dist, (eps, scaling), initial_kernel=initial_kernel, initial_parameters=(l_0, eps))
 
         super().__init__(trend_process, level_process)
