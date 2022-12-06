@@ -12,7 +12,7 @@ from ...typing import ParameterType
 
 
 def _f(x, k, g, s):
-    return k * (g - x.values) * x.values, s * x.values
+    return k * (g - x.value) * x.value, s * x.value
 
 
 def _initial_kernel(kappa, gamma, sigma):
