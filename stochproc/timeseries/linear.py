@@ -17,7 +17,7 @@ class LinearModel(AffineProcess):
     :math:`A \in \mathbb{R}^{n \times n}`.
     """
 
-    def __init__(self, a: ParameterType, sigma: ParameterType, b: ParameterType = None, **kwargs):
+    def __init__(self, a: ParameterType, sigma: ParameterType, increment_distribution, initial_kernel, b: ParameterType = None, initial_parameters=None):
         """
         Initializes the :class:`LinearModel` class.
 
@@ -32,7 +32,7 @@ class LinearModel(AffineProcess):
         if b is None:
             b = torch.tensor(0.0, device=a.device)
 
-        super().__init__(self._mean_scale, parameters=(a, b, sigma), **kwargs)
+        super().__init__(self._mean_scale, parameters=(a, b, sigma), increment_distribution=increment_distribution, initial_kernel=initial_kernel, initial_parameters=initial_parameters)
 
     def _mean_scale(self, x, a, b, s):
         if x.event_shape.numel() > 1:
