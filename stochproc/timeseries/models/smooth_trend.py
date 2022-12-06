@@ -9,7 +9,7 @@ from ...typing import ParameterType
 
 
 def _mean_scale(x, s, lam):
-    return x.values + lam * x["sub"].values, s
+    return x.value + lam * x["sub"].value, s
 
 
 def initial_kernel(l_0, eps):
