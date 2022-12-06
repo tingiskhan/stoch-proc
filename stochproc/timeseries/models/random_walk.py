@@ -29,8 +29,10 @@ class RandomWalk(LinearModel):
 
         scale, initial_mean = broadcast_all(scale, initial_mean)
 
-        initial_dist = DistributionModule(Normal, loc=initial_mean, scale=scale)
-        inc_dist = DistributionModule(Normal, loc=0.0, scale=1.0)
+        def initial_kernel(loc, scale):
+            return Normal(loc, scale)
+
+        increment_distribution = Normal(loc=torch.zeros_like(scale), scale=torch.ones_like(scale))
         a = torch.tensor(1.0, device=scale.device, dtype=scale.dtype)
 
-        super().__init__(a, scale, increment_dist=inc_dist, initial_dist=initial_dist, **kwargs)
+        super().__init__(a, scale, increment_distribution=increment_distribution, initial_kernel=initial_kernel, initial_parameters=(initial_mean, scale), **kwargs)

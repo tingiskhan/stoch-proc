@@ -41,7 +41,7 @@ class OrnsteinUhlenbeck(AffineProcess):
 
     def _mean_scale(self, x, k, g, s):
         d = (-k * self._dt).exp()
-        loc = g + (x.values - g) * d
+        loc = g + (x.value - g) * d
         scale = s / (2.0 * k).sqrt() * (1.0 - d.pow(2.0)).sqrt()
 
         return loc, scale
