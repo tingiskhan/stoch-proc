@@ -11,9 +11,9 @@ from ...distributions import DistributionModule, JointDistribution
 
 # TODO: Add beta for those where abs(beta) < 1.0
 def _initial_kernel(alpha, beta, sigma, lags):
-    base = _build_trans_dist(torch.zeros_like(sigma), torch.ones_like(sigma), lags)
+    base = _build_trans_dist(torch.zeros_like(beta), torch.ones_like(beta), lags)
 
-    return TransformedDistribution(base, AffineTransform(alpha, sigma))
+    return TransformedDistribution(base, AffineTransform(alpha, sigma.unsqueeze(-1) if lags > 1 else sigma))
 
 
 def _build_trans_dist(loc, scale, lags) -> Distribution:
@@ -62,7 +62,7 @@ class AR(LinearModel):
         bottom_shape = self.lags - 1, self.lags
 
         self._bottom = torch.eye(*bottom_shape, device=alpha.device)
-        self._b_masker = torch.eye(self.lags, 1, device=alpha.device).squeeze(-1)
+        self._b_masker = torch.eye(self.lags, 1, device=alpha.device).T
 
     def _mean_scale_wrapper(self, f):
         def _wrapper(x, a, b, s):
@@ -74,9 +74,9 @@ class AR(LinearModel):
             mask = torch.ones((*batch_shape, *self._bottom.shape), device=a.device)
             bottom = self._bottom * mask
 
-            a = torch.cat((a.unsqueeze(-2), bottom))
-            b = self._b_masker * b
+            a = torch.cat((a.unsqueeze(-2), bottom), dim=-2)
+            b = self._b_masker * b.unsqueeze(-1)
 
-            return f(x, a, b, s)
+            return f(x, a, b, s.unsqueeze(-1))
 
         return _wrapper
