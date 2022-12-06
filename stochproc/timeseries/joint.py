@@ -8,7 +8,8 @@ from .stochastic_process import StructuralStochasticProcess
 from .affine import AffineProcess
 from .state import TimeseriesState, JointState
 from .chol_affine import LowerCholeskyAffineProcess
-from ..distributions import JointDistribution, DistributionModule
+from ..distributions import JointDistribution
+
 
 
 # TODO: Perhaps unify with AffineJointStochasticProcess but I dislike multiple inheritance...
@@ -40,23 +41,19 @@ class JointStochasticProcess(StructuralStochasticProcess):
             processes: sub processes to combine into a single affine process.
         """
 
-        super(JointStochasticProcess, self).__init__(parameters=(), initial_dist=None)
+        super().__init__(kernel=self.kernel, parameters=(), initial_kernel=None)
 
-        self.sub_processes = torch.nn.ModuleDict(processes)
+        self.sub_processes = {k: v for k, v in processes.items() if isinstance(v, StructuralStochasticProcess)}
+        self._initial_kernel = self.initial_kernel
+        self._event_shape = self.initial_distribution.event_shape
 
-        self._initial_dist = DistributionModule(self._init_builder)
-        self._event_shape = self.initial_dist.event_shape
-
-    def _init_builder(self, **kwargs):
-        return JointDistribution(*(sub_proc.initial_dist for sub_proc in self.sub_processes.values()))
+    def initial_kernel(self):
+        return JointDistribution(*(sub_proc.initial_distribution for sub_proc in self.sub_processes.values()))
 
     def initial_sample(self, shape: torch.Size = torch.Size([])) -> JointState:
         return JointState(**{proc_name: proc.initial_sample(shape) for proc_name, proc in self.sub_processes.items()})
 
-    def functional_parameters(self, **kwargs):
-        return tuple((proc.functional_parameters(**kwargs) for proc in self.sub_processes.values()))
-
-    def build_density(self, x: TimeseriesState) -> Distribution:
+    def kernel(self, x: TimeseriesState) -> Distribution:
         return JointDistribution(*(sub_proc.build_density(x[k]) for k, sub_proc in self.sub_processes.items()))
 
 
@@ -82,24 +79,22 @@ class AffineJointStochasticProcess(AffineProcess):
         msg = f"All processes must be of type '{AffineProcess.__name__}'!"
         assert all(issubclass(p.__class__, AffineProcess) for p in processes.values()), msg
 
-        super(AffineJointStochasticProcess, self).__init__(
-            None, (), increment_dist=DistributionModule(self._inc_builder), initial_dist=None,
-        )
+        increment_distribution = JointDistribution(*(sub_proc.increment_distribution for sub_proc in processes.values()))
+        
+        super().__init__(mean_scale=None, increment_distribution=increment_distribution, parameters=(), initial_kernel=None)
+        
+    # TODO: Code duplication... >>>
+        self.sub_processes = {k: v for k, v in processes.items() if isinstance(v, StructuralStochasticProcess)}
+        self._initial_kernel = self.initial_kernel
+        self._event_shape = self.initial_distribution.event_shape
 
-        self.sub_processes = torch.nn.ModuleDict(processes)
-
-        self._initial_dist = DistributionModule(self._init_builder)
-        self._event_shape = self.initial_dist.event_shape
-
-    def _inc_builder(self, **kwargs):
-        return JointDistribution(*(sub_proc.increment_dist() for sub_proc in self.sub_processes.values()))
-
-    def _init_builder(self, **kwargs):
-        return JointDistribution(*(sub_proc.initial_dist for sub_proc in self.sub_processes.values()))
+    def initial_kernel(self):
+        return JointDistribution(*(sub_proc.initial_distribution for sub_proc in self.sub_processes.values()))
 
     def initial_sample(self, shape: torch.Size = torch.Size([])) -> JointState:
         return JointState(**{proc_name: proc.initial_sample(shape) for proc_name, proc in self.sub_processes.items()})
-
+    # >>>
+    
     def mean_scale(self, x: TimeseriesState, parameters=None):
         mean = tuple()
         scale = tuple()
@@ -112,10 +107,6 @@ class AffineJointStochasticProcess(AffineProcess):
             scale += (s.unsqueeze(-1) if proc.n_dim == 0 else s,)
 
         return torch.cat(mean, dim=-1), torch.cat(scale, dim=-1)
-
-    # TODO: Should perhaps return a flat list which is split later on, but I think this is better
-    def functional_parameters(self, **kwargs):
-        return tuple((proc.functional_parameters(**kwargs) for proc in self.sub_processes.values()))
 
 
 def _multiplier(s: torch.Tensor, eye: torch.Tensor, proc: StructuralStochasticProcess, batch_shape: torch.Size) -> torch.Tensor:
@@ -164,10 +155,10 @@ class LowerCholeskyJointStochasticProcess(AffineJointStochasticProcess):
         return torch.cat(mean, dim=-1), torch.cat(scale, dim=-2)
 
     # NB: Code duplication...
-    def build_density(self, x):
+    def kernel(self, x):
         loc, scale = self.mean_scale(x)
 
-        return TransformedDistribution(self.increment_dist(), t.LowerCholeskyAffine(loc, scale))
+        return TransformedDistribution(self.increment_distribution, t.LowerCholeskyAffine(loc, scale))
 
 
 def joint_process(**processes: StructuralStochasticProcess) -> StructuralStochasticProcess:
