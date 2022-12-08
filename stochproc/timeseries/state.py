@@ -1,8 +1,8 @@
-from typing import Union, Callable
+from typing import Callable, Union
+
 import torch
 
 from .utils import lazy_property
-
 
 LazyTensor = Union[torch.Tensor, Callable[[], torch.Tensor]]
 

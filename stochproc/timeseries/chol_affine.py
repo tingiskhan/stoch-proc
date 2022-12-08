@@ -1,4 +1,4 @@
-from pyro.distributions import transforms as t, TransformedDistribution
+from pyro.distributions import TransformedDistribution, transforms as t
 
 from .affine import AffineProcess
 

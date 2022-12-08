@@ -2,8 +2,8 @@ import torch
 from pyro.distributions import Normal
 from torch.distributions.utils import broadcast_all
 
-from ..linear import LinearModel
 from ...typing import ParameterType
+from ..linear import LinearModel
 
 
 def initial_kernel(x_0, sigma):

@@ -1,24 +1,22 @@
-import functools
-
 import torch
+from pyro.distributions import TransformedDistribution
+from pyro.distributions import transforms as t
 from torch.distributions import Distribution
-from pyro.distributions import TransformedDistribution, transforms as t
 
-from .stochastic_process import StructuralStochasticProcess
-from .affine import AffineProcess
-from .state import TimeseriesState, JointState
-from .chol_affine import LowerCholeskyAffineProcess
 from ..distributions import JointDistribution
-
+from .affine import AffineProcess
+from .chol_affine import LowerCholeskyAffineProcess
+from .state import JointState, TimeseriesState
+from .stochastic_process import StructuralStochasticProcess
 
 
 # TODO: Perhaps unify with AffineJointStochasticProcess but I dislike multiple inheritance...
 class JointStochasticProcess(StructuralStochasticProcess):
-    """
+    r"""
     A stochastic process comprising multiple separate stochastic processes by assuming independence between them. That
-    is, given :math:`n` stochastic processes :math:`\\{X^i_t\\}, i = 1, \\dots, n` we have
+    is, given :math:`n` stochastic processes :math:`\{ X^i_t \}, i = 1, \dots, n` we have
         .. math::
-            p(x^1_{t+1}, \\dots, x^n_{t+1} \\mid x^1_t, \\dots, x^n_t) = \\prod^n_{i=1} p(x^i_{t+1} \\mid x^i_t)
+            p(x^1_{t+1}, \dots, x^n_{t+1} \mid x^1_t, \dots, x^n_t) = \prod^n_{i=1} p(x^i_{t+1} \mid x^i_t)
 
     Example:
         In this example we'll construct a joint process of a random walk and an Ornstein-Uhlenbeck process.

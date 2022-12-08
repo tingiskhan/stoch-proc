@@ -1,12 +1,12 @@
 from functools import partial
-import torch
-from pyro.distributions import Delta, Normal, TransformedDistribution, Distribution
-from pyro.distributions.transforms import AffineTransform
 
+import torch
+from pyro.distributions import Delta, Distribution, Normal, TransformedDistribution
+from pyro.distributions.transforms import AffineTransform
 from torch.distributions.utils import broadcast_all
 
-from ..linear import LinearModel
 from ...distributions import JointDistribution
+from ..linear import LinearModel
 
 
 # TODO: Add beta for those where abs(beta) < 1.0

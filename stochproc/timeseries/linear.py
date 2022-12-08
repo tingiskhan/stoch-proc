@@ -1,8 +1,8 @@
 import torch
 
+from ..typing import ParameterType
 from .affine import AffineProcess
 from .utils import coerce_tensors
-from ..typing import ParameterType
 
 
 class LinearModel(AffineProcess):

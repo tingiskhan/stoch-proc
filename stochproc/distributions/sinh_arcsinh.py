@@ -1,5 +1,5 @@
 import torch
-from torch.distributions import constraints, utils, Transform
+from torch.distributions import Transform, constraints, utils
 
 
 class SinhArcsinhTransform(Transform):

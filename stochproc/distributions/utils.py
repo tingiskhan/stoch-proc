@@ -1,5 +1,5 @@
-from torch.distributions import MultivariateNormal
 import torch
+from torch.distributions import MultivariateNormal
 
 if torch.__version__ >= "1.9.0":
     chol_fun = torch.linalg.cholesky

@@ -1,13 +1,13 @@
 from math import sqrt
 
-from torch.distributions.utils import broadcast_all
+import torch
 from pyro.distributions import Normal, TransformedDistribution
 from pyro.distributions.transforms import AbsTransform
-import torch
+from torch.distributions.utils import broadcast_all
 
-from .ou import initial_kernel as ou_builder
-from ..diffusion import AffineEulerMaruyama
 from ...typing import ParameterType
+from ..diffusion import AffineEulerMaruyama
+from .ou import initial_kernel as ou_builder
 
 
 def _f(x, k, g, s):
@@ -31,13 +31,13 @@ class Verhulst(AffineEulerMaruyama):
     """
 
     def __init__(self, kappa: ParameterType, gamma: ParameterType, sigma: ParameterType, dt):
-        """
+        r"""
         Initializes the :class:`Verhulst` class.
 
         Args:
-            reversion: :math:`\\kappa`.
-            mean: :math:`\\gamma`.
-            vol: :math:`\\sigma`.
+            reversion: :math:`\kappa`.
+            mean: :math:`\gamma`.
+            vol: :math:`\sigma`.
             kwargs: see base.
         """
 

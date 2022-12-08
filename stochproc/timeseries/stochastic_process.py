@@ -1,21 +1,20 @@
 from abc import ABC
 from copy import deepcopy
-from typing import TypeVar, Callable, Tuple, Sequence
+from typing import Callable, Sequence, Tuple, TypeVar
+
 import pyro
 import torch
-from pyro.distributions import Normal, Distribution
+from pyro.distributions import Distribution, Normal
 
-from .state import TimeseriesState
-from .result import TimeseriesPath
-from .utils import coerce_tensors
 from ..typing import ParameterType
-
+from .result import TimeseriesPath
+from .state import TimeseriesState
+from .utils import coerce_tensors
 
 T = TypeVar("T")
 
 Kernel = Callable[[TimeseriesState, Sequence[ParameterType]], Distribution]
 InitialKernel = Callable[[Sequence[ParameterType]], Distribution]
-
 
 
 class StructuralStochasticProcess(ABC):

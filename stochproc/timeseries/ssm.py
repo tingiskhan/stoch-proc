@@ -1,13 +1,12 @@
-from typing import Tuple, Callable
+from typing import Callable, Tuple
 
 import pyro
 import torch
 from pyro.distributions import Distribution
 
-from .stochastic_process import StructuralStochasticProcess
-from .state import TimeseriesState, StateSpaceModelState
 from .result import StateSpacePath
-
+from .state import StateSpaceModelState, TimeseriesState
+from .stochastic_process import StructuralStochasticProcess
 
 _NAN = float("nan")
 

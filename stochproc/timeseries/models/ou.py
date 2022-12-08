@@ -2,8 +2,8 @@ import torch
 from pyro.distributions import Normal
 from torch.distributions.utils import broadcast_all
 
-from ..affine import AffineProcess
 from ...typing import ParameterType
+from ..affine import AffineProcess
 
 
 def initial_kernel(kappa, gamma, sigma):

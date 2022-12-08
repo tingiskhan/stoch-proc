@@ -2,8 +2,8 @@ import torch
 from pyro.distributions import Normal
 from torch.distributions.utils import broadcast_all
 
-from ..linear import LinearModel
 from ...typing import ParameterType
+from ..linear import LinearModel
 
 
 class RandomWalk(LinearModel):
@@ -17,11 +17,11 @@ class RandomWalk(LinearModel):
     """
 
     def __init__(self, scale: ParameterType, initial_mean: ParameterType = 0.0, **kwargs):
-        """
+        r"""
         Initializes the :class:`RandomWalk` model.
 
         Args:
-            scale: :math:`\\sigma` in class doc.
+            scale: :math:`\sigma` in class doc.
             initial_mean: parameter specifying the mean of the initial distribution. Defaults to 0.
             kwargs: see base.
         """

@@ -1,10 +1,10 @@
+import torch
 from pyro.distributions import Normal
 from torch.distributions.utils import broadcast_all
-import torch
 
+from ...typing import ParameterType
 from ..affine import AffineProcess
 from ..hierarchical import AffineHierarchicalProcess
-from ...typing import ParameterType
 
 
 def _mean_scale(x, s, lam):

@@ -1,10 +1,10 @@
-from torch.distributions.utils import broadcast_all
-from pyro.distributions import Normal
 import torch
+from pyro.distributions import Normal
+from torch.distributions.utils import broadcast_all
 
-from .ou import initial_kernel
-from ..affine import AffineProcess
 from ...typing import ParameterType
+from ..affine import AffineProcess
+from .ou import initial_kernel
 
 
 class TrendingOU(AffineProcess):

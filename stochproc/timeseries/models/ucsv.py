@@ -2,8 +2,8 @@ import torch
 from pyro.distributions import Normal
 from torch.distributions.utils import broadcast_all
 
-from ..affine import AffineProcess
 from ...typing import ParameterType
+from ..affine import AffineProcess
 
 
 def f(x, sigma_volatility):
@@ -29,11 +29,11 @@ class UCSV(AffineProcess):
     """
 
     def __init__(self, sigma_volatility: ParameterType, initial_state_mean: ParameterType = torch.zeros(2)):
-        """
+        r"""
         Inititalizes :class:`UCSV`.
 
         Args:
-            sigma_volatility: The volatility of the log volatility process, i.e. :math:`\\sigma_v`.
+            sigma_volatility: The volatility of the log volatility process, i.e. :math:`\sigma_v`.
             initial_state_mean: Optional, whether to use initial values other than 0 for both processes.
             kwargs: See base.
         """

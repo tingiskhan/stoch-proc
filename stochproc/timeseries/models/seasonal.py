@@ -1,7 +1,7 @@
 from functools import partial
+
 import torch
 from torch.distributions.utils import broadcast_all
-
 
 from .ar import AR
 

@@ -2,12 +2,12 @@ import math
 from abc import ABC
 
 import torch
-from pyro.distributions import Normal, Delta
+from pyro.distributions import Delta, Normal
 
+from ..typing import ParameterType
 from .affine import AffineProcess, MeanScaleFun
 from .stochastic_process import StructuralStochasticProcess
 from .typing import Drift
-from ..typing import ParameterType
 
 _info = torch.finfo(torch.get_default_dtype())
 EPS = math.sqrt(_info.eps)
