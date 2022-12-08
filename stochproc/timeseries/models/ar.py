@@ -54,7 +54,7 @@ class AR(LinearModel):
             raise Exception(f"Mismatch between shapes: {alpha.value.shape[-1]} != {lags}")
 
         self.lags = lags
-        inc_dist = _build_trans_dist(loc=torch.zeros_like(alpha), scale=torch.ones_like(alpha), lags=self.lags)
+        inc_dist = _build_trans_dist(loc=torch.tensor(0.0, device=alpha.device), scale=torch.tensor(1.0, device=alpha.device), lags=self.lags)
 
         super().__init__(beta, sigma, b=alpha, increment_distribution=inc_dist, initial_kernel=partial(_initial_kernel, lags=self.lags))
         self.mean_scale_fun = self._mean_scale_wrapper(self.mean_scale_fun)

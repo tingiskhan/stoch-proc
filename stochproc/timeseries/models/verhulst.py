@@ -41,7 +41,7 @@ class Verhulst(AffineEulerMaruyama):
             kwargs: see base.
         """
 
-        kappa, gamma, sigma = broadcast_all(kappa, gamma, sigma)
-        increment_distribution = Normal(torch.zeros_like(kappa), sqrt(dt) * torch.ones_like(kappa))
+        kappa, gamma, sigma = broadcast_all(kappa, gamma, sigma)        
+        increment_distribution = Normal(torch.tensor(0.0, device=kappa.device), torch.tensor(sqrt(dt), device=kappa.device))
 
         super().__init__(_f, (kappa, gamma, sigma), increment_distribution, dt, _initial_kernel)

@@ -21,7 +21,6 @@ class TrendingOU(AffineProcess):
         sigma: ParameterType,
         v_0: ParameterType,
         dt: float = 1.0,
-        **kwargs
     ):
         """
         Initializes the :class:`TrendingOU` object.
@@ -35,7 +34,7 @@ class TrendingOU(AffineProcess):
         """
 
         kappa, gamma, sigma, v_0 = broadcast_all(kappa, gamma, sigma, v_0)
-        increment_distribution = Normal(torch.zeros_like(kappa), torch.ones_like(kappa))
+        increment_distribution = Normal(torch.tensor(0.0, device=kappa.device), torch.tensor(1.0, device=kappa.device))
 
         super().__init__(self._mean_scale, increment_distribution, (kappa, gamma, v_0, sigma), initial_kernel, initial_parameters=(kappa, v_0, sigma))
         self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt

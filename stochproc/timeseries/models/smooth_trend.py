@@ -38,7 +38,7 @@ class SmoothLinearTrend(AffineHierarchicalProcess):
 
         l_0, scaling, eps = broadcast_all(l_0, scaling, eps)
 
-        inc_dist = Normal(loc=torch.zeros_like(l_0), scale=torch.ones_like(l_0))
+        inc_dist = Normal(torch.tensor(0.0, device=l_0.device), torch.tensor(1.0, device=l_0.device))
         level_process = AffineProcess(_mean_scale, inc_dist, (eps, scaling), initial_kernel=initial_kernel, initial_parameters=(l_0, eps))
 
         super().__init__(trend_process, level_process)
