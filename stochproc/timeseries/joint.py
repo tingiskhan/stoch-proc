@@ -152,7 +152,7 @@ class LowerCholeskyJointStochasticProcess(AffineJointStochasticProcess):
             mean += (m.unsqueeze(-1) if proc.n_dim == 0 else m,)
 
             numel = proc.event_shape.numel()
-            eye_slice = eye[left : left + numel]
+            eye_slice = eye[left: left + numel]
 
             scale += (_multiplier(s, eye_slice, proc, x.batch_shape),)
             left += numel

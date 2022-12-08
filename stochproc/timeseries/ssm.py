@@ -1,4 +1,3 @@
-from typing import Callable, Tuple
 
 import pyro
 import torch
@@ -26,7 +25,7 @@ class StateSpaceModel(StructuralStochasticProcess):
 
         Args:
             hidden: hidden process.
-            f: the function for building the observable distribution.
+            kernel: see :class:`StructuralStochasticProcess`.
             parameters: see :class:`StructuralStochasticProcess`.
             observe_every_step: parameter for specifying the frequency at which we observe the data.
         """
