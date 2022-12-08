@@ -47,7 +47,7 @@ class JointDistribution(Distribution):
         super().__init__(event_shape=event_shape, batch_shape=single_batch_shape, **kwargs)
 
         if any(len(d.event_shape) > 1 for d in distributions):
-            raise NotImplementedError(f"Currently cannot handle matrix valued distributions!")
+            raise NotImplementedError("Currently cannot handle matrix valued distributions!")
 
         self.distributions = distributions
         self.indices = _indices
