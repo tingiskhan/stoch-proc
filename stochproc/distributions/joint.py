@@ -44,7 +44,7 @@ class JointDistribution(Distribution):
         single_batch_shape = sorted(batch_shapes, key=lambda u: u[0])[-1][1]
         distributions = [d.expand(single_batch_shape) for d in distributions]
 
-        super(JointDistribution, self).__init__(event_shape=event_shape, batch_shape=single_batch_shape, **kwargs)
+        super().__init__(event_shape=event_shape, batch_shape=single_batch_shape, **kwargs)
 
         if any(len(d.event_shape) > 1 for d in distributions):
             raise NotImplementedError(f"Currently cannot handle matrix valued distributions!")
