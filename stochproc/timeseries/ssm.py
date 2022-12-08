@@ -12,9 +12,6 @@ from .result import StateSpacePath
 _NAN = float("nan")
 
 
-DistBuilder = Callable[[TimeseriesState, Tuple[torch.Tensor, ...]], Distribution]
-
-
 class StateSpaceModel(StructuralStochasticProcess):
     r"""
     Class representing a state space model, i.e. a dynamical system given by the pair stochastic processes
@@ -24,7 +21,7 @@ class StateSpaceModel(StructuralStochasticProcess):
     .. _`here`: https://en.wikipedia.org/wiki/State-space_representation
     """
 
-    def __init__(self, hidden: StructuralStochasticProcess, f: DistBuilder, parameters, observe_every_step=1, **kwargs):
+    def __init__(self, hidden: StructuralStochasticProcess, kernel, parameters, observe_every_step=1):
         """
         Initializes the :class:`StateSpaceModel` class.
 
@@ -35,7 +32,7 @@ class StateSpaceModel(StructuralStochasticProcess):
             observe_every_step: parameter for specifying the frequency at which we observe the data.
         """
 
-        super().__init__(kernel=f, parameters=parameters, initial_kernel=None, **kwargs)
+        super().__init__(kernel=kernel, parameters=parameters, initial_kernel=None)
         
         self.hidden = hidden
         self.observe_every_step = observe_every_step
