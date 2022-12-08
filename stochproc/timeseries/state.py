@@ -30,7 +30,7 @@ class TimeseriesState(dict):
 
         super().__init__()
 
-        self["_time_index"] = (time_index if isinstance(time_index, torch.Tensor) else torch.tensor(time_index)).int()        
+        self["_time_index"] = (time_index if isinstance(time_index, torch.Tensor) else torch.tensor(time_index)).int()
         self["_value"] = values
         self["_event_shape"] = event_shape
 

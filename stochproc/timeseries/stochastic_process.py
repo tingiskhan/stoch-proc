@@ -30,7 +30,11 @@ class StructuralStochasticProcess(ABC):
     """
 
     def __init__(
-        self, kernel: Kernel, parameters: Sequence[ParameterType], initial_kernel: InitialKernel, initial_parameters: Sequence[ParameterType] = None
+        self,
+        kernel: Kernel,
+        parameters: Sequence[ParameterType],
+        initial_kernel: InitialKernel,
+        initial_parameters: Sequence[ParameterType] = None,
     ):
         """
         Initializes the :class:`StructuralStochasticProcess` class.
@@ -46,7 +50,7 @@ class StructuralStochasticProcess(ABC):
 
         self._initial_kernel = initial_kernel
         self._kernel = kernel
-        
+
         self.parameters = coerce_tensors(*parameters)
         self.initial_parameters = coerce_tensors(*initial_parameters) if initial_parameters else self.parameters
 
@@ -173,7 +177,9 @@ class StructuralStochasticProcess(ABC):
             init_state = self.initial_sample()
             batched_state = init_state.propagate_from(values=obs[:-1], time_increment=time_index)
 
-        log_prob = self.build_density(batched_state).log_prob(obs[1:]).sum() + self.initial_distribution.log_prob(obs[0])
+        log_prob = self.build_density(batched_state).log_prob(obs[1:]).sum() + self.initial_distribution.log_prob(
+            obs[0]
+        )
         pyro_lib.factor("model_prob", log_prob)
 
         return obs

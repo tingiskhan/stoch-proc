@@ -32,7 +32,7 @@ class StateSpaceModel(StructuralStochasticProcess):
         """
 
         super().__init__(kernel=kernel, parameters=parameters, initial_kernel=None)
-        
+
         self.hidden = hidden
         self.observe_every_step = observe_every_step
         self._event_shape = self.initial_sample()["y"].event_shape
@@ -45,9 +45,7 @@ class StateSpaceModel(StructuralStochasticProcess):
         density = self.build_density(x)
         empty = float("nan") * torch.ones(density.batch_shape + density.event_shape, device=x.value.device)
 
-        return StateSpaceModelState(
-            x=x, y=TimeseriesState(x.time_index, values=empty, event_shape=density.event_shape)
-        )
+        return StateSpaceModelState(x=x, y=TimeseriesState(x.time_index, values=empty, event_shape=density.event_shape))
 
     def initial_sample(self, shape: torch.Size = torch.Size([])) -> StateSpaceModelState:
         x_state = self.hidden.initial_sample(shape)

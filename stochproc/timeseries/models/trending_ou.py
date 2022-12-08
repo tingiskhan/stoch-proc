@@ -36,7 +36,13 @@ class TrendingOU(AffineProcess):
         kappa, gamma, sigma, v_0 = broadcast_all(kappa, gamma, sigma, v_0)
         increment_distribution = Normal(torch.tensor(0.0, device=kappa.device), torch.tensor(1.0, device=kappa.device))
 
-        super().__init__(self._mean_scale, increment_distribution, (kappa, gamma, v_0, sigma), initial_kernel, initial_parameters=(kappa, v_0, sigma))
+        super().__init__(
+            self._mean_scale,
+            increment_distribution,
+            (kappa, gamma, v_0, sigma),
+            initial_kernel,
+            initial_parameters=(kappa, v_0, sigma),
+        )
         self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
 
     def _mean_scale(self, x, k, g, v_0, s):

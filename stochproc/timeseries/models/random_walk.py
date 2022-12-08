@@ -34,4 +34,11 @@ class RandomWalk(LinearModel):
         increment_distribution = Normal(torch.tensor(0.0, device=scale.device), torch.tensor(1.0, device=scale.device))
         a = torch.tensor(1.0, device=scale.device, dtype=scale.dtype)
 
-        super().__init__(a, scale, increment_distribution=increment_distribution, initial_kernel=initial_kernel, initial_parameters=(initial_mean, scale), **kwargs)
+        super().__init__(
+            a,
+            scale,
+            increment_distribution=increment_distribution,
+            initial_kernel=initial_kernel,
+            initial_parameters=(initial_mean, scale),
+            **kwargs
+        )

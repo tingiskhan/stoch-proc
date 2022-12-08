@@ -33,7 +33,7 @@ def lazy_property(property_name: str):
             if callable(prop):
                 # TODO: Perhaps verify that self is a dictionary...
                 prop = self[property_name] = prop()
-                        
+
             return prop
 
         return property(wrapper_inner, doc=f.__doc__)

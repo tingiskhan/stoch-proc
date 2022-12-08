@@ -77,11 +77,15 @@ class AffineJointStochasticProcess(AffineProcess):
         msg = f"All processes must be of type '{AffineProcess.__name__}'!"
         assert all(issubclass(p.__class__, AffineProcess) for p in processes.values()), msg
 
-        increment_distribution = JointDistribution(*(sub_proc.increment_distribution for sub_proc in processes.values()))
-        
-        super().__init__(mean_scale=None, increment_distribution=increment_distribution, parameters=(), initial_kernel=None)
-        
-    # TODO: Code duplication... >>>
+        increment_distribution = JointDistribution(
+            *(sub_proc.increment_distribution for sub_proc in processes.values())
+        )
+
+        super().__init__(
+            mean_scale=None, increment_distribution=increment_distribution, parameters=(), initial_kernel=None
+        )
+
+        # TODO: Code duplication... >>>
         self.sub_processes = {k: v for k, v in processes.items() if isinstance(v, StructuralStochasticProcess)}
         self._initial_kernel = self.initial_kernel
         self._event_shape = self.initial_distribution.event_shape
@@ -91,8 +95,9 @@ class AffineJointStochasticProcess(AffineProcess):
 
     def initial_sample(self, shape: torch.Size = torch.Size([])) -> JointState:
         return JointState(**{proc_name: proc.initial_sample(shape) for proc_name, proc in self.sub_processes.items()})
+
     # >>>
-    
+
     def mean_scale(self, x: TimeseriesState, parameters=None):
         mean = tuple()
         scale = tuple()
@@ -107,7 +112,9 @@ class AffineJointStochasticProcess(AffineProcess):
         return torch.cat(mean, dim=-1), torch.cat(scale, dim=-1)
 
 
-def _multiplier(s: torch.Tensor, eye: torch.Tensor, proc: StructuralStochasticProcess, batch_shape: torch.Size) -> torch.Tensor:
+def _multiplier(
+    s: torch.Tensor, eye: torch.Tensor, proc: StructuralStochasticProcess, batch_shape: torch.Size
+) -> torch.Tensor:
     """
     Helper method for performing multiplying operation.
 
@@ -145,7 +152,7 @@ class LowerCholeskyJointStochasticProcess(AffineJointStochasticProcess):
             mean += (m.unsqueeze(-1) if proc.n_dim == 0 else m,)
 
             numel = proc.event_shape.numel()
-            eye_slice = eye[left:left + numel]
+            eye_slice = eye[left : left + numel]
 
             scale += (_multiplier(s, eye_slice, proc, x.batch_shape),)
             left += numel

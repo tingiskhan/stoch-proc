@@ -39,9 +39,14 @@ class UCSV(AffineProcess):
         """
 
         sigma_volatility = broadcast_all(sigma_volatility)[0]
-        
-        increment_dist = Normal(
-            loc=torch.tensor(0.0, device=sigma_volatility.device), scale=torch.tensor(1.0, device=sigma_volatility.device)
-        ).expand(sigma_volatility.shape + torch.Size([2])).to_event(1)
+
+        increment_dist = (
+            Normal(
+                loc=torch.tensor(0.0, device=sigma_volatility.device),
+                scale=torch.tensor(1.0, device=sigma_volatility.device),
+            )
+            .expand(sigma_volatility.shape + torch.Size([2]))
+            .to_event(1)
+        )
 
         super().__init__(f, increment_dist, (sigma_volatility,), initial_kernel, (initial_state_mean, sigma_volatility))

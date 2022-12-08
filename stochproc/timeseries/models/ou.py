@@ -36,7 +36,13 @@ class OrnsteinUhlenbeck(AffineProcess):
         kappa, gamma, sigma = broadcast_all(kappa, gamma, sigma)
         increment_distribution = Normal(torch.tensor(0.0, device=kappa.device), torch.tensor(1.0, device=kappa.device))
 
-        super().__init__(self._mean_scale, increment_distribution, parameters=(kappa, gamma, sigma), initial_kernel=initial_kernel, **kwargs)
+        super().__init__(
+            self._mean_scale,
+            increment_distribution,
+            parameters=(kappa, gamma, sigma),
+            initial_kernel=initial_kernel,
+            **kwargs
+        )
         self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
 
     def _mean_scale(self, x, k, g, s):

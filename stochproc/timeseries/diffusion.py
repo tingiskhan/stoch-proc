@@ -66,7 +66,9 @@ class AffineEulerMaruyama(AffineProcess):
     where :math:`W_t` is an arbitrary random variable from which we can sample.
     """
 
-    def __init__(self, dynamics: MeanScaleFun, parameters, increment_distribution, dt, initial_kernel, initial_parameters=None):
+    def __init__(
+        self, dynamics: MeanScaleFun, parameters, increment_distribution, dt, initial_kernel, initial_parameters=None
+    ):
         """
         Initializes the :class:`AffineEulerMaruyama` class.
 
@@ -79,11 +81,13 @@ class AffineEulerMaruyama(AffineProcess):
             kwargs: see base.
         """
 
-        super().__init__(dynamics, increment_distribution, parameters, initial_kernel, initial_parameters=initial_parameters)
+        super().__init__(
+            dynamics, increment_distribution, parameters, initial_kernel, initial_parameters=initial_parameters
+        )
 
         # TODO: Code duplication...
         self.dt = dt
-    
+
     def propagate(self, x, time_increment=1):
         res = super().propagate(x, time_increment=time_increment)
         res["dt"] = self.dt
@@ -140,7 +144,7 @@ class Euler(AffineEulerMaruyama):
         def initial_kernel(loc, scale):
             if tuning_std:
                 return Normal(loc, scale).to_event(event_dim)
-            
+
             return Delta(v=initial_values, event_dim=event_dim)
 
         def mean_scale(x, *args, **kwargs):
@@ -149,9 +153,18 @@ class Euler(AffineEulerMaruyama):
         if not tuning_std:
             dist = Delta(v=torch.zeros_like(initial_values), event_dim=event_dim)
         else:
-            dist = Normal(loc=torch.zeros_like(initial_values), scale=math.sqrt(dt) * torch.ones_like(initial_values)).to_event(event_dim)
+            dist = Normal(
+                loc=torch.zeros_like(initial_values), scale=math.sqrt(dt) * torch.ones_like(initial_values)
+            ).to_event(event_dim)
 
-        super().__init__(dynamics=mean_scale, increment_distribution=dist, dt=dt, parameters=parameters, initial_kernel=initial_kernel, initial_parameters=(initial_values, EPS))
+        super().__init__(
+            dynamics=mean_scale,
+            increment_distribution=dist,
+            dt=dt,
+            parameters=parameters,
+            initial_kernel=initial_kernel,
+            initial_parameters=(initial_values, EPS),
+        )
         self.f = dynamics
 
 

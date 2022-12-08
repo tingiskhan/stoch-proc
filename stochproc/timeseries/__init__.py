@@ -7,7 +7,12 @@ from .diffusion import (
     RungeKutta,
     StochasticDifferentialEquation,
 )
-from .joint import AffineJointStochasticProcess, JointStochasticProcess, LowerCholeskyJointStochasticProcess, joint_process
+from .joint import (
+    AffineJointStochasticProcess,
+    JointStochasticProcess,
+    LowerCholeskyJointStochasticProcess,
+    joint_process,
+)
 from .linear import LinearModel
 from .ssm import StateSpaceModel
 from .state import TimeseriesState, JointState
@@ -35,5 +40,5 @@ __all__ = [
     "LowerCholeskyAffineProcess",
     "JointStochasticProcess",
     "LowerCholeskyJointStochasticProcess",
-    "joint_process"
+    "joint_process",
 ]

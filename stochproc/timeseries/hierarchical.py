@@ -106,7 +106,7 @@ class LowerCholeskyHierarchicalProcess(LowerCholeskyJointStochasticProcess):
 
         scale = (
             _multiplier(sub_scale, eye[:sub_numel], self.sub_processes["sub"], x.batch_shape),
-            _multiplier(main_scale, eye[sub_numel:], self.sub_processes["main"], x.batch_shape)
+            _multiplier(main_scale, eye[sub_numel:], self.sub_processes["main"], x.batch_shape),
         )
 
         return torch.cat(mean, dim=-1), torch.cat(scale, dim=-2)
