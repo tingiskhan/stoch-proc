@@ -47,7 +47,7 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
         )
 
     def kernel(self, x: TimeseriesState, alpha, xi, eta) -> Distribution:
-        """
+        r"""
         Joint density for the realizations of (\lambda_t, dN_t, \lambda_s, q).
         N.B.: Jumps are modeled as a Bernoulli random variable (there could at most one jump for each dt).
         """
