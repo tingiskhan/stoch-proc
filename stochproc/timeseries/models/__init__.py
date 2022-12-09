@@ -7,6 +7,7 @@ from .ucsv import UCSV
 from .seasonal import Seasonal
 from .smooth_trend import SmoothLinearTrend
 from .trending_ou import TrendingOU
+from .self_exciting_process import SelfExcitingLatentProcesses
 
 __all__ = [
     "OrnsteinUhlenbeck",
@@ -18,4 +19,5 @@ __all__ = [
     "Seasonal",
     "SmoothLinearTrend",
     "TrendingOU",
+    "SelfExcitingLatentProcesses",""
 ]
