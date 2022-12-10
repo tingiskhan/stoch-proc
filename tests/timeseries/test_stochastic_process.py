@@ -40,3 +40,17 @@ class TestStochasticProcess(object):
 
         assert (sts_1 is not sts_2) and (sts_2.parameters[0] is sts_1.parameters[0])
         assert len(tuple(sts_1.parameters)) == len(tuple(sts_2.parameters)) == 1
+
+    def test_yield_parameters(self):
+        val = torch.nn.Parameter(torch.tensor(1.0), requires_grad=False)
+
+        parameters = [
+            val,
+            val
+        ]
+
+        sts = ts.StructuralStochasticProcess(None, parameters, initial_distribution)
+
+        parameters = tuple(sts.yield_parameters())
+
+        assert len(parameters) == 1 and parameters[0] is val

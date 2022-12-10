@@ -93,3 +93,10 @@ class StateSpaceModel(StructuralStochasticProcess):
             pyro_lib.factor("y_log_prob", obs_dist.log_prob(obs).sum(dim=0))
 
         return latent
+
+    def yield_parameters(self, filt=None):
+        for p in self.hidden.yield_parameters(filt):
+            yield p
+
+        for p in super().yield_parameters(filt):
+            yield p

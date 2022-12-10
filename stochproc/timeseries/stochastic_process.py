@@ -51,6 +51,7 @@ class StructuralStochasticProcess(ABC):
         self._initial_kernel = initial_kernel
         self._kernel = kernel
 
+        # TODO: Consider using a custom container instead
         self.parameters = coerce_tensors(*parameters)
         self.initial_parameters = coerce_tensors(*initial_parameters) if initial_parameters else self.parameters
 
@@ -88,7 +89,7 @@ class StructuralStochasticProcess(ABC):
         Returns the initial distribution.
         """
 
-        return self._initial_kernel(*self.initial_parameters)
+        return self._initial_kernel(*self.initial_parameters)    
 
     def initial_sample(self, shape: torch.Size = torch.Size([])) -> TimeseriesState:
         """
@@ -321,3 +322,18 @@ class StructuralStochasticProcess(ABC):
             raise Exception(f"No such mode exists: '{mode}'!")
 
         return latent
+
+    def yield_parameters(self, filt: Callable[[torch.Tensor], bool] = None):
+        """
+        Yields parameters of models.
+
+        Args:
+            filt: filter function.
+
+        Returns:
+            Sequence[torch.Tensor]: _description_
+        """
+
+        for p in set(self.parameters + self.initial_parameters):
+            if filt is None or filt(p):
+                yield p
