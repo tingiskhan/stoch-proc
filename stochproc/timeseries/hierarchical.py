@@ -17,17 +17,20 @@ class AffineHierarchicalProcess(AffineJointStochasticProcess):
         One example is the two factor `Hull-White model`_, which in code is defined as (with arbitrary parameters)
             >>> from stochproc import timeseries as ts, distributions as dists
             >>> from math import sqrt
+            >>> import torch
             >>> from pyro.distributions import Normal, LogNormal
             >>>
             >>> def mean_scale(x, kappa, theta, sigma):
             >>>     return kappa * (theta - x["sub"].value / kappa - x.value), sigma
             >>>
+            >>> def initial_kernel(kappa, theta, sigma):
+            >>>     return Normal(torch.zeros_like(kappa), torch.ones_like(kappa))
+            >>>
             >>> dt = 1.0
             >>> u = ts.models.OrnsteinUhlenbeck(0.01, 0.0, 0.01, dt=dt)
             >>>
-            >>> inc_dist = dists.DistributionModule(Normal, loc=0.0, scale=sqrt(dt))
-            >>> init_dist = dists.DistributionModule(LogNormal, loc=-2.0, scale=0.5)
-            >>> hull_white = ts.AffineEulerMaruyama(mean_scale, (0.01, 0.5, 0.05), init_dist, inc_dist, dt).add_sub_process(u)
+            >>> inc_dist = Normal(loc=0.0, scale=sqrt(dt))
+            >>> hull_white = ts.AffineEulerMaruyama(mean_scale, (0.01, 0.5, 0.05), inc_dist, initial_kernel=initial_kernel, dt=dt).add_sub_process(u)
             >>>
             >>> x = hull_white.sample_states(500).get_path()
             >>> x.shape
