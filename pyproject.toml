@@ -42,8 +42,8 @@ homepage = "https://github.com/tingiskhan/stoch-proc"
 [tool.black]
 line-length = 120
 
-[tool.setuptools]
-packages = ["stochproc"]
+[tool.setuptools.packages.find]
+include = ["stochproc*"]
 
 [tool.bumpver]
 current_version = "0.1.1"
