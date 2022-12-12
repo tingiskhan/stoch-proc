@@ -2,6 +2,10 @@
 
 ## Versions
 
+### v0.0.26
+ - Simplifies backend by removing all dependencies to `torch.nn.Module` to facilitate supporting JAX.
+ - Migrates to pyproject.toml file instead.
+
 ### v0.0.24
  - Adds support for scaling sub process in `SmoothLinearTrend`
 
