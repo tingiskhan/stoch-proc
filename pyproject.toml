@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stochproc"
-version = "0.1.0"
 description = "Stochastic processes in pytorch and pyro"
+dynamic = ["version"]
 authors = [
     {name = "Victor Gruselius", email="victor.gruselius@gmail.com"},
 ]
@@ -45,3 +45,23 @@ line-length = 120
 
 [tool.setuptools]
 packages = ["stochproc"]
+
+[tool.bumpver]
+current_version = "0.1.0"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message = "bump version {old_version} -> {new_version}"
+commit = true
+tag = true
+push = true
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = [
+    'current_version = "{version}"',
+]
+
+"stochproc/__init__.py" = [
+    '__version__ = "{version}"'
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "stochproc.__version__"}
