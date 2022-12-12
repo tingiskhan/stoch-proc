@@ -20,7 +20,7 @@ class TestAffineTimeseriesOneDimensional(object):
         ]
 
         increment_dist = Normal(loc=0.0, scale=1.0)
-        process = ts.AffineProcess(mean_scale, increment_dist, params, initial_distribution)
+        process = ts.AffineProcess(mean_scale, params, increment_dist, initial_distribution)
 
         x = process.initial_sample(batch_shape)
 
@@ -41,7 +41,7 @@ class TestAffineTimeseriesMultiDimensional(object):
 
         increment_dist = Normal(loc=0.0, scale=1.0).expand(torch.Size([2])).to_event(1)
 
-        process = ts.AffineProcess(mean_scale, increment_dist, params, lambda *args: initial_distribution(*args).expand(torch.Size([2])).to_event(1))
+        process = ts.AffineProcess(mean_scale, params, increment_dist, lambda *args: initial_distribution(*args).expand(torch.Size([2])).to_event(1))
         x = process.initial_sample(batch_shape)
 
         for _ in range(SAMPLES):

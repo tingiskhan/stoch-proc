@@ -24,7 +24,7 @@ def process() -> ts.AffineProcess:
 
     increment_dist = Normal(loc=0.0, scale=1.0).expand(torch.Size([2])).to_event(1)
 
-    return ts.LowerCholeskyAffineProcess(mean_scale, increment_dist, params, initial_kernel, initial_parameters=(0.0, 1.0))
+    return ts.LowerCholeskyAffineProcess(mean_scale, params, increment_dist, initial_kernel, initial_parameters=(0.0, 1.0))
 
 
 class TestAffineTimeseriesOneDimensional(object):

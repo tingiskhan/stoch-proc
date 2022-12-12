@@ -49,4 +49,4 @@ class UCSV(AffineProcess):
             .to_event(1)
         )
 
-        super().__init__(f, increment_dist, (sigma_volatility,), initial_kernel, (initial_state_mean, sigma_volatility))
+        super().__init__(f, (sigma_volatility,), increment_dist, initial_kernel, (initial_state_mean, sigma_volatility))

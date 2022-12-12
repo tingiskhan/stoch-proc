@@ -82,7 +82,7 @@ class AffineEulerMaruyama(AffineProcess):
         """
 
         super().__init__(
-            dynamics, increment_distribution, parameters, initial_kernel, initial_parameters=initial_parameters
+            dynamics, parameters, increment_distribution, initial_kernel, initial_parameters=initial_parameters
         )
 
         # TODO: Code duplication...

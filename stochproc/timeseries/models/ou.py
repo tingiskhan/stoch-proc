@@ -38,7 +38,7 @@ class OrnsteinUhlenbeck(AffineProcess):
 
         super().__init__(
             self._mean_scale,
-            increment_distribution,
+            increment_distribution=increment_distribution,
             parameters=(kappa, gamma, sigma),
             initial_kernel=initial_kernel,
             **kwargs

@@ -18,7 +18,7 @@ class LowerCholeskyAffineProcess(AffineProcess):
     and :math:`W_t` denotes a random variable with arbitrary density (from which we can sample).
     """
 
-    def __init__(self, mean_scale, increment_dist, parameters, initial_kernel, initial_parameters=None):
+    def __init__(self, mean_scale, parameters, increment_dist, initial_kernel, initial_parameters=None):
         """
         Initializes the :class:`LowerCholeskyAffineProcess`.
 
@@ -30,7 +30,7 @@ class LowerCholeskyAffineProcess(AffineProcess):
             kwargs: see base.
         """
 
-        super().__init__(mean_scale, increment_dist, parameters, initial_kernel, initial_parameters)
+        super().__init__(mean_scale, parameters, increment_dist, initial_kernel, initial_parameters)
         assert self.n_dim >= 1, "This process only covers multi-dimensional processes!"
 
     def kernel(self, x, *args):

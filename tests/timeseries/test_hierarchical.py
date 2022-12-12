@@ -25,7 +25,7 @@ class TestHierarchicalProcess(object):
         sub = ts.models.AR(0.0, 0.99, 0.001)
 
         inc_dist = Normal(loc=0.0, scale=1.0)
-        main = ts.AffineProcess(mean_scale, inc_dist, (0.99, 0.05), initial_kernel=initial_kernel).add_sub_process(sub)
+        main = ts.AffineProcess(mean_scale, (0.99, 0.05), inc_dist, initial_kernel=initial_kernel).add_sub_process(sub)
 
         assert main.event_shape == torch.Size([2])
 

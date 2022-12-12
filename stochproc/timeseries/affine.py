@@ -46,8 +46,8 @@ class AffineProcess(StructuralStochasticProcess):
     def __init__(
         self,
         mean_scale: MeanScaleFun,
-        increment_distribution: Distribution,
         parameters,
+        increment_distribution: Distribution,
         initial_kernel,
         initial_parameters=None,
     ):
