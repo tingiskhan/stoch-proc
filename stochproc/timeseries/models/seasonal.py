@@ -1,12 +1,12 @@
+from functools import partial
+
 import torch
-from stochproc.distributions import DistributionModule
 from torch.distributions.utils import broadcast_all
 
-from ..linear import LinearModel, ParameterType
-from .ar import _build_init, _build_trans_dist
+from .ar import AR
 
 
-class Seasonal(LinearModel):
+class Seasonal(AR):
     r"""
     Defines a seasonal time series model, i.e. in which we have that
         .. math::
@@ -15,7 +15,7 @@ class Seasonal(LinearModel):
 
     """
 
-    def __init__(self, period: int, sigma: ParameterType, initial_sigma: ParameterType = None):
+    def __init__(self, period: int, sigma):
         """
         Initializes the :class:`Seasonal` model.
 
@@ -27,12 +27,5 @@ class Seasonal(LinearModel):
 
         sigma = broadcast_all(sigma)[0]
 
-        mat = torch.eye(period - 1, period, device=sigma.device)
-        mat = torch.cat((-torch.ones((1, period), device=sigma.device), mat), dim=0)
-
-        inc_dist = DistributionModule(_build_trans_dist, loc=0.0, scale=1.0, lags=period)
-        initial_dist = DistributionModule(
-            _build_init, alpha=0.0, beta=1.0, sigma=sigma if initial_sigma is None else initial_sigma, lags=period
-        )
-
-        super(Seasonal, self).__init__(mat, sigma, increment_dist=inc_dist, initial_dist=initial_dist)
+        alpha = torch.ones(sigma.shape + torch.Size([period]), device=sigma.device)
+        super().__init__(torch.zeros_like(sigma), alpha, sigma, lags=period)

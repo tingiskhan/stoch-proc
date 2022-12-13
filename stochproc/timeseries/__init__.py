@@ -7,17 +7,21 @@ from .diffusion import (
     RungeKutta,
     StochasticDifferentialEquation,
 )
-from .joint import AffineJointStochasticProcess, JointStochasticProcess, LowerCholeskyJointStochasticProcess, joint_process
+from .joint import (
+    AffineJointStochasticProcess,
+    JointStochasticProcess,
+    LowerCholeskyJointStochasticProcess,
+    joint_process,
+)
 from .linear import LinearModel
 from .ssm import StateSpaceModel
 from .state import TimeseriesState, JointState
-from .stochastic_process import StochasticProcess, StructuralStochasticProcess
+from .stochastic_process import StructuralStochasticProcess
 from .hierarchical import AffineHierarchicalProcess
 from .chol_affine import LowerCholeskyAffineProcess
 
 # TODO: Remove TimeseriesState and BatchedState
 __all__ = [
-    "StochasticProcess",
     "StructuralStochasticProcess",
     "AffineProcess",
     "StateSpaceModel",
@@ -36,5 +40,5 @@ __all__ = [
     "LowerCholeskyAffineProcess",
     "JointStochasticProcess",
     "LowerCholeskyJointStochasticProcess",
-    "joint_process"
+    "joint_process",
 ]

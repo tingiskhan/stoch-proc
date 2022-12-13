@@ -1,11 +1,10 @@
-from torch.distributions.utils import broadcast_all
-from pyro.distributions import Normal
 import torch
+from pyro.distributions import Normal
+from torch.distributions.utils import broadcast_all
 
-from .ou import init_builder
-from ..affine import AffineProcess
-from ...distributions import DistributionModule
 from ...typing import ParameterType
+from ..affine import AffineProcess
+from .ou import initial_kernel
 
 
 class TrendingOU(AffineProcess):
@@ -22,7 +21,6 @@ class TrendingOU(AffineProcess):
         sigma: ParameterType,
         v_0: ParameterType,
         dt: float = 1.0,
-        **kwargs
     ):
         """
         Initializes the :class:`TrendingOU` object.
@@ -36,15 +34,20 @@ class TrendingOU(AffineProcess):
         """
 
         kappa, gamma, sigma, v_0 = broadcast_all(kappa, gamma, sigma, v_0)
-        dist = DistributionModule(Normal, loc=0.0, scale=1.0)
-        initial_dist = DistributionModule(init_builder, kappa=kappa, gamma=v_0, sigma=sigma)
+        increment_distribution = Normal(torch.tensor(0.0, device=kappa.device), torch.tensor(1.0, device=kappa.device))
 
-        super().__init__(self._mean_scale, (kappa, gamma, v_0, sigma), initial_dist, dist, **kwargs)
+        super().__init__(
+            self._mean_scale,            
+            (kappa, gamma, v_0, sigma),
+            increment_distribution,
+            initial_kernel,
+            initial_parameters=(kappa, v_0, sigma),
+        )
         self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
 
     def _mean_scale(self, x, k, g, v_0, s):
         d = (-k * self._dt).exp()
-        loc = v_0 + g * ((x.time_index + 1.0) * self._dt) + (x.values - g * x.time_index * self._dt - v_0) * d
+        loc = v_0 + g * ((x.time_index + 1.0) * self._dt) + (x.value - g * x.time_index * self._dt - v_0) * d
         scale = s / (2.0 * k).sqrt() * (1.0 - d.pow(2.0)).sqrt()
 
         return loc, scale

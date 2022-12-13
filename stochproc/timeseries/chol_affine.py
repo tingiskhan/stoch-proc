@@ -1,4 +1,4 @@
-from pyro.distributions import transforms as t, TransformedDistribution
+from pyro.distributions import TransformedDistribution, transforms as t
 
 from .affine import AffineProcess
 
@@ -18,7 +18,7 @@ class LowerCholeskyAffineProcess(AffineProcess):
     and :math:`W_t` denotes a random variable with arbitrary density (from which we can sample).
     """
 
-    def __init__(self, mean_scale, parameters, initial_dist, increment_dist, **kwargs):
+    def __init__(self, mean_scale, parameters, increment_dist, initial_kernel, initial_parameters=None):
         """
         Initializes the :class:`LowerCholeskyAffineProcess`.
 
@@ -30,16 +30,16 @@ class LowerCholeskyAffineProcess(AffineProcess):
             kwargs: see base.
         """
 
-        super().__init__(mean_scale, parameters, initial_dist, increment_dist, **kwargs)
+        super().__init__(mean_scale, parameters, increment_dist, initial_kernel, initial_parameters)
         assert self.n_dim >= 1, "This process only covers multi-dimensional processes!"
 
-    def build_density(self, x):
+    def kernel(self, x, *args):
         loc, scale = self.mean_scale(x)
 
-        return TransformedDistribution(self.increment_dist(), t.LowerCholeskyAffine(loc, scale))
+        return TransformedDistribution(self.increment_distribution, t.LowerCholeskyAffine(loc, scale))
 
     def mean_scale(self, x, parameters=None):
-        return self.mean_scale_fun(x, *(parameters or self.functional_parameters()))
+        return self.mean_scale_fun(x, *(parameters or self.parameters))
 
     def add_sub_process(self, sub_process):
         from .hierarchical import LowerCholeskyHierarchicalProcess

@@ -22,7 +22,7 @@ class TestSSM(object):
         rw = ts.models.RandomWalk(0.05)
 
         def f(x_, a):
-            return Normal(loc=x_.values.unsqueeze(-1) * a, scale=1.0).to_event(1)
+            return Normal(loc=x_.value.unsqueeze(-1) * a, scale=1.0).to_event(1)
 
         ssm = ts.StateSpaceModel(rw, f, parameters=(torch.tensor([1.0, 0.01]),), observe_every_step=sample_every)
 
@@ -42,7 +42,7 @@ class TestSSM(object):
         joint = ts.AffineJointStochasticProcess(loc_1=loc_1, loc_2=loc_2)
 
         def f(x_, a):
-            return Normal(loc=a.matmul(x_.values.unsqueeze(-1)).squeeze(-1), scale=1.0).to_event(1)
+            return Normal(loc=a.matmul(x_.value.unsqueeze(-1)).squeeze(-1), scale=1.0).to_event(1)
 
         ssm = ts.StateSpaceModel(joint, f, parameters=(torch.eye(2),))
         x, y = ssm.sample_states(SAMPLES, samples=batch_shape).get_paths()

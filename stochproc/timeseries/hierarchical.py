@@ -17,17 +17,20 @@ class AffineHierarchicalProcess(AffineJointStochasticProcess):
         One example is the two factor `Hull-White model`_, which in code is defined as (with arbitrary parameters)
             >>> from stochproc import timeseries as ts, distributions as dists
             >>> from math import sqrt
+            >>> import torch
             >>> from pyro.distributions import Normal, LogNormal
             >>>
             >>> def mean_scale(x, kappa, theta, sigma):
-            >>>     return kappa * (theta - x["sub"].values / kappa - x.values), sigma
+            >>>     return kappa * (theta - x["sub"].value / kappa - x.value), sigma
+            >>>
+            >>> def initial_kernel(kappa, theta, sigma):
+            >>>     return Normal(torch.zeros_like(kappa), torch.ones_like(kappa))
             >>>
             >>> dt = 1.0
             >>> u = ts.models.OrnsteinUhlenbeck(0.01, 0.0, 0.01, dt=dt)
             >>>
-            >>> inc_dist = dists.DistributionModule(Normal, loc=0.0, scale=sqrt(dt))
-            >>> init_dist = dists.DistributionModule(LogNormal, loc=-2.0, scale=0.5)
-            >>> hull_white = ts.AffineEulerMaruyama(mean_scale, (0.01, 0.5, 0.05), init_dist, inc_dist, dt).add_sub_process(u)
+            >>> inc_dist = Normal(loc=0.0, scale=sqrt(dt))
+            >>> hull_white = ts.AffineEulerMaruyama(mean_scale, (0.01, 0.5, 0.05), inc_dist, initial_kernel=initial_kernel, dt=dt).add_sub_process(u)
             >>>
             >>> x = hull_white.sample_states(500).get_path()
             >>> x.shape
@@ -45,7 +48,7 @@ class AffineHierarchicalProcess(AffineJointStochasticProcess):
             main_process: main process.
         """
 
-        super(AffineHierarchicalProcess, self).__init__(sub=sub_process, main=main_process)
+        super().__init__(sub=sub_process, main=main_process)
 
     def mean_scale(self, x, parameters=None):
         sub_mean, sub_scale = self.sub_processes["sub"].mean_scale(x["sub"])
@@ -79,14 +82,14 @@ class LowerCholeskyHierarchicalProcess(LowerCholeskyJointStochasticProcess):
 
     def __init__(self, sub_process: AffineProcess, main_process: AffineProcess):
         """
-        Initializes the :class:`AffineHierarchalProcess` class.
+        Initializes the :class:`LowerCholeskyHierarchicalProcess` class.
 
         Args:
             sub_process: child/sub process.
             main_process: main process.
         """
 
-        super(LowerCholeskyHierarchicalProcess, self).__init__(sub=sub_process, main=main_process)
+        super().__init__(sub=sub_process, main=main_process)
 
     def mean_scale(self, x, parameters=None):
         sub_mean, sub_scale = self.sub_processes["sub"].mean_scale(x["sub"])
@@ -102,11 +105,11 @@ class LowerCholeskyHierarchicalProcess(LowerCholeskyJointStochasticProcess):
             main_mean,
         )
 
-        eye = torch.eye(self.event_shape.numel(), device=x.values.device)
+        eye = torch.eye(self.event_shape.numel(), device=x.value.device)
 
         scale = (
             _multiplier(sub_scale, eye[:sub_numel], self.sub_processes["sub"], x.batch_shape),
-            _multiplier(main_scale, eye[sub_numel:], self.sub_processes["main"], x.batch_shape)
+            _multiplier(main_scale, eye[sub_numel:], self.sub_processes["main"], x.batch_shape),
         )
 
         return torch.cat(mean, dim=-1), torch.cat(scale, dim=-2)

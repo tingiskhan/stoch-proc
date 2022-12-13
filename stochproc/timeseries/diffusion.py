@@ -2,13 +2,12 @@ import math
 from abc import ABC
 
 import torch
-from pyro.distributions import Normal, Delta
+from pyro.distributions import Delta, Normal
 
+from ..typing import ParameterType
 from .affine import AffineProcess, MeanScaleFun
 from .stochastic_process import StructuralStochasticProcess
-from .typing import DiffusionFunction, Drift
-from ..distributions import DistributionModule
-from ..typing import ParameterType
+from .typing import Drift
 
 _info = torch.finfo(torch.get_default_dtype())
 EPS = math.sqrt(_info.eps)
@@ -23,7 +22,7 @@ class StochasticDifferentialEquation(StructuralStochasticProcess, ABC):
     where :math:`\theta` is the parameter set, and :math:`h` the dynamics of the SDE.
     """
 
-    def __init__(self, parameters, initial_dist: DistributionModule, dt: float, **kwargs):
+    def __init__(self, *args, dt: float, **kwargs):
         """
         Initializes the :class:`StochasticDifferentialEquation`.
 
@@ -34,11 +33,11 @@ class StochasticDifferentialEquation(StructuralStochasticProcess, ABC):
             kwargs: see base.
         """
 
-        super().__init__(parameters=parameters, initial_dist=initial_dist, **kwargs)
-        self.register_buffer("dt", torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt)
+        super().__init__(*args, **kwargs)
+        self.dt = dt
 
-    def forward(self, x, time_increment=1.0):
-        res = super(StochasticDifferentialEquation, self).forward(x)
+    def propagate(self, x, time_increment=1):
+        res = super().propagate(x, time_increment=time_increment)
         res["dt"] = self.dt
 
         return res
@@ -53,26 +52,11 @@ class DiscretizedStochasticDifferentialEquation(StochasticDifferentialEquation):
     This e.g. encompasses the Euler-Maruyama and Milstein schemes.
     """
 
-    def __init__(self, prop_state: DiffusionFunction, parameters, initial_dist: DistributionModule, dt, **kwargs):
-        """
-        Initializes the :class:`DiscretizedStochasticDifferentialEquation` class.
-
-        Args:
-            prop_state: corresponds to the function :math:`h`.
-            parameters: see base.
-            initial_dist: see base.
-            dt: see base.
-            kwargs: see base.
-        """
-
-        super().__init__(parameters, initial_dist, dt, **kwargs)
-        self._propagator = prop_state
-
     def build_density(self, x):
-        return self._propagator(x, self.dt, *self.functional_parameters())
+        return self._kernel(x, *(self.parameters + (self.dt,)))
 
 
-class AffineEulerMaruyama(AffineProcess, StochasticDifferentialEquation):
+class AffineEulerMaruyama(AffineProcess):
     r"""
     Defines the Euler-Maruyama scheme for an SDE of affine nature, i.e. in which the dynamics are given by the
     functional pair of the drift and diffusion, such that we have
@@ -83,7 +67,7 @@ class AffineEulerMaruyama(AffineProcess, StochasticDifferentialEquation):
     """
 
     def __init__(
-        self, dynamics: MeanScaleFun, parameters, initial_dist, increment_dist: DistributionModule, dt, **kwargs
+        self, dynamics: MeanScaleFun, parameters, increment_distribution, dt, initial_kernel, initial_parameters=None
     ):
         """
         Initializes the :class:`AffineEulerMaruyama` class.
@@ -97,13 +81,22 @@ class AffineEulerMaruyama(AffineProcess, StochasticDifferentialEquation):
             kwargs: see base.
         """
 
-        super(AffineEulerMaruyama, self).__init__(
-            dynamics, parameters, initial_dist, dt=dt, increment_dist=increment_dist, **kwargs
+        super().__init__(
+            dynamics, parameters, increment_distribution, initial_kernel, initial_parameters=initial_parameters
         )
 
+        # TODO: Code duplication...
+        self.dt = dt
+
+    def propagate(self, x, time_increment=1):
+        res = super().propagate(x, time_increment=time_increment)
+        res["dt"] = self.dt
+
+        return res
+
     def mean_scale(self, x, parameters=None):
-        drift, diffusion = super(AffineEulerMaruyama, self).mean_scale(x, parameters)
-        return x.values + drift * self.dt, diffusion
+        drift, diffusion = super().mean_scale(x, parameters)
+        return x.value + drift * self.dt, diffusion
 
 
 class Euler(AffineEulerMaruyama):
@@ -133,7 +126,6 @@ class Euler(AffineEulerMaruyama):
         dt,
         event_dim: int,
         tuning_std: float = False,
-        **kwargs
     ):
         """
         Initializes the :class:`Euler` class.
@@ -148,19 +140,31 @@ class Euler(AffineEulerMaruyama):
             kwargs: see base.
         """
 
+        # TODO: Consider making methods instead of bound functions...
+        def initial_kernel(loc, scale):
+            if tuning_std:
+                return Normal(loc, scale).to_event(event_dim)
+
+            return Delta(v=initial_values, event_dim=event_dim)
+
+        def mean_scale(x, *args, **kwargs):
+            return dynamics(x, *args, **kwargs), tuning_std * torch.ones_like(x.value)
+
         if not tuning_std:
-            iv = DistributionModule(Delta, v=initial_values, event_dim=event_dim)
-            dist = DistributionModule(Delta, v=torch.zeros(initial_values.shape), event_dim=event_dim)
+            dist = Delta(v=torch.zeros_like(initial_values), event_dim=event_dim)
         else:
-            iv = DistributionModule(lambda **u: Normal(**u).to_event(event_dim), loc=initial_values, scale=EPS)
-            dist = DistributionModule(
-                lambda **u: Normal(**u).expand(initial_values.shape).to_event(event_dim), loc=0.0, scale=math.sqrt(dt)
-            )
+            dist = Normal(
+                loc=torch.zeros_like(initial_values), scale=math.sqrt(dt) * torch.ones_like(initial_values)
+            ).to_event(event_dim)
 
-        def _mean_scale(x, *params):
-            return dynamics(x, *params), torch.ones_like(x.values) * tuning_std
-
-        super().__init__(_mean_scale, parameters, iv, dist, dt, **kwargs)
+        super().__init__(
+            dynamics=mean_scale,
+            increment_distribution=dist,
+            dt=dt,
+            parameters=parameters,
+            initial_kernel=initial_kernel,
+            initial_parameters=(initial_values, EPS),
+        )
         self.f = dynamics
 
 
@@ -172,11 +176,11 @@ class RungeKutta(Euler):
     """
 
     def mean_scale(self, x, parameters=None):
-        params = parameters or self.functional_parameters()
+        params = parameters or self.parameters
 
         k1, g = self.mean_scale_fun(x, *params)
-        k2 = self.f(x.propagate_from(time_increment=self.dt / 2, values=x.values + self.dt * k1 / 2), *params)
-        k3 = self.f(x.propagate_from(time_increment=self.dt / 2, values=x.values + self.dt * k2 / 2), *params)
-        k4 = self.f(x.propagate_from(time_increment=self.dt, values=x.values + self.dt * k3), *params)
+        k2 = self.f(x.propagate_from(time_increment=self.dt / 2, values=x.value + self.dt * k1 / 2), *params)
+        k3 = self.f(x.propagate_from(time_increment=self.dt / 2, values=x.value + self.dt * k2 / 2), *params)
+        k4 = self.f(x.propagate_from(time_increment=self.dt, values=x.value + self.dt * k3), *params)
 
-        return x.values + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4), g
+        return x.value + self.dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4), g

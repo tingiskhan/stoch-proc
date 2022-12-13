@@ -14,27 +14,19 @@ class TestDiffusionOneDimensional(object):
         dt = 0.05
 
         def dynamics(x_, kappa, gamma, sigma):
-            return kappa * (gamma - x_.values), sigma
+            return kappa * (gamma - x_.value), sigma
 
         parameters = (
-           0.05,
+            0.05,
             0.0,
             0.075
         )
 
-        def builder(kappa, gamma, sigma):
+        def initial_kernel(kappa, gamma, sigma):
             return tdists.Normal(loc=gamma, scale=sigma / (2 * kappa).sqrt())
 
-        initial_dist = dists.DistributionModule(builder, kappa=parameters[0], gamma=parameters[1], sigma=parameters[2])
-        increment_dist = dists.DistributionModule(tdists.Normal, loc=0.0, scale=math.sqrt(dt))
-
-        discretized_ou = ts.AffineEulerMaruyama(
-            dynamics,
-            parameters,
-            dt=dt,
-            initial_dist=initial_dist,
-            increment_dist=increment_dist
-        )
+        increment_dist = tdists.Normal(loc=0.0, scale=math.sqrt(dt))
+        discretized_ou = ts.AffineEulerMaruyama(dynamics, parameters, increment_dist, dt, initial_kernel)
 
         x = discretized_ou.sample_states(SAMPLES, samples=batch_shape).get_path()
 
@@ -45,7 +37,7 @@ class TestDiffusionOneDimensional(object):
         dt = 0.05
 
         def dynamics(x_, kappa, gamma):
-            return kappa * (gamma - x_.values)
+            return kappa * (gamma - x_.value)
 
         parameters = (
             0.05,

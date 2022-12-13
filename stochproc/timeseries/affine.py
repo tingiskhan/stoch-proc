@@ -7,7 +7,6 @@ from pyro.distributions.transforms import AffineTransform
 from .state import TimeseriesState
 from .stochastic_process import StructuralStochasticProcess
 from .typing import MeanScaleFun
-from ..distributions import DistributionModule
 
 
 class AffineProcess(StructuralStochasticProcess):
@@ -27,7 +26,7 @@ class AffineProcess(StructuralStochasticProcess):
             >>> from torch.distributions import Normal, TransformedDistribution, AffineTransform
             >>>
             >>> def mean_scale(x, alpha, beta, sigma):
-            >>>     return alpha + beta * x.values, sigma
+            >>>     return alpha + beta * x.value, sigma
             >>>
             >>> def initial_builder(alpha, beta, sigma):
             >>>     return Normal(loc=alpha, scale=sigma / (1 - beta ** 2).sqrt())
@@ -36,17 +35,21 @@ class AffineProcess(StructuralStochasticProcess):
             >>> beta = 0.99
             >>> sigma = 0.05
             >>>
-            >>> initial_dist = dists.DistributionModule(initial_builder, alpha=alpha, beta=beta, sigma=sigma)
-            >>> increment_dist = dists.DistributionModule(Normal, loc=0.0, scale=1.0)
+            >>> increment_dist = Normal(loc=0.0, scale=1.0)
             >>>
             >>> parameters = (alpha, beta, sigma)
-            >>> ar_1 = ts.AffineProcess(mean_scale, parameters, initial_dist, increment_dist)
+            >>> ar_1 = ts.AffineProcess(mean_scale, increment_dist, parameters, initial_dist)
             >>>
             >>> samples = ar_1.sample_path(1_000)
     """
 
     def __init__(
-        self, mean_scale: MeanScaleFun, parameters, initial_dist, increment_dist: DistributionModule, **kwargs
+        self,
+        mean_scale: MeanScaleFun,
+        parameters,
+        increment_distribution: Distribution,
+        initial_kernel,
+        initial_parameters=None,
     ):
         """
         Initializes the :class:`AffineProcess` class.
@@ -58,15 +61,17 @@ class AffineProcess(StructuralStochasticProcess):
             increment_dist: distribution that we location-scale transform.
         """
 
-        super().__init__(parameters=parameters, initial_dist=initial_dist, **kwargs)
+        super().__init__(
+            self.kernel, parameters=parameters, initial_kernel=initial_kernel, initial_parameters=initial_parameters
+        )
 
         self.mean_scale_fun = mean_scale
-        self.increment_dist = increment_dist
+        self.increment_distribution = increment_distribution
 
-    def build_density(self, x):
+    def kernel(self, x, *args):
         loc, scale = self.mean_scale(x)
 
-        return TransformedDistribution(self.increment_dist(), AffineTransform(loc, scale, event_dim=self.n_dim))
+        return TransformedDistribution(self.increment_distribution, AffineTransform(loc, scale, event_dim=self.n_dim))
 
     def mean_scale(self, x: TimeseriesState, parameters=None) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -74,14 +79,13 @@ class AffineProcess(StructuralStochasticProcess):
 
         Args:
             x: previous state of the process.
-            parameters: whether to override the current parameters of the model, otherwise uses
-                :meth:`stochproc.timeseries.StructuralStochasticProcess.functional_parameters`.
+            parameters: whether to override the current parameters of the model.
 
         Returns:
             Returns the tuple ``(mean, scale)``.
         """
 
-        mean, scale = self.mean_scale_fun(x, *(parameters or self.functional_parameters()))
+        mean, scale = self.mean_scale_fun(x, *(parameters or self.parameters))
 
         return torch.broadcast_tensors(mean, scale)
 

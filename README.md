@@ -33,9 +33,9 @@ import matplotlib.pyplot as plt
 
 
 def f(x, s_, r_, b_):
-    dxt = s_ * (x.values[..., 1] - x.values[..., 0])
-    dyt = r_ * x.values[..., 0] - x.values[..., 1] - x.values[..., 0] * x.values[..., 2]
-    dzt = -b_ * x.values[..., 2] + x.values[..., 0] * x.values[..., 1]
+    dxt = s_ * (x.value[..., 1] - x.value[..., 0])
+    dyt = r_ * x.value[..., 0] - x.value[..., 1] - x.value[..., 0] * x.value[..., 2]
+    dzt = -b_ * x.value[..., 2] + x.value[..., 0] * x.value[..., 1]
 
     return torch.stack((dxt, dyt, dzt), dim=-1)
 

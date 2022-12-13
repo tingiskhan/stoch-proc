@@ -8,7 +8,11 @@ from .constants import SAMPLES, BATCH_SHAPES
 
 
 def mean_scale(x_, alpha, sigma):
-    return alpha * x_.values, sigma * torch.eye(2, device=x_.values.device)
+    return alpha * x_.value, sigma * torch.eye(2, device=x_.value.device)
+
+
+def initial_kernel(loc, scale):
+    return Normal(loc, scale).expand(torch.Size([2])).to_event(1)
 
 
 @pytest.fixture()
@@ -18,9 +22,9 @@ def process() -> ts.AffineProcess:
         0.05
     ]
 
-    increment_dist = initial_distribution = dists.DistributionModule(Normal, loc=0.0, scale=1.0).expand(
-        torch.Size([2])).to_event(1)
-    return ts.LowerCholeskyAffineProcess(mean_scale, params, initial_distribution, increment_dist)
+    increment_dist = Normal(loc=0.0, scale=1.0).expand(torch.Size([2])).to_event(1)
+
+    return ts.LowerCholeskyAffineProcess(mean_scale, params, increment_dist, initial_kernel, initial_parameters=(0.0, 1.0))
 
 
 class TestAffineTimeseriesOneDimensional(object):

@@ -1,27 +1,30 @@
-import torch
-from pyro.distributions import Delta, Normal, TransformedDistribution, Distribution
-from pyro.distributions.transforms import AffineTransform
+from functools import partial
 
+import torch
+from pyro.distributions import Delta, Distribution, Normal, TransformedDistribution
+from pyro.distributions.transforms import AffineTransform
 from torch.distributions.utils import broadcast_all
 
+from ...distributions import JointDistribution
 from ..linear import LinearModel
-from ...distributions import DistributionModule, JointDistribution
 
 
 # TODO: Add beta for those where abs(beta) < 1.0
-def _build_init(alpha, beta, sigma, lags, **kwargs):
-    base = _build_trans_dist(torch.zeros_like(sigma), torch.ones_like(sigma), lags, **kwargs)
+def _initial_kernel(alpha, beta, sigma, lags):
+    base = _build_trans_dist(torch.zeros_like(beta), torch.ones_like(beta), lags)
 
-    return TransformedDistribution(base, AffineTransform(alpha, sigma))
+    return TransformedDistribution(
+        base, AffineTransform(beta.unsqueeze(-1) if lags > 1 else beta, sigma.unsqueeze(-1) if lags > 1 else sigma)
+    )
 
 
-def _build_trans_dist(loc, scale, lags, **kwargs) -> Distribution:
-    base = Normal(loc=loc, scale=scale, **kwargs)
+def _build_trans_dist(loc, scale, lags) -> Distribution:
+    base = Normal(loc=loc, scale=scale)
     if lags == 1:
         return base
 
     zeros = torch.zeros((*loc.shape, lags - 1), device=loc.device)
-    return JointDistribution(base, Delta(zeros, event_dim=1), **kwargs)
+    return JointDistribution(base, Delta(zeros, event_dim=1))
 
 
 class AR(LinearModel):
@@ -34,7 +37,7 @@ class AR(LinearModel):
     where :math:`W_t` is a univariate zero mean, unit variance Gaussian random variable.
     """
 
-    def __init__(self, alpha, beta, sigma, lags=1, **kwargs):
+    def __init__(self, alpha, beta, sigma, lags=1):
         """
         Initializes the :class:`AR` class.
 
@@ -53,15 +56,23 @@ class AR(LinearModel):
             raise Exception(f"Mismatch between shapes: {alpha.value.shape[-1]} != {lags}")
 
         self.lags = lags
-        inc_dist = DistributionModule(_build_trans_dist, loc=0.0, scale=1.0, lags=self.lags)
-        initial_dist = DistributionModule(_build_init, alpha=alpha, beta=beta, sigma=sigma, lags=self.lags)
+        inc_dist = _build_trans_dist(
+            loc=torch.tensor(0.0, device=alpha.device), scale=torch.tensor(1.0, device=alpha.device), lags=self.lags
+        )
 
-        super().__init__(beta, sigma, increment_dist=inc_dist, b=alpha, initial_dist=initial_dist, **kwargs)
+        super().__init__(
+            beta,
+            sigma,
+            b=alpha,
+            increment_distribution=inc_dist,
+            initial_kernel=partial(_initial_kernel, lags=self.lags),
+        )
         self.mean_scale_fun = self._mean_scale_wrapper(self.mean_scale_fun)
 
         bottom_shape = self.lags - 1, self.lags
-        self.register_buffer("_bottom", torch.eye(*bottom_shape, device=alpha.device))
-        self.register_buffer("_b_masker", torch.eye(self.lags, 1, device=alpha.device).squeeze(-1))
+
+        self._bottom = torch.eye(*bottom_shape, device=alpha.device)
+        self._b_masker = torch.eye(self.lags, 1, device=alpha.device).squeeze(-1)
 
     def _mean_scale_wrapper(self, f):
         def _wrapper(x, a, b, s):
@@ -73,9 +84,9 @@ class AR(LinearModel):
             mask = torch.ones((*batch_shape, *self._bottom.shape), device=a.device)
             bottom = self._bottom * mask
 
-            a = torch.cat((a.unsqueeze(-2), bottom))
+            a = torch.cat((a.unsqueeze(-2), bottom), dim=-2)
             b = self._b_masker * b
 
-            return f(x, a, b, s)
+            return f(x, a, b, s.unsqueeze(-1))
 
         return _wrapper

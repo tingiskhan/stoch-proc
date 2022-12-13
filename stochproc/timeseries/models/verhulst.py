@@ -1,20 +1,20 @@
 from math import sqrt
 
-from torch.distributions.utils import broadcast_all
+import torch
 from pyro.distributions import Normal, TransformedDistribution
 from pyro.distributions.transforms import AbsTransform
+from torch.distributions.utils import broadcast_all
 
-from .ou import init_builder as ou_builder
-from ..diffusion import AffineEulerMaruyama
-from ...distributions import DistributionModule
 from ...typing import ParameterType
+from ..diffusion import AffineEulerMaruyama
+from .ou import initial_kernel as ou_builder
 
 
 def _f(x, k, g, s):
-    return k * (g - x.values) * x.values, s * x.values
+    return k * (g - x.value) * x.value, s * x.value
 
 
-def _init_builder(kappa, gamma, sigma):
+def _initial_kernel(kappa, gamma, sigma):
     dist = ou_builder(kappa, gamma, sigma)
 
     return TransformedDistribution(dist, AbsTransform())
@@ -30,24 +30,20 @@ class Verhulst(AffineEulerMaruyama):
     where :math:`\kappa, \gamma, \sigma > 0`.
     """
 
-    def __init__(self, kappa: ParameterType, gamma: ParameterType, sigma: ParameterType, dt, **kwargs):
-        """
+    def __init__(self, kappa: ParameterType, gamma: ParameterType, sigma: ParameterType, dt):
+        r"""
         Initializes the :class:`Verhulst` class.
 
         Args:
-            reversion: :math:`\\kappa`.
-            mean: :math:`\\gamma`.
-            vol: :math:`\\sigma`.
+            reversion: :math:`\kappa`.
+            mean: :math:`\gamma`.
+            vol: :math:`\sigma`.
             kwargs: see base.
         """
 
         kappa, gamma, sigma = broadcast_all(kappa, gamma, sigma)
-
-        super().__init__(
-            _f,
-            (kappa, gamma, sigma),
-            DistributionModule(_init_builder, kappa=kappa, gamma=gamma, sigma=sigma),
-            DistributionModule(Normal, loc=0.0, scale=sqrt(dt)),
-            dt=dt,
-            **kwargs
+        increment_distribution = Normal(
+            torch.tensor(0.0, device=kappa.device), torch.tensor(sqrt(dt), device=kappa.device)
         )
+
+        super().__init__(_f, (kappa, gamma, sigma), increment_distribution, dt, _initial_kernel)

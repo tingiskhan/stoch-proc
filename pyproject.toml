@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stochproc"
+description = "Stochastic processes in pytorch and pyro"
+dynamic = ["version"]
+authors = [
+    {name = "Victor Gruselius", email="victor.gruselius@gmail.com"},
+]
+license = {file = "LICENSE"}
+readme = "README.md"
+requires-python = ">=3.6"
+
+keywords = ["stochastic", "timeseries"]
+
+classifiers = [
+        "Programming Language :: Python",
+        "Development Status :: 3 - Alpha",
+        "Natural Language :: English",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Topic :: Scientific/Engineering :: Mathematics",
+]
+
+dependencies = [
+    "torch>1.9.0",
+    "pyro-ppl>=1.8.2"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.1.2",
+    "numpy>=1.21.6"
+]
+
+[project.urls]
+homepage = "https://github.com/tingiskhan/stoch-proc"
+
+[tool.black]
+line-length = 120
+
+[tool.setuptools.packages.find]
+include = ["stochproc*"]
+
+[tool.bumpver]
+current_version = "0.1.1"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message = "bump version {old_version} -> {new_version}"
+commit = false
+tag = false
+push = false
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = [
+    'current_version = "{version}"',
+]
+
+"stochproc/__init__.py" = [
+    '__version__ = "{version}"'
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "stochproc.__version__"}

@@ -1,6 +1,8 @@
-from typing import Union, Callable
+from typing import Callable, Union
 
 import torch
+
+from .utils import lazy_property
 
 LazyTensor = Union[torch.Tensor, Callable[[], torch.Tensor]]
 
@@ -15,7 +17,6 @@ class TimeseriesState(dict):
         time_index: Union[int, torch.IntTensor],
         values: LazyTensor,
         event_shape: torch.Size,
-        exogenous: torch.Tensor = None,
     ):
         """
         Initializes the :class:`TimeseriesState` class.
@@ -29,28 +30,21 @@ class TimeseriesState(dict):
 
         super().__init__()
 
-        self.time_index: torch.IntTensor = (
-            time_index if isinstance(time_index, torch.Tensor) else torch.tensor(time_index)
-        ).int()
-        self.exogenous: torch.Tensor = exogenous
-        self.event_shape = event_shape
-
-        self._values = values
+        self["_time_index"] = (time_index if isinstance(time_index, torch.Tensor) else torch.tensor(time_index)).int()
+        self["_value"] = values
+        self["_event_shape"] = event_shape
 
     @property
-    def values(self) -> torch.Tensor:
-        """
-        The values of the state.
-        """
+    def time_index(self) -> torch.IntTensor:
+        return self["_time_index"]
 
-        if callable(self._values):
-            self._values = self._values()
+    @lazy_property("_value")
+    def value(self) -> torch.Tensor:
+        return self["_value"]
 
-        return self._values
-
-    @values.setter
-    def values(self, x):
-        self._values = x
+    @property
+    def event_shape(self) -> torch.Size:
+        return self["_event_shape"]
 
     @property
     def batch_shape(self) -> torch.Size:
@@ -58,10 +52,10 @@ class TimeseriesState(dict):
         Returns the batch shape.
         """
 
-        tot_dim = self.values.dim()
+        tot_dim = self.value.dim()
         event_dim = len(self.event_shape)
 
-        return self.values.shape[: tot_dim - event_dim]
+        return self.value.shape[: tot_dim - event_dim]
 
     def copy(self, values: LazyTensor) -> "TimeseriesState":
         """
@@ -72,7 +66,6 @@ class TimeseriesState(dict):
         """
 
         prop = self.propagate_from(values=values, time_increment=0)
-        prop.exogenous = self.exogenous
 
         return prop
 
@@ -88,18 +81,8 @@ class TimeseriesState(dict):
 
         return TimeseriesState(time_index=self.time_index + time_increment, values=values, event_shape=self.event_shape)
 
-    def add_exog(self, x: torch.Tensor):
-        """
-        Adds an exogenous variable to the state.
-
-        Args:
-            x: exogenous variable.
-        """
-
-        self.exogenous = x
-
     def __repr__(self):
-        return f"TimeseriesState at t={self.time_index} containing: {self.values.__repr__()}"
+        return f"TimeseriesState at t={self.time_index} containing: {self.value.__repr__()}"
 
 
 class JointState(TimeseriesState):
@@ -120,7 +103,7 @@ class JointState(TimeseriesState):
 
         time_index = tuple(sub_states.values())[0].time_index
         event_dim = torch.Size([sum(ss.event_shape[0] if any(ss.event_shape) else 1 for ss in sub_states.values())])
-        super(JointState, self).__init__(time_index=time_index, event_shape=event_dim, values=None)
+        super().__init__(time_index=time_index, event_shape=event_dim, values=None)
 
         self._sub_states_order = tuple(sub_states.keys())
         for name, sub_state in sub_states.items():
@@ -130,12 +113,12 @@ class JointState(TimeseriesState):
             self[name] = sub_state
 
     @property
-    def values(self) -> torch.Tensor:
+    def value(self) -> torch.Tensor:
         res = tuple()
 
         for sub_state_name in self._sub_states_order:
             sub_state: TimeseriesState = self[sub_state_name]
-            res += (sub_state.values if any(sub_state.event_shape) else sub_state.values.unsqueeze(-1),)
+            res += (sub_state.value if any(sub_state.event_shape) else sub_state.value.unsqueeze(-1),)
 
         return torch.cat(res, dim=-1)
 
