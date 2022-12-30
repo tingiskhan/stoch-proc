@@ -37,12 +37,10 @@ class OrnsteinUhlenbeck(LinearModel):
         increment_distribution = Normal(torch.tensor(0.0, device=kappa.device), torch.tensor(1.0, device=kappa.device))
 
         super().__init__(
-            kappa,
-            sigma,
+            (kappa, gamma, sigma),
             increment_distribution,
             initial_kernel=initial_kernel,
             parameter_transform=self._param_transform,
-            b=gamma,
             **kwargs
         )
 

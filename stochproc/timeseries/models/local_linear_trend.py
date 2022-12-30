@@ -46,8 +46,7 @@ class LocalLinearTrend(LinearModel):
         a = torch.tensor([[1.0, 0.0], [1.0, 1.0]], device=sigma.device)
 
         super().__init__(
-            a,
-            sigma,
+            (a, sigma),
             increment_distribution=increment_dist,
             initial_kernel=initial_kernel,
             initial_parameters=(initial_mean, sigma),

@@ -35,8 +35,7 @@ class RandomWalk(LinearModel):
         a = torch.tensor(1.0, device=scale.device, dtype=scale.dtype)
 
         super().__init__(
-            a,
-            scale,
+            (a, scale),
             increment_distribution=increment_distribution,
             initial_kernel=initial_kernel,
             initial_parameters=(initial_mean, scale),

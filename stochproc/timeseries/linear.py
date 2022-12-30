@@ -1,10 +1,24 @@
-from ast import Call
 import torch
-from typing import Tuple, Callable
+from typing import Sequence, Tuple, Callable
 
-from ..typing import ParameterType
 from .affine import AffineProcess
-from .utils import coerce_tensors
+
+
+# TODO: Skip if-else and do this on instantiation instead
+def default_transform(*args):
+    if len(args) == 2:
+        a, s = args
+        return a, torch.zeros_like(s), s
+    
+    if len(args) == 3:
+        return args
+
+    raise Exception("You sent more parameters than expected, please provide a custom transform for your parameters!")
+
+
+ParameterTransformer = Callable[
+    [Sequence[torch.Tensor]], Tuple[torch.Tensor, torch.Tensor, torch.Tensor]
+    ]
 
 
 class LinearModel(AffineProcess):
@@ -21,13 +35,11 @@ class LinearModel(AffineProcess):
 
     def __init__(
         self,
-        a: ParameterType,
-        sigma: ParameterType,
+        parameters,
         increment_distribution,
         initial_kernel,
-        b: ParameterType = None,
         initial_parameters=None,
-        parameter_transform: Callable[[Tuple[torch.Tensor, ...]], Tuple[torch.Tensor, ...]] = None
+        parameter_transform: ParameterTransformer = default_transform
     ):
         """
         Initializes the :class:`LinearModel` class.
@@ -36,17 +48,13 @@ class LinearModel(AffineProcess):
             a: ``A`` matrix in the class docs.
             sigma: ``sigma`` vector in the class docs.
             b: ``b`` vector in the class docs.
-            parameter_transform: function for transforming parameters into expected.
+            parameter_transform: function for transforming parameters into expected. Defaults to assuming that the
+                order of the parameters are ``a, b, s``.                
         """
-
-        a, sigma = coerce_tensors(a, sigma)
-
-        if b is None:
-            b = torch.tensor(0.0, device=a.device)
 
         super().__init__(
             self._mean_scale,
-            parameters=(a, b, sigma),
+            parameters=parameters,
             increment_distribution=increment_distribution,
             initial_kernel=initial_kernel,
             initial_parameters=initial_parameters,
@@ -54,19 +62,15 @@ class LinearModel(AffineProcess):
 
         self._parameter_transform = parameter_transform
     
-    def linear_parameters(self) -> Tuple[torch.Tensor, ...]:
+    def linear_parameters(self) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         r"""
         Returns the triple :math:`\{ \alpha, \beta, \sigma }`.
         """
 
-        if self._parameter_transform is None:
-            return self.parameters
-        
         return tuple(self._parameter_transform(*self.parameters))
 
-    def _mean_scale(self, x, a, b, s):
-        if self._parameter_transform is not None:
-            a, b, s = self._parameter_transform(a, b, s)
+    def _mean_scale(self, x, *args):
+        a, b, s = self._parameter_transform(*args)
 
         if x.event_shape.numel() > 1:
             res = (b.unsqueeze(-1) + a.matmul(x.value.unsqueeze(-1))).squeeze(-1)

@@ -61,12 +61,10 @@ class AR(LinearModel):
         )
 
         super().__init__(
-            beta,
-            sigma,
-            b=alpha,
+            (beta, sigma, alpha),
             increment_distribution=inc_dist,
             initial_kernel=partial(_initial_kernel, lags=self.lags),
-            parameter_transform=self._parameter_transform
+            parameter_transform=self._param_transform
         )
 
         bottom_shape = self.lags - 1, self.lags
@@ -74,7 +72,7 @@ class AR(LinearModel):
         self._bottom = torch.eye(*bottom_shape, device=alpha.device)
         self._b_masker = torch.eye(self.lags, 1, device=alpha.device).squeeze(-1)
 
-    def _parameter_transform(self, a, b, s):
+    def _param_transform(self, a, b, s):
         if self.lags == 1:
             return a, b, s
         
