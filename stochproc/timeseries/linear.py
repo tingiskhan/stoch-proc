@@ -36,6 +36,7 @@ class LinearModel(AffineProcess):
             a: ``A`` matrix in the class docs.
             sigma: ``sigma`` vector in the class docs.
             b: ``b`` vector in the class docs.
+            parameter_transform: function for transforming parameters into expected.
         """
 
         a, sigma = coerce_tensors(a, sigma)
