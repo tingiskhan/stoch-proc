@@ -41,14 +41,14 @@ class OrnsteinUhlenbeck(LinearModel):
             sigma,
             increment_distribution,
             initial_kernel=initial_kernel,
-            parameter_transform=self._parameter_transform,
+            parameter_transform=self._param_transform,
             b=gamma,
             **kwargs
         )
 
         self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
 
-    def _parameter_transform(self, k, g, s):
+    def _param_transform(self, k, g, s):
         a = (-k * self._dt).exp()
         b = g * (1.0 - a)
         s = s / (2.0 * k).sqrt() * (1.0 - a.pow(2.0)).sqrt()
