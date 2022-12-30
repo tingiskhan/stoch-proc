@@ -1,4 +1,6 @@
+from ast import Call
 import torch
+from typing import Tuple, Callable
 
 from ..typing import ParameterType
 from .affine import AffineProcess
@@ -25,6 +27,7 @@ class LinearModel(AffineProcess):
         initial_kernel,
         b: ParameterType = None,
         initial_parameters=None,
+        parameter_transform: Callable[[Tuple[torch.Tensor, ...]], Tuple[torch.Tensor, ...]] = None
     ):
         """
         Initializes the :class:`LinearModel` class.
@@ -48,7 +51,22 @@ class LinearModel(AffineProcess):
             initial_parameters=initial_parameters,
         )
 
+        self._parameter_transform = parameter_transform
+    
+    def linear_parameters(self) -> Tuple[torch.Tensor, ...]:
+        r"""
+        Returns the triple :math:`\{ \alpha, \beta, \sigma }`.
+        """
+
+        if self._parameter_transform is None:
+            return self.parameters
+        
+        return tuple(self._parameter_transform(*self.parameters))
+
     def _mean_scale(self, x, a, b, s):
+        if self._parameter_transform is not None:
+            a, b, s = self._parameter_transform(a, b, s)
+
         if x.event_shape.numel() > 1:
             res = (b.unsqueeze(-1) + a.matmul(x.value.unsqueeze(-1))).squeeze(-1)
         else:

@@ -3,7 +3,7 @@ from pyro.distributions import Normal
 from torch.distributions.utils import broadcast_all
 
 from ...typing import ParameterType
-from ..affine import AffineProcess
+from ..linear import LinearModel
 
 
 def initial_kernel(kappa, gamma, sigma):
@@ -11,7 +11,7 @@ def initial_kernel(kappa, gamma, sigma):
 
 
 # TODO: Should perhaps inherit from StochasticDifferentialEquation?
-class OrnsteinUhlenbeck(AffineProcess):
+class OrnsteinUhlenbeck(LinearModel):
     r"""
     Implements the solved Ornstein-Uhlenbeck process, i.e. the solution to the SDE
         .. math::
@@ -37,17 +37,20 @@ class OrnsteinUhlenbeck(AffineProcess):
         increment_distribution = Normal(torch.tensor(0.0, device=kappa.device), torch.tensor(1.0, device=kappa.device))
 
         super().__init__(
-            self._mean_scale,
-            increment_distribution=increment_distribution,
-            parameters=(kappa, gamma, sigma),
+            kappa,
+            sigma,
+            increment_distribution,
             initial_kernel=initial_kernel,
+            parameter_transform=self._parameter_transform,
+            b=gamma,
             **kwargs
         )
+
         self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
 
-    def _mean_scale(self, x, k, g, s):
-        d = (-k * self._dt).exp()
-        loc = g + (x.value - g) * d
-        scale = s / (2.0 * k).sqrt() * (1.0 - d.pow(2.0)).sqrt()
+    def _parameter_transform(self, k, g, s):
+        a = (-k * self._dt).exp()
+        b = g * (1.0 - a)
+        s = s / (2.0 * k).sqrt() * (1.0 - a.pow(2.0)).sqrt()
 
-        return loc, scale
+        return a, b, s
