@@ -35,6 +35,7 @@ class OrnsteinUhlenbeck(LinearModel):
 
         kappa, gamma, sigma = broadcast_all(kappa, gamma, sigma)
         increment_distribution = Normal(torch.tensor(0.0, device=kappa.device), torch.tensor(1.0, device=kappa.device))
+        self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
 
         super().__init__(
             (kappa, gamma, sigma),
@@ -43,8 +44,6 @@ class OrnsteinUhlenbeck(LinearModel):
             parameter_transform=self._param_transform,
             **kwargs
         )
-
-        self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
 
     def _param_transform(self, k, g, s):
         a = (-k * self._dt).exp()
