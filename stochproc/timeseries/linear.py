@@ -51,7 +51,7 @@ class LinearModel(AffineProcess):
             parameter_transform: function for transforming parameters into expected. Defaults to assuming that the
                 order of the parameters are ``a, b, s``.                
         """
-
+                
         super().__init__(
             self._mean_scale,
             parameters=parameters,
@@ -61,8 +61,10 @@ class LinearModel(AffineProcess):
         )
 
         self._parameter_transform = parameter_transform
+
+        assert len(self._parameter_transform(*self.parameters)) == 3, "Your parameter transform does not return a triple!"
     
-    def linear_parameters(self) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def transformed_parameters(self) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         r"""
         Returns the triple :math:`\{ \alpha, \beta, \sigma }`.
         """
