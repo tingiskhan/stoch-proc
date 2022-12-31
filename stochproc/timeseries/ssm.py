@@ -10,6 +10,7 @@ from .stochastic_process import StructuralStochasticProcess
 _NAN = float("nan")
 
 
+# TODO: Consider adding a linear model...
 class StateSpaceModel(StructuralStochasticProcess):
     r"""
     Class representing a state space model, i.e. a dynamical system given by the pair stochastic processes
