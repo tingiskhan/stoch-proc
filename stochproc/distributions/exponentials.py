@@ -15,8 +15,8 @@ class NegativeExponential(ExponentialFamily):
     Args:
         rate (float or Tensor): rate = 1 / scale of the distribution
     """
-    
-    arg_constraints = {'rate': constraints.less_than(0.0)}
+
+    arg_constraints = {"rate": constraints.less_than(0.0)}
     support = constraints.less_than(0.0)
     has_rsample = True
     _mean_carrier_measure = 0
@@ -27,14 +27,14 @@ class NegativeExponential(ExponentialFamily):
 
     @property
     def stddev(self):
-        return - self.rate.reciprocal()
+        return -self.rate.reciprocal()
 
     @property
     def variance(self):
         return self.rate.pow(-2)
 
     def __init__(self, rate, validate_args=None):
-        self.rate, = broadcast_all(rate)
+        (self.rate,) = broadcast_all(rate)
         batch_shape = torch.Size() if isinstance(rate, Number) else self.rate.size()
         super().__init__(batch_shape, validate_args=validate_args)
 
@@ -57,7 +57,7 @@ class NegativeExponential(ExponentialFamily):
     def log_prob(self, value):
         if self._validate_args:
             self._validate_sample(value)
-        return (- self.rate).log() - self.rate * value
+        return (-self.rate).log() - self.rate * value
 
     def cdf(self, value):
         if self._validate_args:
@@ -72,7 +72,7 @@ class NegativeExponential(ExponentialFamily):
 
     @property
     def _natural_params(self):
-        return (-self.rate, )
+        return (-self.rate,)
 
     def _log_normalizer(self, x):
         return -torch.log(-x)
@@ -85,7 +85,7 @@ class DoubleExponential(ExponentialFamily):
         .. math::
             \zeta(q) = p \rho_{plus} \exp{-\rho_{plus} * q}, \text{if q > 0}
             \zeta(q) = p -\rho_{minus} \exp{-rho_{minus} * q}, \text{otherwise}
-    
+
     Args:
         rate (float or Tensor): rate = 1 / scale of the distribution
 
@@ -93,12 +93,12 @@ class DoubleExponential(ExponentialFamily):
         >>> m = DoubleExponential(torch.tensor([10, -10, 0.5]))
         >>> m.sample()
         tensor([ 0.1046])
-    
+
     """
     arg_constraints = {
         "rho_plus": constraints.positive,
-        "rho_minus": constraints.less_than(0.),
-        "p": constraints.interval(0.0, 1.0)
+        "rho_minus": constraints.less_than(0.0),
+        "p": constraints.interval(0.0, 1.0),
     }
 
     support = constraints.real
@@ -112,12 +112,14 @@ class DoubleExponential(ExponentialFamily):
     @property
     def stddev(self):
         # V(J) := E[J^2] - E[J]^2
-        return (self.p * 2 * self.rho_plus.pow(-2.) + (1 - self.p) * 2 * self.rho_minus.pow(-2.) - self.mean.pow(2.)).sqrt()
+        return (
+            self.p * 2 * self.rho_plus.pow(-2.0) + (1 - self.p) * 2 * self.rho_minus.pow(-2.0) - self.mean.pow(2.0)
+        ).sqrt()
 
     @property
     def variance(self):
         sigma = self.stddev
-        return sigma.pow(2.)
+        return sigma.pow(2.0)
 
     @property
     def phi_fun(self):
@@ -127,7 +129,11 @@ class DoubleExponential(ExponentialFamily):
         return c
 
     def __init__(self, rho_plus, rho_minus, p, validate_args=None):
-        self.rho_plus, self.rho_minus, self.p, = broadcast_all(rho_plus, rho_minus, p)
+        (
+            self.rho_plus,
+            self.rho_minus,
+            self.p,
+        ) = broadcast_all(rho_plus, rho_minus, p)
 
         if isinstance(rho_plus, Number) and isinstance(rho_minus, Number) and isinstance(p, Number):
             batch_shape = torch.Size()
@@ -167,9 +173,9 @@ class DoubleExponential(ExponentialFamily):
             self._validate_sample(value)
 
         mask = (value >= 0.0).float()
-        log_prob = (
-            ((self.p * self.rho_plus).log() - self.rho_plus * value) * mask + ((-self.rho_minus * (1 - self.p)).log() - self.rho_minus * value) * (~mask)
-        )
+        log_prob = ((self.p * self.rho_plus).log() - self.rho_plus * value) * mask + (
+            (-self.rho_minus * (1 - self.p)).log() - self.rho_minus * value
+        ) * (~mask)
 
         return log_prob
 
@@ -193,9 +199,9 @@ class DoubleExponential(ExponentialFamily):
         x = torch.zeros(n)
         for i in range(0, n.__getitem__(0)):
             if u[i] <= self.p:
-                x[i] = - 1 / self.rho_minus * (u[i] / (1 - self.p)).log()
+                x[i] = -1 / self.rho_minus * (u[i] / (1 - self.p)).log()
             else:
-                x[i] = - 1 / self.rho_plus * ((1 - u[i]) / self.p).log()
+                x[i] = -1 / self.rho_plus * ((1 - u[i]) / self.p).log()
         return x
 
     def entropy(self):
@@ -203,9 +209,9 @@ class DoubleExponential(ExponentialFamily):
 
     @property
     def _natural_params(self):
-        print(' I am in natural parameters')
+        print(" I am in natural parameters")
         return (-self.rate,)
 
     def _log_normalizer(self, x):
-        print(' I am in log_normalized')
+        print(" I am in log_normalized")
         return -torch.log(-x)

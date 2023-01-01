@@ -56,5 +56,5 @@ class HarmonicProcess(LinearModel):
             increment_distribution,
             initial_kernel,
             initial_parameters=initial_parameters,
-            parameter_transform=_parameter_transform
+            parameter_transform=_parameter_transform,
         )

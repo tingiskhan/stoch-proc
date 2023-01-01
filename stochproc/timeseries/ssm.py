@@ -1,4 +1,3 @@
-
 import pyro
 import torch
 from pyro.distributions import Distribution

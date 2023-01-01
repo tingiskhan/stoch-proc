@@ -37,7 +37,7 @@ class TrendingOU(AffineProcess):
         increment_distribution = Normal(torch.tensor(0.0, device=kappa.device), torch.tensor(1.0, device=kappa.device))
 
         super().__init__(
-            self._mean_scale,            
+            self._mean_scale,
             (kappa, gamma, v_0, sigma),
             increment_distribution,
             initial_kernel,

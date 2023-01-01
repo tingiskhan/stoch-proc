@@ -69,13 +69,13 @@ class AR(LinearModel):
             (beta, sigma, alpha),
             increment_distribution=inc_dist,
             initial_kernel=partial(_initial_kernel, lags=self.lags),
-            parameter_transform=self._param_transform
-        )        
+            parameter_transform=self._param_transform,
+        )
 
     def _param_transform(self, a, b, s):
         if self.lags == 1:
             return a, b, s
-        
+
         batch_shape = a.shape[:-1]
 
         mask = torch.ones((*batch_shape, *self._bottom.shape), device=a.device)

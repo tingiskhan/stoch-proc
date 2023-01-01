@@ -9,16 +9,14 @@ def default_transform(*args):
     if len(args) == 2:
         a, s = args
         return a, torch.zeros_like(s), s
-    
+
     if len(args) == 3:
         return args
 
     raise Exception("You sent more parameters than expected, please provide a custom transform for your parameters!")
 
 
-ParameterTransformer = Callable[
-    [Sequence[torch.Tensor]], Tuple[torch.Tensor, torch.Tensor, torch.Tensor]
-    ]
+ParameterTransformer = Callable[[Sequence[torch.Tensor]], Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
 
 
 class LinearModel(AffineProcess):
@@ -39,7 +37,7 @@ class LinearModel(AffineProcess):
         increment_distribution,
         initial_kernel,
         initial_parameters=None,
-        parameter_transform: ParameterTransformer = default_transform
+        parameter_transform: ParameterTransformer = default_transform,
     ):
         """
         Initializes the :class:`LinearModel` class.
@@ -49,9 +47,9 @@ class LinearModel(AffineProcess):
             sigma: ``sigma`` vector in the class docs.
             b: ``b`` vector in the class docs.
             parameter_transform: function for transforming parameters into expected. Defaults to assuming that the
-                order of the parameters are ``a, b, s``.                
+                order of the parameters are ``a, b, s``.
         """
-                
+
         super().__init__(
             self._mean_scale,
             parameters=parameters,
@@ -62,8 +60,10 @@ class LinearModel(AffineProcess):
 
         self._parameter_transform = parameter_transform
 
-        assert len(self._parameter_transform(*self.parameters)) == 3, "Your parameter transform does not return a triple!"
-    
+        assert (
+            len(self._parameter_transform(*self.parameters)) == 3
+        ), "Your parameter transform does not return a triple!"
+
     def transformed_parameters(self) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         r"""
         Returns the triple :math:`\{ \alpha, \beta, \sigma }`.
