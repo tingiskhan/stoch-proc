@@ -14,7 +14,7 @@ from .joint import (
     joint_process,
 )
 from .linear import LinearModel
-from .ssm import StateSpaceModel
+from .ssm import StateSpaceModel, LinearStateSpaceModel
 from .state import TimeseriesState, JointState
 from .stochastic_process import StructuralStochasticProcess
 from .hierarchical import AffineHierarchicalProcess
@@ -41,4 +41,5 @@ __all__ = [
     "JointStochasticProcess",
     "LowerCholeskyJointStochasticProcess",
     "joint_process",
+    "LinearStateSpaceModel",
 ]

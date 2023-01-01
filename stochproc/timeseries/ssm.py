@@ -1,6 +1,9 @@
 import pyro
 import torch
-from pyro.distributions import Distribution
+from pyro.distributions import Distribution, Normal
+
+from stochproc.timeseries.linear import LinearModel, default_transform
+from stochproc.timeseries.utils import coerce_tensors
 
 from .result import StateSpacePath
 from .state import StateSpaceModelState, TimeseriesState
@@ -19,7 +22,8 @@ class StateSpaceModel(StructuralStochasticProcess):
     .. _`here`: https://en.wikipedia.org/wiki/State-space_representation
     """
 
-    def __init__(self, hidden: StructuralStochasticProcess, kernel, parameters, observe_every_step=1):
+    # TODO: Not very SOLID by adding the event shape...
+    def __init__(self, hidden: StructuralStochasticProcess, kernel, parameters, observe_every_step=1, event_shape: torch.Size = None):
         """
         Initializes the :class:`StateSpaceModel` class.
 
@@ -28,13 +32,14 @@ class StateSpaceModel(StructuralStochasticProcess):
             kernel: see :class:`StructuralStochasticProcess`.
             parameters: see :class:`StructuralStochasticProcess`.
             observe_every_step: parameter for specifying the frequency at which we observe the data.
+            event_shape: manual override for the event shape.
         """
 
-        super().__init__(kernel=kernel, parameters=parameters, initial_kernel=None)
+        StructuralStochasticProcess.__init__(self, kernel=kernel, parameters=parameters, initial_kernel=None)
 
         self.hidden = hidden
         self.observe_every_step = observe_every_step
-        self._event_shape = self.initial_sample()["y"].event_shape
+        self._event_shape = event_shape if event_shape is not None else self.initial_sample()["y"].event_shape
 
     @property
     def initial_distribution(self) -> Distribution:
@@ -100,3 +105,35 @@ class StateSpaceModel(StructuralStochasticProcess):
 
         for p in super().yield_parameters(filt):
             yield p
+    
+
+class LinearStateSpaceModel(StateSpaceModel, LinearModel):
+    """
+    Implements a linear Gaussian state space model, similar to :class:`LinearModel` but where the left hand side
+    is replaced with :math:`Y_t`.
+    """
+
+    def __init__(self, hidden: StructuralStochasticProcess, parameters, event_shape: torch.Size, observe_every_step=1, parameter_transform=default_transform):
+        """
+        Initializes the :class:`StateSpaceModel` class.
+
+        Args:
+            hidden: see :class:`StateSpaceModel`.            
+            parameters: see :class:`LinearModel`.
+            event_shape: see :class:`StateSpaceModel`.
+            observe_every_step: see :class:`StateSpaceModel`.
+        """
+
+        coerced_parameters = coerce_tensors(*parameters)
+
+        device = coerced_parameters[0].device
+        increment_distribution = Normal(torch.tensor(0.0, device=device), torch.tensor(1.0, device=device))
+
+        if event_shape:
+            increment_distribution = increment_distribution.expand(event_shape).to_event(1)
+
+        LinearModel.__init__(self, coerced_parameters, increment_distribution, None, None, parameter_transform=parameter_transform)        
+        StateSpaceModel.__init__(self, hidden, self._kernel, coerced_parameters, observe_every_step=observe_every_step, event_shape=event_shape)
+    
+    def add_sub_process(self, sub_process):
+        raise NotImplementedError(f"Cannot register a sub process to '{self.__class__}'!")
