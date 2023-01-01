@@ -74,8 +74,8 @@ class LinearModel(AffineProcess):
     def _mean_scale(self, x, *args):
         a, b, s = self._parameter_transform(*args)
 
-        if x.event_shape.numel() > 1:
-            res = (b.unsqueeze(-1) + a.matmul(x.value.unsqueeze(-1))).squeeze(-1)
+        if self.n_dim > 0:
+            res = (b.unsqueeze(-1) + a @ x.value.unsqueeze(-1)).squeeze(-1)
         else:
             res = b + a * x.value
 
