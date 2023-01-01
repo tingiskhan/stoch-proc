@@ -25,7 +25,8 @@ def models():
 
 
 class TestCustomModels(object):
-    @pytest.mark.parametrize("batch_size, model", tuple(itertools.product(BATCH_SHAPES, models())))
+    @pytest.mark.parametrize("batch_size", BATCH_SHAPES)
+    @pytest.mark.parametrize("model", models())
     def test_all_models(self, batch_size, model):
         states = model.sample_states(SAMPLES, samples=batch_size)
         x = states.get_path()
