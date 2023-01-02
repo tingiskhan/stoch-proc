@@ -24,14 +24,14 @@ class TestJointProcesses(object):
         joint_proc = ts.JointStochasticProcess(**processes)
         x = joint_proc.sample_states(SAMPLES, samples=batch_shape).get_path()
 
-        assert x.shape == torch.Size([SAMPLES, *batch_shape, 2])
+        assert x.shape == torch.Size([SAMPLES]) + batch_shape + torch.Size([2])
 
     @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
     def test_affine_joint_processes(self, batch_shape, processes):
         joint_proc = ts.AffineJointStochasticProcess(**processes)
         x = joint_proc.sample_states(SAMPLES, samples=batch_shape).get_path()
 
-        assert x.shape == torch.Size([SAMPLES, *batch_shape, 2])
+        assert x.shape == torch.Size([SAMPLES]) + batch_shape + torch.Size([2])
 
     def test_parameters(self, processes):
         joint = ts.joint_process(**processes)

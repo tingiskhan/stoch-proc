@@ -32,4 +32,4 @@ class TestCustomModels(object):
         x = states.get_path()
 
         assert all(s.batch_shape == batch_size for s in states)
-        assert (x.shape == torch.Size([SAMPLES, *batch_size, *model.event_shape])) and ~torch.isnan(x).any()
+        assert (x.shape == torch.Size([SAMPLES]) + batch_size + model.event_shape) and ~torch.isnan(x).any()

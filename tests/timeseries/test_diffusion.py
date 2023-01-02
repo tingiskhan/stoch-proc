@@ -30,7 +30,7 @@ class TestDiffusionOneDimensional(object):
 
         x = discretized_ou.sample_states(SAMPLES, samples=batch_shape).get_path()
 
-        assert (x.shape == torch.Size([SAMPLES, *batch_shape])) and (not torch.isnan(x).any())
+        assert (x.shape == torch.Size([SAMPLES]) + batch_shape) and (not torch.isnan(x).any())
 
     @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
     def test_runge_kutta(self, batch_shape):
@@ -50,4 +50,4 @@ class TestDiffusionOneDimensional(object):
             )
             x = newton_cooling.sample_states(SAMPLES, samples=batch_shape).get_path()
 
-            assert x.shape == torch.Size([SAMPLES, *batch_shape])
+            assert x.shape == torch.Size([SAMPLES]) + batch_shape

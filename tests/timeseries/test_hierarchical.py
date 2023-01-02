@@ -31,7 +31,7 @@ class TestHierarchicalProcess(object):
 
         x = main.sample_states(SAMPLES, batch_shape).get_path()
 
-        assert x.shape == torch.Size([SAMPLES, *batch_shape, *main.event_shape])
+        assert x.shape == torch.Size([SAMPLES]) + batch_shape + main.event_shape
 
     @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
     def test_hull_white(self, batch_shape):
@@ -47,4 +47,4 @@ class TestHierarchicalProcess(object):
 
         x = hull_white.sample_states(SAMPLES, batch_shape).get_path()
 
-        assert x.shape == torch.Size([SAMPLES, *batch_shape, *hull_white.event_shape])
+        assert x.shape == torch.Size([SAMPLES]) + batch_shape + hull_white.event_shape
