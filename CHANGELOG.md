@@ -6,6 +6,7 @@
  - Improves `LinearModel`
  - Adds `LinearStateModel`
  - Minor test improvements
+ - Adds `HarmonicProcess`
 
 ### v0.1.0
  - Simplifies backend by removing all dependencies to `torch.nn.Module` to facilitate supporting JAX.
