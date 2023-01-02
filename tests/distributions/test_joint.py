@@ -39,7 +39,7 @@ class TestJointDistribution(object):
         more_sample_shape = torch.Size([1000, 300])
         more_samples = joint_distribution.sample(more_sample_shape)
 
-        assert more_samples.shape == torch.Size([*more_sample_shape, 3])
+        assert more_samples.shape == more_sample_shape + torch.Size([3])
 
     def test_log_prob(self, joint_distribution):
         shape = torch.Size([1000, 300])

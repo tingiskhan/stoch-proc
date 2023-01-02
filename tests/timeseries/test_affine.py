@@ -28,7 +28,7 @@ class TestAffineTimeseriesOneDimensional(object):
             x = process.propagate(x)
 
         path = process.sample_states(SAMPLES, samples=batch_shape).get_path()
-        assert path.shape == torch.Size([SAMPLES, *batch_shape])
+        assert path.shape == torch.Size([SAMPLES]) + batch_shape
 
 
 class TestAffineTimeseriesMultiDimensional(object):
@@ -48,4 +48,4 @@ class TestAffineTimeseriesMultiDimensional(object):
             x = process.propagate(x)
 
         path = process.sample_states(SAMPLES, samples=batch_shape).get_path()
-        assert path.shape == torch.Size([SAMPLES, *batch_shape, 2])
+        assert path.shape == torch.Size([SAMPLES]) + batch_shape + torch.Size([2])

@@ -89,7 +89,7 @@ class StructuralStochasticProcess(ABC):
         Returns the initial distribution.
         """
 
-        return self._initial_kernel(*self.initial_parameters)    
+        return self._initial_kernel(*self.initial_parameters)
 
     def initial_sample(self, shape: torch.Size = torch.Size([])) -> TimeseriesState:
         """

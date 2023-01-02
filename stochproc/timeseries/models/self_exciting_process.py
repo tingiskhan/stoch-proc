@@ -13,7 +13,16 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
     See e.g. https://www.researchgate.net/publication/327672329_Hedging_of_options_in_presence_of_jump_clustering
     """
 
-    def __init__(self, alpha: ParameterType, xi: ParameterType, eta: ParameterType, p: ParameterType, rho_minus: ParameterType, rho_plus: ParameterType, **kwargs):
+    def __init__(
+        self,
+        alpha: ParameterType,
+        xi: ParameterType,
+        eta: ParameterType,
+        p: ParameterType,
+        rho_minus: ParameterType,
+        rho_plus: ParameterType,
+        **kwargs
+    ):
         """
         Initializes the :class:`SelfExcitingLatentProcesses` class.
 
@@ -32,19 +41,15 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
         self._event_shape = torch.Size([4])
 
     def initial_kernel(self, alpha, xi, eta):
-        exp_j2 = self.de.p * 2.0 / (self.de.rho_plus ** 2.0) + (1 - self.de.p) * 2.0 / (self.de.rho_minus ** 2.0)
-        
+        exp_j2 = self.de.p * 2.0 / (self.de.rho_plus**2.0) + (1 - self.de.p) * 2.0 / (self.de.rho_minus**2.0)
+
         std_lambda = exp_j2.sqrt() * xi
         dist_ = TransformedDistribution(
-            Normal(torch.zeros_like(alpha), torch.ones_like(alpha)), [t.AffineTransform(xi, std_lambda), t.AbsTransform()]
+            Normal(torch.zeros_like(alpha), torch.ones_like(alpha)),
+            [t.AffineTransform(xi, std_lambda), t.AbsTransform()],
         )
 
-        return JointDistribution(
-            dist_,
-            Delta(torch.zeros_like(alpha)),
-            Delta(torch.zeros_like(alpha)),
-            self.de
-        )
+        return JointDistribution(dist_, Delta(torch.zeros_like(alpha)), Delta(torch.zeros_like(alpha)), self.de)
 
     def kernel(self, x: TimeseriesState, alpha, xi, eta) -> Distribution:
         r"""

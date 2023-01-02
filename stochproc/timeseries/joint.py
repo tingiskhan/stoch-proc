@@ -42,7 +42,12 @@ class JointStochasticProcess(StructuralStochasticProcess):
         parameters = sum((p.parameters for p in processes.values()), ())
         initial_parameters = sum((p.initial_parameters for p in processes.values()), ())
 
-        super().__init__(kernel=self.kernel, parameters=set(parameters), initial_kernel=None, initial_parameters=set(initial_parameters))
+        super().__init__(
+            kernel=self.kernel,
+            parameters=set(parameters),
+            initial_kernel=None,
+            initial_parameters=set(initial_parameters),
+        )
 
         self.sub_processes = {k: v for k, v in processes.items() if isinstance(v, StructuralStochasticProcess)}
         self._initial_kernel = self.initial_kernel
@@ -89,9 +94,13 @@ class AffineJointStochasticProcess(AffineProcess):
         initial_parameters = sum((p.initial_parameters for p in processes.values()), ())
 
         super().__init__(
-            mean_scale=None, increment_distribution=increment_distribution, parameters=parameters, initial_kernel=None, initial_parameters=initial_parameters
+            mean_scale=None,
+            increment_distribution=increment_distribution,
+            parameters=parameters,
+            initial_kernel=None,
+            initial_parameters=initial_parameters,
         )
-        
+
         self.sub_processes = {k: v for k, v in processes.items() if isinstance(v, StructuralStochasticProcess)}
         self._initial_kernel = self.initial_kernel
         self._event_shape = self.initial_distribution.event_shape
@@ -158,7 +167,7 @@ class LowerCholeskyJointStochasticProcess(AffineJointStochasticProcess):
             mean += (m.unsqueeze(-1) if proc.n_dim == 0 else m,)
 
             numel = proc.event_shape.numel()
-            eye_slice = eye[left: left + numel]
+            eye_slice = eye[left : left + numel]
 
             scale += (_multiplier(s, eye_slice, proc, x.batch_shape),)
             left += numel

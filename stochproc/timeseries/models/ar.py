@@ -60,33 +60,28 @@ class AR(LinearModel):
             loc=torch.tensor(0.0, device=alpha.device), scale=torch.tensor(1.0, device=alpha.device), lags=self.lags
         )
 
-        super().__init__(
-            beta,
-            sigma,
-            b=alpha,
-            increment_distribution=inc_dist,
-            initial_kernel=partial(_initial_kernel, lags=self.lags),
-        )
-        self.mean_scale_fun = self._mean_scale_wrapper(self.mean_scale_fun)
-
         bottom_shape = self.lags - 1, self.lags
 
         self._bottom = torch.eye(*bottom_shape, device=alpha.device)
         self._b_masker = torch.eye(self.lags, 1, device=alpha.device).squeeze(-1)
 
-    def _mean_scale_wrapper(self, f):
-        def _wrapper(x, a, b, s):
-            if self.lags == 1:
-                return f(x, a, b, s)
+        super().__init__(
+            (beta, sigma, alpha),
+            increment_distribution=inc_dist,
+            initial_kernel=partial(_initial_kernel, lags=self.lags),
+            parameter_transform=self._param_transform,
+        )
 
-            batch_shape = a.shape[:-1]
+    def _param_transform(self, a, b, s):
+        if self.lags == 1:
+            return a, b, s
 
-            mask = torch.ones((*batch_shape, *self._bottom.shape), device=a.device)
-            bottom = self._bottom * mask
+        batch_shape = a.shape[:-1]
 
-            a = torch.cat((a.unsqueeze(-2), bottom), dim=-2)
-            b = self._b_masker * b
+        mask = torch.ones((*batch_shape, *self._bottom.shape), device=a.device)
+        bottom = self._bottom * mask
 
-            return f(x, a, b, s.unsqueeze(-1))
+        a = torch.cat((a.unsqueeze(-2), bottom), dim=-2)
+        b = self._b_masker * b
 
-        return _wrapper
+        return a, b, s.unsqueeze(-1)
