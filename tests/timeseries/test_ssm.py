@@ -39,7 +39,7 @@ class TestSSM(object):
         loc_1 = ts.models.RandomWalk(0.05)
         loc_2 = ts.models.RandomWalk(0.025)
 
-        joint = ts.AffineJointStochasticProcess(loc_1=loc_1, loc_2=loc_2)
+        joint = ts.joint_process(loc_1=loc_1, loc_2=loc_2)
 
         def f(x_, a):
             return Normal(loc=a.matmul(x_.value.unsqueeze(-1)).squeeze(-1), scale=1.0).to_event(1)
@@ -63,3 +63,4 @@ class TestSSM(object):
 
         assert x.shape == torch.Size([SAMPLES]) + batch_shape
         assert y.shape == torch.Size([SAMPLES]) + batch_shape + torch.Size([2])
+    
