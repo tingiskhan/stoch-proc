@@ -22,7 +22,6 @@ class StateSpaceModel(StructuralStochasticProcess):
     .. _`here`: https://en.wikipedia.org/wiki/State-space_representation
     """
 
-    # TODO: Not very SOLID by adding the event shape...
     def __init__(self, hidden: StructuralStochasticProcess, kernel, parameters, observe_every_step=1):
         """
         Initializes the :class:`StateSpaceModel` class.
