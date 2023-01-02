@@ -75,7 +75,13 @@ class LinearModel(AffineProcess):
         a, b, s = self._parameter_transform(*args)
 
         if self.n_dim > 0:
-            res = (b.unsqueeze(-1) + a @ x.value.unsqueeze(-1)).squeeze(-1)
+            values = x.value.unsqueeze(-1)
+
+            # This is a non-SOLID "hack" to accomodate for event shapes differing between model and state
+            if not x.event_shape:
+                values = values.unsqueeze(-1)
+
+            res = (b.unsqueeze(-1) + a @ values).squeeze(-1)
         else:
             res = b + a * x.value
 
