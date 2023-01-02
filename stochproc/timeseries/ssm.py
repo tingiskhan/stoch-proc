@@ -23,7 +23,7 @@ class StateSpaceModel(StructuralStochasticProcess):
     """
 
     # TODO: Not very SOLID by adding the event shape...
-    def __init__(self, hidden: StructuralStochasticProcess, kernel, parameters, observe_every_step=1, event_shape: torch.Size = None):
+    def __init__(self, hidden: StructuralStochasticProcess, kernel, parameters, observe_every_step=1):
         """
         Initializes the :class:`StateSpaceModel` class.
 
@@ -39,11 +39,17 @@ class StateSpaceModel(StructuralStochasticProcess):
 
         self.hidden = hidden
         self.observe_every_step = observe_every_step
-        self._event_shape = event_shape if event_shape is not None else self.initial_sample()["y"].event_shape
 
     @property
     def initial_distribution(self) -> Distribution:
         raise NotImplementedError("Cannot sample from initial distribution of SSM directly!")
+    
+    def _infer_event_shape(self):
+        """
+        Method for inferring and setting the property :prop:`_event_shape`.
+        """
+
+        self._event_shape = self.initial_sample()["y"].event_shape
 
     def _build_initial_state(self, x: TimeseriesState) -> StateSpaceModelState:
         density = self.build_density(x)
@@ -118,7 +124,7 @@ class LinearStateSpaceModel(StateSpaceModel, LinearModel):
         Initializes the :class:`StateSpaceModel` class.
 
         Args:
-            hidden: see :class:`StateSpaceModel`.            
+            hidden: see :class:`StateSpaceModel`.
             parameters: see :class:`LinearModel`.
             event_shape: see :class:`StateSpaceModel`.
             observe_every_step: see :class:`StateSpaceModel`.
@@ -132,8 +138,13 @@ class LinearStateSpaceModel(StateSpaceModel, LinearModel):
         if event_shape:
             increment_distribution = increment_distribution.expand(event_shape).to_event(1)
 
-        LinearModel.__init__(self, coerced_parameters, increment_distribution, None, None, parameter_transform=parameter_transform)        
-        StateSpaceModel.__init__(self, hidden, self._kernel, coerced_parameters, observe_every_step=observe_every_step, event_shape=event_shape)
+        LinearModel.__init__(self, coerced_parameters, increment_distribution, None, None, parameter_transform=parameter_transform)
+        StateSpaceModel.__init__(self, hidden, self._kernel, coerced_parameters, observe_every_step=observe_every_step)
+
+        self._event_shape = event_shape
     
+    def _infer_event_shape(self) -> torch.Size:
+        pass
+
     def add_sub_process(self, sub_process):
         raise NotImplementedError(f"Cannot register a sub process to '{self.__class__}'!")
