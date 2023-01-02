@@ -42,7 +42,7 @@ class StateSpaceModel(StructuralStochasticProcess):
     @property
     def initial_distribution(self) -> Distribution:
         raise NotImplementedError("Cannot sample from initial distribution of SSM directly!")
-    
+
     def _infer_event_shape(self):
         """
         Method for inferring and setting the property :prop:`_event_shape`.
@@ -110,7 +110,7 @@ class StateSpaceModel(StructuralStochasticProcess):
 
         for p in super().yield_parameters(filt):
             yield p
-    
+
 
 class LinearStateSpaceModel(StateSpaceModel, LinearModel):
     """
@@ -118,7 +118,14 @@ class LinearStateSpaceModel(StateSpaceModel, LinearModel):
     is replaced with :math:`Y_t`.
     """
 
-    def __init__(self, hidden: StructuralStochasticProcess, parameters, event_shape: torch.Size, observe_every_step=1, parameter_transform=default_transform):
+    def __init__(
+        self,
+        hidden: StructuralStochasticProcess,
+        parameters,
+        event_shape: torch.Size,
+        observe_every_step=1,
+        parameter_transform=default_transform,
+    ):
         """
         Initializes the :class:`StateSpaceModel` class.
 
@@ -137,11 +144,13 @@ class LinearStateSpaceModel(StateSpaceModel, LinearModel):
         if event_shape:
             increment_distribution = increment_distribution.expand(event_shape).to_event(1)
 
-        LinearModel.__init__(self, coerced_parameters, increment_distribution, None, None, parameter_transform=parameter_transform)
+        LinearModel.__init__(
+            self, coerced_parameters, increment_distribution, None, None, parameter_transform=parameter_transform
+        )
         StateSpaceModel.__init__(self, hidden, self._kernel, coerced_parameters, observe_every_step=observe_every_step)
 
         self._event_shape = event_shape
-    
+
     def _infer_event_shape(self) -> torch.Size:
         pass
 
