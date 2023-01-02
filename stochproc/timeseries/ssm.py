@@ -12,7 +12,6 @@ from .stochastic_process import StructuralStochasticProcess
 _NAN = float("nan")
 
 
-# TODO: Consider adding a linear model...
 class StateSpaceModel(StructuralStochasticProcess):
     r"""
     Class representing a state space model, i.e. a dynamical system given by the pair stochastic processes
@@ -38,6 +37,7 @@ class StateSpaceModel(StructuralStochasticProcess):
 
         self.hidden = hidden
         self.observe_every_step = observe_every_step
+        self._infer_event_shape()
 
     @property
     def initial_distribution(self) -> Distribution:
@@ -127,7 +127,7 @@ class LinearStateSpaceModel(StateSpaceModel, LinearModel):
         parameter_transform=default_transform,
     ):
         """
-        Initializes the :class:`StateSpaceModel` class.
+        Initializes the :class:`LinearStateSpaceModel` class.
 
         Args:
             hidden: see :class:`StateSpaceModel`.
