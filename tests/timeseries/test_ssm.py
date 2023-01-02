@@ -31,8 +31,8 @@ class TestSSM(object):
         states = ssm.sample_states(SAMPLES, samples=batch_shape, x_0=x_0)
         x, y = states.get_paths()
 
-        assert x.shape == torch.Size([SAMPLES, *batch_shape])
-        assert y.shape == torch.Size([SAMPLES, *batch_shape, 2])
+        assert x.shape == torch.Size([SAMPLES]) + batch_shape
+        assert y.shape == torch.Size([SAMPLES]) + batch_shape + torch.Size([2])
 
     @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
     def test_joint_ssm(self, batch_shape):
@@ -47,7 +47,7 @@ class TestSSM(object):
         ssm = ts.StateSpaceModel(joint, f, parameters=(torch.eye(2),))
         x, y = ssm.sample_states(SAMPLES, samples=batch_shape).get_paths()
 
-        assert (y.shape == torch.Size([SAMPLES, *batch_shape, 2]))
+        assert y.shape == torch.Size([SAMPLES]) + batch_shape + torch.Size([2])
 
     @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
     @pytest.mark.parametrize("sample_initial", SAMPLE_INITIAL)
@@ -61,5 +61,5 @@ class TestSSM(object):
         states = ssm.sample_states(SAMPLES, samples=batch_shape, x_0=x_0)
         x, y = states.get_paths()
 
-        assert x.shape == torch.Size([SAMPLES, *batch_shape])
-        assert y.shape == torch.Size([SAMPLES, *batch_shape, 2])
+        assert x.shape == torch.Size([SAMPLES]) + batch_shape
+        assert y.shape == torch.Size([SAMPLES]) + batch_shape + torch.Size([2])
