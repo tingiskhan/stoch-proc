@@ -41,7 +41,7 @@ class AffineHierarchicalProcess(AffineJointStochasticProcess):
 
     def __init__(self, sub_process: AffineProcess, main_process: AffineProcess):
         """
-        Initializes the :class:`AffineHierarchalProcess` class.
+        Initializes the :class:`AffineHierarchicalProcess` class.
 
         Args:
             sub_process: child/sub process.

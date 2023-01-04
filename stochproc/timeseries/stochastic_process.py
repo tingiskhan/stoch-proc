@@ -267,7 +267,7 @@ class StructuralStochasticProcess(ABC):
     @staticmethod
     def _check_obs_and_t(t_final: int, obs: torch.Tensor) -> Tuple[int, torch.Tensor]:
         """
-        Helper method for coalescing `t_final` and `obs`.
+        Helper method for coalescing ``t_final`` and ``obs``.
 
         Args:
             t_final: the final time index.

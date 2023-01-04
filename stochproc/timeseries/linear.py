@@ -43,9 +43,10 @@ class LinearModel(AffineProcess):
         Initializes the :class:`LinearModel` class.
 
         Args:
-            a: ``A`` matrix in the class docs.
-            sigma: ``sigma`` vector in the class docs.
-            b: ``b`` vector in the class docs.
+            parameters: see :class:`AffineProcess`.
+            increment_distribution: see :class:`AffineProcess`.
+            initial_kernel: see :class:`AffineProcess`.
+            initial_parameters: see :class:`AffineProcess`.
             parameter_transform: function for transforming parameters into expected. Defaults to assuming that the
                 order of the parameters are ``a, b, s``.
         """
@@ -66,7 +67,7 @@ class LinearModel(AffineProcess):
 
     def transformed_parameters(self) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         r"""
-        Returns the triple :math:`\{ \alpha, \beta, \sigma }`.
+        Returns the triple :math:`\{ \alpha, \beta, \sigma \}`.
         """
 
         return tuple(self._parameter_transform(*self.parameters))
