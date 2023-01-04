@@ -24,7 +24,7 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
         **kwargs
     ):
         """
-        Initializes the :class:`SelfExcitingLatentProcesses` class.
+        Internal initializer for :class:`SelfExcitingLatentProcesses`.
 
         Args:
             alpha (ParameterType): speed of mean reversion for deterministic component.

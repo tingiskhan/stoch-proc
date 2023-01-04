@@ -23,7 +23,7 @@ class TrendingOU(AffineProcess):
         dt: float = 1.0,
     ):
         """
-        Initializes the :class:`TrendingOU` object.
+        Internal initializer for :class:`TrendingOU` object.
 
         Args:
             kappa: reversion parameter.

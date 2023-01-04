@@ -18,7 +18,7 @@ class RandomWalk(LinearModel):
 
     def __init__(self, scale: ParameterType, initial_mean: ParameterType = 0.0, **kwargs):
         r"""
-        Initializes the :class:`RandomWalk` model.
+        Internal initializer for :class:`RandomWalk`.
 
         Args:
             scale: :math:`\sigma` in class doc.

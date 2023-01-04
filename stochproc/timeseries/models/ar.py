@@ -39,7 +39,7 @@ class AR(LinearModel):
 
     def __init__(self, alpha, beta, sigma, lags=1):
         """
-        Initializes the :class:`AR` class.
+        Internal initializer for :class:`AR`.
 
         Args:
             alpha: mean of the process.

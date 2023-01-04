@@ -41,7 +41,7 @@ class AffineHierarchicalProcess(AffineJointStochasticProcess):
 
     def __init__(self, sub_process: AffineProcess, main_process: AffineProcess):
         """
-        Initializes the :class:`AffineHierarchicalProcess` class.
+        Internal initializer for :class:`AffineHierarchicalProcess`.
 
         Args:
             sub_process: child/sub process.
@@ -82,7 +82,7 @@ class LowerCholeskyHierarchicalProcess(LowerCholeskyJointStochasticProcess):
 
     def __init__(self, sub_process: AffineProcess, main_process: AffineProcess):
         """
-        Initializes the :class:`LowerCholeskyHierarchicalProcess` class.
+        Internal initializer for :class:`LowerCholeskyHierarchicalProcess`.
 
         Args:
             sub_process: child/sub process.

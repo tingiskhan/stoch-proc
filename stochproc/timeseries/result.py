@@ -12,7 +12,7 @@ class TimeseriesPath(object):
 
     def __init__(self, *states: TimeseriesState):
         """
-        Initializes the :class:`TimeseriesPath` object.
+        Internal initializer for :class:`TimeseriesPath` object.
 
         Args:
             *states: iterable of timeseries states.

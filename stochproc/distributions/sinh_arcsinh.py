@@ -32,7 +32,7 @@ class SinhArcsinhTransform(Transform):
 
     def __init__(self, skew, tailweight):
         """
-        Initializes the :class:`SinhArcsinh` transform.
+        Internal initializer for :class:`SinhArcsinh` transform.
 
         Args:
             skew: Controls the skew of the distribution.

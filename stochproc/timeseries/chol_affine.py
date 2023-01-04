@@ -20,7 +20,7 @@ class LowerCholeskyAffineProcess(AffineProcess):
 
     def __init__(self, mean_scale, parameters, increment_dist, initial_kernel, initial_parameters=None):
         """
-        Initializes the :class:`LowerCholeskyAffineProcess`.
+        Internal initializer for :class:`LowerCholeskyAffineProcess`.
 
         Args:
             mean_scale: see base.

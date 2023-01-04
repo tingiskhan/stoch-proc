@@ -40,7 +40,7 @@ class LinearModel(AffineProcess):
         parameter_transform: ParameterTransformer = default_transform,
     ):
         """
-        Initializes the :class:`LinearModel` class.
+        Internal initializer for :class:`LinearModel`.
 
         Args:
             parameters: see :class:`AffineProcess`.

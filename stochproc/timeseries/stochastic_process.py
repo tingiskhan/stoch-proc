@@ -37,7 +37,7 @@ class StructuralStochasticProcess(ABC):
         initial_parameters: Sequence[ParameterType] = None,
     ):
         """
-        Initializes the :class:`StructuralStochasticProcess` class.
+        Internal initializer for :class:`StructuralStochasticProcess`.
 
         Args:
             kernel: kernel that propagates the process from :math:`t` to :math:`t + 1`.

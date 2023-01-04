@@ -33,7 +33,7 @@ class JointStochasticProcess(StructuralStochasticProcess):
 
     def __init__(self, **processes: AffineProcess):
         """
-        Initializes the :class:`JointStochasticProcess` class.
+        Internal initializer for :class:`JointStochasticProcess`.
 
         Args:
             processes: sub processes to combine into a single affine process.
@@ -76,7 +76,7 @@ class AffineJointStochasticProcess(AffineProcess):
 
     def __init__(self, **processes: AffineProcess):
         """
-        Initializes the :class:`AffineJointStochasticProcess` class.
+        Internal initializer for :class:`AffineJointStochasticProcess`.
 
         Args:
             processes: sub processes to combine into a single affine process.
