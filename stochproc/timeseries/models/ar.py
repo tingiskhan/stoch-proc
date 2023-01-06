@@ -66,7 +66,7 @@ class AR(LinearModel):
         self._b_masker = torch.eye(self.lags, 1, device=alpha.device).squeeze(-1)
 
         super().__init__(
-            (beta, sigma, alpha),
+            (beta, alpha, sigma),
             increment_distribution=inc_dist,
             initial_kernel=partial(_initial_kernel, lags=self.lags),
             parameter_transform=self._param_transform,
