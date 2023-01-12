@@ -62,7 +62,10 @@ class AffineProcess(StructuralStochasticProcess):
         """
 
         super().__init__(
-            self._mean_scale_kernel, parameters=parameters, initial_kernel=initial_kernel, initial_parameters=initial_parameters
+            self._mean_scale_kernel,
+            parameters=parameters,
+            initial_kernel=initial_kernel,
+            initial_parameters=initial_parameters,
         )
 
         self.mean_scale_fun = mean_scale

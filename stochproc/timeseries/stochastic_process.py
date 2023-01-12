@@ -336,10 +336,11 @@ class StructuralStochasticProcess(ABC):
         """
 
         if filt is None:
+
             def filt(_):
                 return True
 
         return {
             "initial_parameters": [p for p in self.initial_parameters if filt(p)],
-            "parameters": [p for p in self.initial_parameters if filt(p)]
+            "parameters": [p for p in self.initial_parameters if filt(p)],
         }

@@ -27,7 +27,9 @@ class _JointMixin(object):
             processes: sub processes to combine into a single affine process.
         """
 
-        self.sub_processes = OrderedDict({k: v for k, v in processes.items() if isinstance(v, StructuralStochasticProcess)})
+        self.sub_processes = OrderedDict(
+            {k: v for k, v in processes.items() if isinstance(v, StructuralStochasticProcess)}
+        )
         self._initial_kernel = partial(_initial_kernel, sub_processes=self.sub_processes)
         self._event_shape = self.initial_distribution.event_shape
 
@@ -36,11 +38,7 @@ class _JointMixin(object):
         self.initial_parameters = p["initial_parameters"]
 
     def initial_sample(self, shape: torch.Size = torch.Size([])) -> JointState:
-        return JointState(
-            **{
-                proc_name: proc.initial_sample(shape) for proc_name, proc in self.sub_processes.items()
-                }
-            )
+        return JointState(**{proc_name: proc.initial_sample(shape) for proc_name, proc in self.sub_processes.items()})
 
     def yield_parameters(self, filt=None):
         res = OrderedDict([])
@@ -49,7 +47,7 @@ class _JointMixin(object):
             for sk, sv in v.yield_parameters(filt).items():
                 if sk not in res:
                     res[sk] = OrderedDict([])
-                
+
                 res[sk][k] = sv
 
         return res
@@ -60,7 +58,7 @@ class _JointMixin(object):
             parameters = self.parameters
 
         return self._kernel(x, parameters)
-        
+
 
 class JointStochasticProcess(_JointMixin, StructuralStochasticProcess):
     r"""
@@ -141,7 +139,7 @@ class AffineJointStochasticProcess(_JointMixin, AffineProcess):
         )
 
         _JointMixin.__init__(self, **processes)
-                        
+
     def mean_scale(self, x: TimeseriesState, parameters=None):
         if parameters:
             assert len(parameters) == 1, "Weirdness!"
