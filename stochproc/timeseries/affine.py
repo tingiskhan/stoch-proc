@@ -62,14 +62,14 @@ class AffineProcess(StructuralStochasticProcess):
         """
 
         super().__init__(
-            self.kernel, parameters=parameters, initial_kernel=initial_kernel, initial_parameters=initial_parameters
+            self._mean_scale_kernel, parameters=parameters, initial_kernel=initial_kernel, initial_parameters=initial_parameters
         )
 
         self.mean_scale_fun = mean_scale
         self.increment_distribution = increment_distribution
 
-    def kernel(self, x, *args):
-        loc, scale = self.mean_scale(x)
+    def _mean_scale_kernel(self, x, *args):
+        loc, scale = self.mean_scale(x, parameters=args)
 
         return TransformedDistribution(self.increment_distribution, AffineTransform(loc, scale, event_dim=self.n_dim))
 
