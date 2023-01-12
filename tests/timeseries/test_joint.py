@@ -7,6 +7,14 @@ import pytest
 from .constants import BATCH_SHAPES
 
 
+class CustomDict(dict):
+    keys_accessed = set()
+
+    def __getitem__(self, __key):
+        self.keys_accessed.add(__key)
+        return super().__getitem__(__key)
+
+
 @pytest.fixture()
 def processes():
     mean = ts.models.RandomWalk(0.05)
@@ -36,8 +44,19 @@ class TestJointProcesses(object):
     def test_parameters(self, processes):
         joint = ts.joint_process(**processes)
 
-        parameters = tuple(joint.yield_parameters())
+        parameters = joint.yield_parameters()
 
-        sub_process_parameters = sum((p.parameters for p in processes.values()), ())
-        sub_process_initial_parameters = sum((p.initial_parameters for p in processes.values()), ())
-        assert len(parameters) == len(set(sub_process_parameters + sub_process_initial_parameters))
+        for k, v in joint.sub_processes.items():
+            for ps, pv in parameters.items():
+                assert parameters[ps][k] is pv[k]
+
+        # TODO: Perhaps use mock here...
+        overrides = CustomDict(
+            mean=[2.0 * t for t in joint.sub_processes["mean"].parameters],
+            log_scale=[2.0 * t for t in joint.sub_processes["log_scale"].parameters]
+        )
+
+        x = joint.initial_sample()
+        x_new = joint.build_density(x, overrides)
+
+        assert set(joint.sub_processes.keys()) == set(overrides.keys_accessed)
