@@ -1,6 +1,6 @@
 from abc import ABC
 from copy import deepcopy
-from typing import Callable, Sequence, Tuple, TypeVar
+from typing import Callable, Sequence, Tuple, TypeVar, Dict
 
 import pyro
 import torch
@@ -45,8 +45,6 @@ class StructuralStochasticProcess(ABC):
             initial_kernel: kernel used to initialize the stochastic process.
             initial_parameters: optional, parameters that govern the initial kernel. If `None`, uses `parameters`.
         """
-
-        super().__init__()
 
         self._initial_kernel = initial_kernel
         self._kernel = kernel
@@ -108,7 +106,7 @@ class StructuralStochasticProcess(ABC):
 
         return TimeseriesState(0, dist.sample, event_shape=dist.event_shape)
 
-    def build_density(self, x: TimeseriesState) -> Distribution:
+    def build_density(self, x: TimeseriesState, parameters: Sequence[torch.Tensor] = None) -> Distribution:
         r"""
         Method to be overridden by derived classes. Defines how to construct the transition density to :math:`X_{t+1}`
         given the state at :math:`t`, i.e. this method corresponds to building the density:
@@ -122,7 +120,10 @@ class StructuralStochasticProcess(ABC):
             Returns the density of the state at :math:`t+1`.
         """
 
-        return self._kernel(x, *self.parameters)
+        if parameters is None:
+            parameters = self.parameters
+
+        return self._kernel(x, *parameters)
 
     def propagate(self, x: TimeseriesState, time_increment=1.0) -> TimeseriesState:
         """
@@ -323,7 +324,7 @@ class StructuralStochasticProcess(ABC):
 
         return latent
 
-    def yield_parameters(self, filt: Callable[[torch.Tensor], bool] = None):
+    def yield_parameters(self, filt: Callable[[torch.Tensor], bool] = None) -> Dict[str, Sequence[torch.Tensor]]:
         """
         Yields parameters of models.
 
@@ -331,9 +332,14 @@ class StructuralStochasticProcess(ABC):
             filt: filter function.
 
         Returns:
-            Sequence[torch.Tensor]: _description_
+            Sequence[torch.Tensor]: yields the parameters of the model.
         """
 
-        for p in set(self.parameters + self.initial_parameters):
-            if filt is None or filt(p):
-                yield p
+        if filt is None:
+            def filt(_):
+                return True
+
+        return {
+            "initial_parameters": [p for p in self.initial_parameters if filt(p)],
+            "parameters": [p for p in self.initial_parameters if filt(p)]
+        }
