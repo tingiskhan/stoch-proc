@@ -355,7 +355,12 @@ class StructuralStochasticProcess(ABC):
         old_parameters = self.parameters
 
         try:
-            assert len(parameters) == len(old_parameters), "Weirdness!"
+            param_len = len(old_parameters)
+            new_param_len = len(parameters)
+
+            msg = f"Number of parameters is not congruent, you're trying to override {param_len:d} with {new_param_len:d}!"
+
+            assert len(parameters) == len(old_parameters), msg
             self.parameters = parameters
 
             yield self
