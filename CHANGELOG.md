@@ -2,6 +2,9 @@
 
 ## Versions
 
+### v0.2.0
+ - Improves API regarding overriding parameters
+
 ### v0.1.2
  - Improves `LinearModel`
  - Adds `LinearStateModel`
