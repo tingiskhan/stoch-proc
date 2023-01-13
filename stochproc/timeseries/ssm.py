@@ -39,10 +39,6 @@ class StateSpaceModel(StructuralStochasticProcess):
         self.observe_every_step = observe_every_step
         self._infer_event_shape()
 
-    @property
-    def initial_distribution(self) -> Distribution:
-        raise NotImplementedError("Cannot sample from initial distribution of SSM directly!")
-
     def _infer_event_shape(self):
         """
         Method for inferring and setting the property :prop:`_event_shape`.
@@ -60,6 +56,10 @@ class StateSpaceModel(StructuralStochasticProcess):
         x_state = self.hidden.initial_sample(shape)
         return self._build_initial_state(x_state)
 
+    @property
+    def initial_distribution(self) -> Distribution:
+        raise NotImplementedError("Cannot sample from initial distribution of SSM directly!")
+
     def propagate(self, x: StateSpaceModelState, time_increment=1.0) -> TimeseriesState:
         x_state = x["x"]
         hidden_state = self.hidden.propagate(x_state)
@@ -67,7 +67,7 @@ class StateSpaceModel(StructuralStochasticProcess):
         if (hidden_state.time_index - 1) % self.observe_every_step == 0:
             vals = self.build_density(hidden_state).sample
         else:
-            vals = torch.ones_like(x["y"].value).fill(_NAN)
+            vals = torch.ones_like(x["y"].value).fill_(_NAN)
 
         return StateSpaceModelState(x=hidden_state, y=x["y"].propagate_from(values=vals))
 

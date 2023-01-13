@@ -71,24 +71,23 @@ class AffineProcess(StructuralStochasticProcess):
         self.mean_scale_fun = mean_scale
         self.increment_distribution = increment_distribution
 
-    def _mean_scale_kernel(self, x, *args):
-        loc, scale = self.mean_scale(x, parameters=args)
+    def _mean_scale_kernel(self, x, *_):
+        loc, scale = self.mean_scale(x)
 
         return TransformedDistribution(self.increment_distribution, AffineTransform(loc, scale, event_dim=self.n_dim))
 
-    def mean_scale(self, x: TimeseriesState, parameters=None) -> Tuple[torch.Tensor, torch.Tensor]:
+    def mean_scale(self, x: TimeseriesState) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Returns the mean and scale of the process evaluated at ``x`` and :meth:`functional_parameters` or ``parameters``.
 
         Args:
             x: previous state of the process.
-            parameters: whether to override the current parameters of the model.
 
         Returns:
             Returns the tuple ``(mean, scale)``.
         """
 
-        mean, scale = self.mean_scale_fun(x, *(parameters or self.parameters))
+        mean, scale = self.mean_scale_fun(x, *self.parameters)
 
         return torch.broadcast_tensors(mean, scale)
 

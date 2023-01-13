@@ -1,4 +1,5 @@
 from abc import ABC
+from contextlib import contextmanager
 from copy import deepcopy
 from typing import Callable, Sequence, Tuple, TypeVar, Dict
 
@@ -106,7 +107,7 @@ class StructuralStochasticProcess(ABC):
 
         return TimeseriesState(0, dist.sample, event_shape=dist.event_shape)
 
-    def build_density(self, x: TimeseriesState, parameters: Sequence[torch.Tensor] = None) -> Distribution:
+    def build_density(self, x: TimeseriesState) -> Distribution:
         r"""
         Method to be overridden by derived classes. Defines how to construct the transition density to :math:`X_{t+1}`
         given the state at :math:`t`, i.e. this method corresponds to building the density:
@@ -120,10 +121,7 @@ class StructuralStochasticProcess(ABC):
             Returns the density of the state at :math:`t+1`.
         """
 
-        if parameters is None:
-            parameters = self.parameters
-
-        return self._kernel(x, *parameters)
+        return self._kernel(x, *self.parameters)
 
     def propagate(self, x: TimeseriesState, time_increment=1.0) -> TimeseriesState:
         """
@@ -344,3 +342,22 @@ class StructuralStochasticProcess(ABC):
             "initial_parameters": [p for p in self.initial_parameters if filt(p)],
             "parameters": [p for p in self.initial_parameters if filt(p)],
         }
+
+    @contextmanager
+    def override_parameters(self, parameters: Sequence[ParameterType]):
+        """
+        Manually overrides current parameter set with :attr:`parameters`.
+
+        Args:
+            parameters (Sequence[ParameterType]): parameters to override with.
+        """
+
+        old_parameters = self.parameters
+
+        try:
+            assert len(parameters) == len(old_parameters), "Weirdness!"
+            self.parameters = parameters
+
+            yield self
+        finally:
+            self.parameters = old_parameters

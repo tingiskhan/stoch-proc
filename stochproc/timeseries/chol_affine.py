@@ -33,14 +33,15 @@ class LowerCholeskyAffineProcess(AffineProcess):
         super().__init__(mean_scale, parameters, increment_dist, initial_kernel, initial_parameters)
         assert self.n_dim >= 1, "This process only covers multi-dimensional processes!"
 
-    def _mean_scale_kernel(self, x, *args):
-        loc, scale = self.mean_scale(x, args)
+    def _mean_scale_kernel(self, x, *_):
+        loc, scale = self.mean_scale(x)
 
         return TransformedDistribution(self.increment_distribution, t.LowerCholeskyAffine(loc, scale))
 
-    def mean_scale(self, x, parameters=None):
-        return self.mean_scale_fun(x, *(parameters or self.parameters))
-
+    # NB: We skip broadcasting here
+    def mean_scale(self, x):
+        return self.mean_scale_fun(x, *self.parameters)
+    
     def add_sub_process(self, sub_process):
         from .hierarchical import LowerCholeskyHierarchicalProcess
 
