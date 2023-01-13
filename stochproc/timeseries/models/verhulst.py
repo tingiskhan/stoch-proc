@@ -32,7 +32,7 @@ class Verhulst(AffineEulerMaruyama):
 
     def __init__(self, kappa: ParameterType, gamma: ParameterType, sigma: ParameterType, dt):
         r"""
-        Initializes the :class:`Verhulst` class.
+        Internal initializer for :class:`Verhulst`.
 
         Args:
             reversion: :math:`\kappa`.

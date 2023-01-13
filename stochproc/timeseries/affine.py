@@ -52,7 +52,7 @@ class AffineProcess(StructuralStochasticProcess):
         initial_parameters=None,
     ):
         """
-        Initializes the :class:`AffineProcess` class.
+        Internal initializer for :class:`AffineProcess`.
 
         Args:
             mean_scale: function constructing the mean and scale.

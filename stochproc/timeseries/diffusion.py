@@ -24,7 +24,7 @@ class StochasticDifferentialEquation(StructuralStochasticProcess, ABC):
 
     def __init__(self, *args, dt: float, **kwargs):
         """
-        Initializes the :class:`StochasticDifferentialEquation`.
+        Internal initializer for :class:`StochasticDifferentialEquation`.
 
         Args:
             parameters: see base.
@@ -70,7 +70,7 @@ class AffineEulerMaruyama(AffineProcess):
         self, dynamics: MeanScaleFun, parameters, increment_distribution, dt, initial_kernel, initial_parameters=None
     ):
         """
-        Initializes the :class:`AffineEulerMaruyama` class.
+        Internal initializer for :class:`AffineEulerMaruyama`.
 
         Args:
             dynamics: callable returning the drift and diffusion.
@@ -128,7 +128,7 @@ class Euler(AffineEulerMaruyama):
         tuning_std: float = False,
     ):
         """
-        Initializes the :class:`Euler` class.
+        Internal initializer for :class:`Euler`.
 
         Args:
             dynamics: the function :math:`f` in the main docs.

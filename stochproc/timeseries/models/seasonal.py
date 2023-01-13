@@ -17,7 +17,7 @@ class Seasonal(AR):
 
     def __init__(self, period: int, sigma):
         """
-        Initializes the :class:`Seasonal` model.
+        Internal initializer for :class:`Seasonal` model.
 
         Args:
             period: period to use for the seasonal model.

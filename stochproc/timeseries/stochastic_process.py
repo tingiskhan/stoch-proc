@@ -38,7 +38,7 @@ class StructuralStochasticProcess(ABC):
         initial_parameters: Sequence[ParameterType] = None,
     ):
         """
-        Initializes the :class:`StructuralStochasticProcess` class.
+        Internal initializer for :class:`StructuralStochasticProcess`.
 
         Args:
             kernel: kernel that propagates the process from :math:`t` to :math:`t + 1`.
@@ -266,7 +266,7 @@ class StructuralStochasticProcess(ABC):
     @staticmethod
     def _check_obs_and_t(t_final: int, obs: torch.Tensor) -> Tuple[int, torch.Tensor]:
         """
-        Helper method for coalescing `t_final` and `obs`.
+        Helper method for coalescing ``t_final`` and ``obs``.
 
         Args:
             t_final: the final time index.
