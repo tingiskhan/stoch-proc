@@ -5,14 +5,7 @@ from .test_affine import SAMPLES
 import pytest
 
 from .constants import BATCH_SHAPES
-
-
-class CustomDict(dict):
-    keys_accessed = set()
-
-    def __getitem__(self, __key):
-        self.keys_accessed.add(__key)
-        return super().__getitem__(__key)
+from .test_stochastic_process import assert_same_contents
 
 
 @pytest.fixture()
@@ -50,13 +43,15 @@ class TestJointProcesses(object):
             for ps, pv in parameters.items():
                 assert parameters[ps][k] is pv[k]
 
-        # TODO: Perhaps use mock here...
-        overrides = CustomDict(
-            mean=[2.0 * t for t in joint.sub_processes["mean"].parameters],
-            log_scale=[2.0 * t for t in joint.sub_processes["log_scale"].parameters]
-        )
+        overrides = {
+            "mean": [2.0 * t for t in joint.sub_processes["mean"].parameters],
+            "log_scale": [2.0 * t for t in joint.sub_processes["log_scale"].parameters]
+        }
 
-        x = joint.initial_sample()
-        x_new = joint.build_density(x, overrides)
-
-        assert set(joint.sub_processes.keys()) == set(overrides.keys_accessed)
+        # TODO: perhaps improve
+        with joint.override_parameters(overrides):
+            for k, v in overrides.items():
+                assert_same_contents(joint.sub_processes[k].parameters, v)
+        
+        for k, v in overrides.items():
+            assert_same_contents(joint.sub_processes[k].parameters, v, assert_is=False)
