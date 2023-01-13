@@ -19,7 +19,7 @@ class TimeseriesState(dict):
         event_shape: torch.Size,
     ):
         """
-        Initializes the :class:`TimeseriesState` class.
+        Internal initializer for :class:`TimeseriesState`.
 
         Args:
             time_index: time index of the state.
@@ -94,7 +94,7 @@ class JointState(TimeseriesState):
 
     def __init__(self, **sub_states: TimeseriesState):
         """
-        Initializes the :class:`JointState` class.
+        Internal initializer for :class:`JointState`.
 
         Args:
             sub_states: The sub states.

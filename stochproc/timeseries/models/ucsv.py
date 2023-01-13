@@ -30,7 +30,7 @@ class UCSV(AffineProcess):
 
     def __init__(self, sigma_volatility: ParameterType, initial_state_mean: ParameterType = torch.zeros(2)):
         r"""
-        Inititalizes :class:`UCSV`.
+        Internal initializer for :class:`UCSV`.
 
         Args:
             sigma_volatility: The volatility of the log volatility process, i.e. :math:`\sigma_v`.

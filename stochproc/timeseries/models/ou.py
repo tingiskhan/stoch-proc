@@ -23,7 +23,7 @@ class OrnsteinUhlenbeck(LinearModel):
 
     def __init__(self, kappa: ParameterType, gamma: ParameterType, sigma: ParameterType, dt: float = 1.0, **kwargs):
         """
-        Initializes the :class:`OrnsteinUhlenbeck` class.
+        Internal initializer for :class:`OrnsteinUhlenbeck`.
 
         Args:
             kappa: reversion parameter.

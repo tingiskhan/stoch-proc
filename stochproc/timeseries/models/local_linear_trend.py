@@ -22,7 +22,7 @@ class LocalLinearTrend(LinearModel):
 
     def __init__(self, sigma: ParameterType, initial_mean: ParameterType = None):
         r"""
-        Initializes the :class:`LocalLinearTrend` class.
+        Internal initializer for :class:`LocalLinearTrend`.
 
         Args:
             sigma: the vector :math:`[ \sigma_s, \sigma_l ]`.

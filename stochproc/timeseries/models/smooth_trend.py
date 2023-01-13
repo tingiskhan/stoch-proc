@@ -28,7 +28,7 @@ class SmoothLinearTrend(AffineHierarchicalProcess):
 
     def __init__(self, trend_process: AffineProcess, l_0: ParameterType = 0.0, scaling: float = 1.0, eps: float = 1e-5):
         """
-        Initializes the :class:`SmoothLinearTrend` class.
+        Internal initializer for :class:`SmoothLinearTrend`.
 
         Args:
             trend_process: model to use for modelling the trend component.

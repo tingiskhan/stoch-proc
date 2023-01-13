@@ -23,7 +23,7 @@ class StateSpaceModel(StructuralStochasticProcess):
 
     def __init__(self, hidden: StructuralStochasticProcess, kernel, parameters, observe_every_step=1):
         """
-        Initializes the :class:`StateSpaceModel` class.
+        Internal initializer for :class:`StateSpaceModel`.
 
         Args:
             hidden: hidden process.
@@ -127,7 +127,7 @@ class LinearStateSpaceModel(StateSpaceModel, LinearModel):
         parameter_transform=default_transform,
     ):
         """
-        Initializes the :class:`LinearStateSpaceModel` class.
+        Internal initializer for :class:`LinearStateSpaceModel`.
 
         Args:
             hidden: see :class:`StateSpaceModel`.
