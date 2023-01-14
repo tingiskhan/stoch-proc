@@ -339,8 +339,8 @@ class StructuralStochasticProcess(ABC):
                 return True
 
         return {
-            "initial_parameters": [p for p in self.initial_parameters if filt(p)],
-            "parameters": [p for p in self.initial_parameters if filt(p)],
+            "initial_parameters": tuple(p for p in self.initial_parameters if filt(p)),
+            "parameters": tuple(p for p in self.initial_parameters if filt(p)),
         }
 
     @contextmanager

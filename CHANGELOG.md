@@ -2,6 +2,9 @@
 
 ## Versions
 
+### v0.2.1
+ - Uses tuple instead of list for parameters
+
 ### v0.2.0
  - Improves API regarding overriding parameters
 
