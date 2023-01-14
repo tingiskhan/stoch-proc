@@ -5,6 +5,7 @@ from .test_affine import SAMPLES
 import pytest
 
 from .constants import BATCH_SHAPES
+from .test_stochastic_process import assert_same_contents
 
 
 @pytest.fixture()
@@ -36,8 +37,21 @@ class TestJointProcesses(object):
     def test_parameters(self, processes):
         joint = ts.joint_process(**processes)
 
-        parameters = tuple(joint.yield_parameters())
+        parameters = joint.yield_parameters()
 
-        sub_process_parameters = sum((p.parameters for p in processes.values()), ())
-        sub_process_initial_parameters = sum((p.initial_parameters for p in processes.values()), ())
-        assert len(parameters) == len(set(sub_process_parameters + sub_process_initial_parameters))
+        for k, v in joint.sub_processes.items():
+            for ps, pv in parameters.items():
+                assert parameters[ps][k] is pv[k]
+
+        overrides = {
+            "mean": [2.0 * t for t in joint.sub_processes["mean"].parameters],
+            "log_scale": [2.0 * t for t in joint.sub_processes["log_scale"].parameters]
+        }
+
+        # TODO: perhaps improve
+        with joint.override_parameters(overrides):
+            for k, v in overrides.items():
+                assert_same_contents(joint.sub_processes[k].parameters, v)
+        
+        for k, v in overrides.items():
+            assert_same_contents(joint.sub_processes[k].parameters, v, assert_is=False)

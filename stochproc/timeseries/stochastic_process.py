@@ -1,6 +1,7 @@
 from abc import ABC
+from contextlib import contextmanager
 from copy import deepcopy
-from typing import Callable, Sequence, Tuple, TypeVar
+from typing import Callable, Sequence, Tuple, TypeVar, Dict
 
 import pyro
 import torch
@@ -45,8 +46,6 @@ class StructuralStochasticProcess(ABC):
             initial_kernel: kernel used to initialize the stochastic process.
             initial_parameters: optional, parameters that govern the initial kernel. If `None`, uses `parameters`.
         """
-
-        super().__init__()
 
         self._initial_kernel = initial_kernel
         self._kernel = kernel
@@ -323,7 +322,7 @@ class StructuralStochasticProcess(ABC):
 
         return latent
 
-    def yield_parameters(self, filt: Callable[[torch.Tensor], bool] = None):
+    def yield_parameters(self, filt: Callable[[torch.Tensor], bool] = None) -> Dict[str, Sequence[torch.Tensor]]:
         """
         Yields parameters of models.
 
@@ -331,9 +330,39 @@ class StructuralStochasticProcess(ABC):
             filt: filter function.
 
         Returns:
-            Sequence[torch.Tensor]: _description_
+            Sequence[torch.Tensor]: yields the parameters of the model.
         """
 
-        for p in set(self.parameters + self.initial_parameters):
-            if filt is None or filt(p):
-                yield p
+        if filt is None:
+
+            def filt(_):
+                return True
+
+        return {
+            "initial_parameters": [p for p in self.initial_parameters if filt(p)],
+            "parameters": [p for p in self.initial_parameters if filt(p)],
+        }
+
+    @contextmanager
+    def override_parameters(self, parameters: Sequence[ParameterType]):
+        """
+        Manually overrides current parameter set with :attr:`parameters`.
+
+        Args:
+            parameters (Sequence[ParameterType]): parameters to override with.
+        """
+
+        old_parameters = self.parameters
+
+        try:
+            param_len = len(old_parameters)
+            new_param_len = len(parameters)
+
+            msg = f"Number of parameters is not congruent, you're trying to override {param_len:d} with {new_param_len:d}!"
+
+            assert len(parameters) == len(old_parameters), msg
+            self.parameters = parameters
+
+            yield self
+        finally:
+            self.parameters = old_parameters

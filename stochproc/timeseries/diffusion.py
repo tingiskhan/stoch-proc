@@ -94,8 +94,8 @@ class AffineEulerMaruyama(AffineProcess):
 
         return res
 
-    def mean_scale(self, x, parameters=None):
-        drift, diffusion = super().mean_scale(x, parameters)
+    def mean_scale(self, x):
+        drift, diffusion = super().mean_scale(x)
         return x.value + drift * self.dt, diffusion
 
 
