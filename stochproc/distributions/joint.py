@@ -35,7 +35,10 @@ class JointDistribution(Distribution):
             kwargs: Key-worded arguments passed to base class.
         """
 
-        _indices = indices or self.infer_indices(*distributions)
+        if any(len(d.event_shape) > 1 for d in distributions):
+            raise NotImplementedError("Currently cannot handle matrix valued distributions!")
+
+        _indices = indices if indices is not None else self.infer_indices(*(d.event_shape for d in distributions))
         event_shape = torch.Size(
             [sum(1 if not isinstance(inds, slice) else inds.stop - inds.start for inds in _indices)]
         )
@@ -44,10 +47,7 @@ class JointDistribution(Distribution):
         single_batch_shape = sorted(batch_shapes, key=lambda u: u[0])[-1][1]
         distributions = [d.expand(single_batch_shape) for d in distributions]
 
-        super().__init__(event_shape=event_shape, batch_shape=single_batch_shape, **kwargs)
-
-        if any(len(d.event_shape) > 1 for d in distributions):
-            raise NotImplementedError("Currently cannot handle matrix valued distributions!")
+        super().__init__(event_shape=event_shape, batch_shape=single_batch_shape, **kwargs)        
 
         self.distributions = distributions
         self.indices = _indices
@@ -84,46 +84,31 @@ class JointDistribution(Distribution):
         return sum(d.entropy() for d in self.distributions)
 
     @staticmethod
-    def infer_indices(*distributions: Distribution) -> Tuple[Union[int, slice]]:
+    def infer_indices(*event_shapes: torch.Size) -> Tuple[Union[int, slice]]:
         """
-        Given a sequence of class:`pytorch.distributions.Distribution` objects, this method infers the indices at which
+        Given a sequence of class:`torch.Size` objects, this method infers the indices at which
         to slice an input tensor.
 
         Args:
-            distributions: sequence of class:`pytorch.distributions.Distribution` objects.
+            event_shapes: sequence of class:`torch.Size` objects.
 
         Returns:
             A tuple containing indices and/or slices.
-
-        Example:
-            >>> from torch.distributions import Normal, Exponential
-            >>> import torch
-            >>> from stochproc.distributions import JointDistribution
-            >>>
-            >>> distributions = Normal(0.0, 1.0), Exponential(1.0)
-            >>> y = torch.stack([d.sample((1000,)) for d in distributions], dim=-1)
-            >>>
-            >>> slices = JointDistribution.infer_indices(*distributions)
-            >>> log_probs = [d.log_prob(y[..., s]) for d, s in zip(distributions, slices)]
-
         """
 
         res = tuple()
 
-        length = 0
-        for i, d in enumerate(distributions):
-            multi_dimensional = len(d.event_shape) > 0
+        left = 0
+        for sub_dist in event_shapes:
+            numel = sub_dist.numel()
 
-            if multi_dimensional:
-                size = d.event_shape[-1]
-                slice_ = slice(length, size + length)
-
-                length += slice_.stop
+            if numel > 1:
+                indexes = slice(left, left + numel)
             else:
-                slice_ = length
-                length += 1
-
-            res += (slice_,)
+                indexes = left
+            
+            res += (indexes,)
+            left += numel
 
         return res
 

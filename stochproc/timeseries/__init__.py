@@ -10,7 +10,6 @@ from .diffusion import (
 from .joint import (
     AffineJointStochasticProcess,
     JointStochasticProcess,
-    LowerCholeskyJointStochasticProcess,
     joint_process,
 )
 from .linear import LinearModel

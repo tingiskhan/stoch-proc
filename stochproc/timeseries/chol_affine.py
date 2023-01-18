@@ -43,6 +43,4 @@ class LowerCholeskyAffineProcess(AffineProcess):
         return self.mean_scale_fun(x, *self.parameters)
     
     def add_sub_process(self, sub_process):
-        from .hierarchical import LowerCholeskyHierarchicalProcess
-
-        return LowerCholeskyHierarchicalProcess(sub_process=sub_process, main_process=self)
+        raise NotImplementedError("Currently does not support defining hierarchical processes!")

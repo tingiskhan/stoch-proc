@@ -74,7 +74,7 @@ class AffineProcess(StructuralStochasticProcess):
     def _mean_scale_kernel(self, x, *_):
         loc, scale = self.mean_scale(x)
 
-        return TransformedDistribution(self.increment_distribution, AffineTransform(loc, scale, event_dim=self.n_dim))
+        return self.build_density_from_loc_scale(loc, scale)
 
     def mean_scale(self, x: TimeseriesState) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -90,6 +90,20 @@ class AffineProcess(StructuralStochasticProcess):
         mean, scale = self.mean_scale_fun(x, *self.parameters)
 
         return torch.broadcast_tensors(mean, scale)
+    
+    def build_density_from_loc_scale(self, loc: torch.Tensor, scale: torch.Tensor) -> Distribution:
+        """
+        Utility method for building density from mean and scale.
+
+        Args:
+            mean (torch.Tensor): mean of distribution.
+            scale (torch.Tensor): scale of distribution.
+
+        Returns:
+            Distribution: resulting distribution.
+        """
+
+        return TransformedDistribution(self.increment_distribution, AffineTransform(loc, scale, event_dim=self.n_dim))
 
     def add_sub_process(self, sub_process: "AffineProcess") -> "AffineProcess":
         """
