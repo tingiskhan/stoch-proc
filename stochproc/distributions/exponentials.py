@@ -1,4 +1,4 @@
-from torch.distributions import ExponentialFamily, constraints, Exponential
+from pyro.distributions import ExponentialFamily, constraints, Exponential
 from torch.distributions.utils import broadcast_all
 
 from numbers import Number
@@ -160,10 +160,10 @@ class DoubleExponential(ExponentialFamily):
         u = torch.rand(size=shape, device=self.p.device)
 
         mask = u < self.p
-        not_mask = ~mask
+        mask_as_float = mask.float()
+        not_mask_as_float = 1.0 - mask_as_float
 
-        x[mask] = -1.0 / self.rho_minus[mask] * (u[mask] / (1.0 - self.p[mask])).log()
-        x[not_mask] = -1.0 / self.rho_plus[~mask] * ((1.0 - u[not_mask]) / self.p[not_mask]).log()
+        x = -1.0 / self.rho_minus * (u / (1.0 - self.p)).log() * mask_as_float + -1.0 / self.rho_plus * ((1.0 - u) / self.p).log() * not_mask_as_float
 
         return x
 

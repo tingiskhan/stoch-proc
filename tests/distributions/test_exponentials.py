@@ -73,3 +73,9 @@ class TestDoubleExponentials(object):
         np.testing.assert_allclose(actual=actual_cdf, desired=exp_cdf, atol=atol,
                                    err_msg='Double Exponential CDF computed for {}; it returns: {}, expected: {}'.format(
                                        z, actual_cdf, exp_cdf))
+
+
+        shape = torch.Size([100, 20])
+        samples = de.sample(shape)
+
+        assert samples.shape == shape
