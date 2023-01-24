@@ -1,10 +1,13 @@
 from typing import Callable, Union
 
+import numpy as np
 import torch
 
 from .utils import lazy_property
+from ..backends import backend, typing
+from ..backends.backend import TArray
 
-LazyTensor = Union[torch.Tensor, Callable[[], torch.Tensor]]
+LazyTensor = Union[TArray, Callable[[], TArray]]
 
 
 class TimeseriesState(dict):
@@ -14,9 +17,9 @@ class TimeseriesState(dict):
 
     def __init__(
         self,
-        time_index: Union[int, torch.IntTensor],
+        time_index: int,
         values: LazyTensor,
-        event_shape: torch.Size,
+        event_shape: typing.SizeLike,
     ):
         """
         Internal initializer for :class:`TimeseriesState`.
@@ -25,12 +28,11 @@ class TimeseriesState(dict):
             time_index: time index of the state.
             values: values of the state. Can be a lazy evaluated tensor as well.
             event_shape: event dimension.
-            exogenous: whether to include any exogenous data.
         """
 
         super().__init__()
 
-        self["_time_index"] = (time_index if isinstance(time_index, torch.Tensor) else torch.tensor(time_index)).int()
+        self["_time_index"] = backend.array(time_index, dtype="uint32")
         self["_value"] = values
         self["_event_shape"] = event_shape
 

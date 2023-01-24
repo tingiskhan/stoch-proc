@@ -1,6 +1,7 @@
 from abc import ABC
 from contextlib import contextmanager
 from copy import deepcopy
+from functools import reduce
 from typing import Callable, Sequence, Tuple, TypeVar, Dict
 
 import pyro
@@ -10,7 +11,9 @@ from pyro.distributions import Distribution, Normal
 from ..typing import ParameterType
 from .result import TimeseriesPath
 from .state import TimeseriesState
-from .utils import coerce_tensors
+
+from ..backends import backend, typing
+
 
 T = TypeVar("T")
 
@@ -29,6 +32,8 @@ class StructuralStochasticProcess(ABC):
     Derived classes should override the ``.build_distribution(...)`` method, which builds the distribution of
     :math:`X_{t+1}` given :math:`\{ X_j \}_{j \leq t}`.
     """
+
+    backend = backend
 
     def __init__(
         self,
@@ -51,13 +56,13 @@ class StructuralStochasticProcess(ABC):
         self._kernel = kernel
 
         # TODO: Consider using a custom container instead
-        self.parameters = coerce_tensors(*parameters)
-        self.initial_parameters = coerce_tensors(*initial_parameters) if initial_parameters else self.parameters
+        self.parameters = backend.coerce_arrays(*parameters)
+        self.initial_parameters = backend.coerce_arrays(*initial_parameters) if initial_parameters else self.parameters
 
         self._event_shape = None if initial_kernel is None else self.initial_distribution.event_shape
 
     @property
-    def event_shape(self) -> torch.Size:
+    def event_shape(self) -> typing.SizeLike:
         """
         Returns the event shape of the process.
         """
@@ -80,7 +85,10 @@ class StructuralStochasticProcess(ABC):
         if it's a multivariate process it returns the number of elements in the vector or matrix.
         """
 
-        return self.event_shape.numel()
+        if not self.event_shape:
+            return 1
+
+        return reduce(lambda u, v: u * v, self.event_shape)
 
     @property
     def initial_distribution(self) -> Distribution:
@@ -90,7 +98,7 @@ class StructuralStochasticProcess(ABC):
 
         return self._initial_kernel(*self.initial_parameters)
 
-    def initial_sample(self, shape: torch.Size = torch.Size([])) -> TimeseriesState:
+    def initial_sample(self, shape: typing.SizeLike = None) -> TimeseriesState:
         """
         Samples a state from the initial distribution.
 
