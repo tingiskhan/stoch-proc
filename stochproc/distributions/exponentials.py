@@ -95,8 +95,8 @@ class DoubleExponential(ExponentialFamily):
         return new
 
     def rsample(self, sample_shape=torch.Size()):
-        shape = self._extended_shape(sample_shape)        
-        u = torch.rand(size=shape, device=self.p.device)
+        shape = self._extended_shape(sample_shape)
+        u = torch.empty(shape, device=self.p.device).uniform_()
 
         x = torch.where(
             u < self.p, 
