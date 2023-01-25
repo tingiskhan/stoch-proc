@@ -36,12 +36,13 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
         """
 
         super().__init__(self.kernel, (alpha, xi, eta), initial_kernel=None, **kwargs)
-        self.de = DoubleExponential(p=p, rho_plus=rho_plus, rho_minus=-rho_minus)
+        self.de = DoubleExponential(p=p, rho_plus=rho_plus, rho_minus=rho_minus)
+        
         self._initial_kernel = self.initial_kernel
         self._event_shape = torch.Size([4])
 
     def initial_kernel(self, alpha, xi, eta):
-        exp_j2 = self.de.p * 2.0 / (self.de.rho_plus**2.0) + (1 - self.de.p) * 2.0 / (self.de.rho_minus**2.0)
+        exp_j2 = self.de.p * 2.0 * self.de.rho_plus.pow(-2.0) + (1.0 - self.de.p) * 2.0 * self.de.rho_minus.pow(-2.0)
 
         std_lambda = exp_j2.sqrt() * xi
         dist_ = TransformedDistribution(
@@ -59,7 +60,10 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
 
         lambda_s = x.value[..., 0]
 
-        dn_t = Bernoulli(probs=(lambda_s * self.dt).clip(0.0, 1.0)).sample()
+        # TODO: Use unbound?
+        probs = (lambda_s * self.dt).nan_to_num(0.0, 0.0, 0.0).clip(0.0, 1.0)
+        dn_t = Bernoulli(probs=probs).sample()
+
         de = self.de.expand(lambda_s.shape)
         dl_t = de.sample() * dn_t
 
