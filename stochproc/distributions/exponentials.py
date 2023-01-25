@@ -1,11 +1,11 @@
-from pyro.distributions import ExponentialFamily, constraints, Exponential
+from pyro.distributions import ExponentialFamily, constraints, Exponential, TransformedDistribution, transforms
 from torch.distributions.utils import broadcast_all
 
 from numbers import Number
 import torch
 
 
-class NegativeExponential(ExponentialFamily):
+class NegativeExponential(TransformedDistribution):
     r"""
     Creates an Exponential distribution parameterized by :attr:`rate`.
     Example::
@@ -16,66 +16,10 @@ class NegativeExponential(ExponentialFamily):
         rate (float or Tensor): rate = 1 / scale of the distribution
     """
 
-    arg_constraints = {"rate": constraints.less_than(0.0)}
-    support = constraints.less_than(0.0)
-    has_rsample = True
-    _mean_carrier_measure = 0
-
-    @property
-    def mean(self):
-        return self.rate.reciprocal()
-
-    @property
-    def stddev(self):
-        return -self.rate.reciprocal()
-
-    @property
-    def variance(self):
-        return self.rate.pow(-2)
-
     def __init__(self, rate, validate_args=None):
-        (self.rate,) = broadcast_all(rate)
-        batch_shape = torch.Size() if isinstance(rate, Number) else self.rate.size()
-        super().__init__(batch_shape, validate_args=validate_args)
-
-    def expand(self, batch_shape, _instance=None):
-        new = self._get_checked_instance(Exponential, _instance)
-        batch_shape = torch.Size(batch_shape)
-        new.rate = self.rate.expand(batch_shape)
-        super().__init__(batch_shape, validate_args=False)
-        new._validate_args = self._validate_args
-        return new
-
-    def rsample(self, sample_shape=torch.Size()):
-        shape = self._extended_shape(sample_shape)
-        if torch._C._get_tracing_state():
-            # [JIT WORKAROUND] lack of support for ._exponential()
-            u = torch.rand(shape, dtype=self.rate.dtype, device=self.rate.device)
-            return (-u).log1p() / self.rate
-        return self.rate.new(shape).exponential_() / self.rate
-
-    def log_prob(self, value):
-        if self._validate_args:
-            self._validate_sample(value)
-        return (-self.rate).log() - self.rate * value
-
-    def cdf(self, value):
-        if self._validate_args:
-            self._validate_sample(value)
-        return 1 - torch.exp(-self.rate * value)
-
-    def icdf(self, value):
-        return -torch.log(1 - value) / self.rate
-
-    def entropy(self):
-        return 1.0 - torch.log(-self.rate)
-
-    @property
-    def _natural_params(self):
-        return (-self.rate,)
-
-    def _log_normalizer(self, x):
-        return -torch.log(-x)
+        base = Exponential(rate=rate, validate_args=validate_args)
+        zeros, ones = torch.zeros_like(base.rate), torch.ones_like(base.rate)
+        super().__init__(base, transforms.AffineTransform(zeros, -ones), validate_args=validate_args)
 
 
 class DoubleExponential(ExponentialFamily):
@@ -97,7 +41,7 @@ class DoubleExponential(ExponentialFamily):
     """
     arg_constraints = {
         "rho_plus": constraints.positive,
-        "rho_minus": constraints.less_than(0.0),
+        "rho_minus": constraints.positive,
         "p": constraints.interval(0.0, 1.0),
     }
 
@@ -107,7 +51,7 @@ class DoubleExponential(ExponentialFamily):
 
     @property
     def mean(self):
-        return self.p / self.rho_plus + (1 - self.p) / self.rho_minus
+        return self.p / self.rho_plus - (1 - self.p) / self.rho_minus
 
     @property
     def stddev(self):
@@ -125,7 +69,7 @@ class DoubleExponential(ExponentialFamily):
     def phi_fun(self):
         # eq. 30 in Hainaut&Moraux 2016
         # \phi(1, 0) =: c
-        c = self.p * (1 / self.rho_plus).exp() + (1 - self.p) * (1 / self.rho_minus).exp()
+        c = self.p * (1 / self.rho_plus).exp() - (1 - self.p) * (1 / self.rho_minus).exp()
         return c
 
     def __init__(self, rho_plus, rho_minus, p, validate_args=None):
@@ -135,11 +79,7 @@ class DoubleExponential(ExponentialFamily):
             self.p,
         ) = broadcast_all(rho_plus, rho_minus, p)
 
-        if isinstance(rho_plus, Number) and isinstance(rho_minus, Number) and isinstance(p, Number):
-            batch_shape = torch.Size()
-        else:
-            batch_shape = self.p.size()
-
+        batch_shape = self.rho_minus.shape
         super().__init__(batch_shape, validate_args=validate_args)
         self.c = self.phi_fun
 
@@ -155,63 +95,40 @@ class DoubleExponential(ExponentialFamily):
         return new
 
     def rsample(self, sample_shape=torch.Size()):
-        shape = self._extended_shape(sample_shape)
-        x = torch.zeros(size=shape, device=self.p.device)
+        shape = self._extended_shape(sample_shape)        
         u = torch.rand(size=shape, device=self.p.device)
 
-        mask = u < self.p
-        mask_as_float = mask.float()
-        not_mask_as_float = 1.0 - mask_as_float
-
-        x = -1.0 / self.rho_minus * (u / (1.0 - self.p)).log() * mask_as_float + -1.0 / self.rho_plus * ((1.0 - u) / self.p).log() * not_mask_as_float
+        x = torch.where(
+            u < self.p, 
+            1.0 / self.rho_minus * (u / (1.0 - self.p)).log(), 
+            -1.0 / self.rho_plus * ((1.0 - u) / self.p).log()
+        )
 
         return x
 
-    # TODO: Speed up if necessary
     def log_prob(self, value):
         if self._validate_args:
             self._validate_sample(value)
 
-        mask = (value >= 0.0).float()
-        log_prob = ((self.p * self.rho_plus).log() - self.rho_plus * value) * mask + (
-            (-self.rho_minus * (1 - self.p)).log() - self.rho_minus * value
-        ) * (~mask)
+        log_prob = torch.where(
+            value >= 0.0,
+            (self.p * self.rho_plus).log() - self.rho_plus * value,
+            (self.rho_minus * (1 - self.p)).log() + self.rho_minus * value
+        )
 
         return log_prob
-
-    # TODO: Speed up if necessary
+    
     def cdf(self, value):
         if self._validate_args:
             self._validate_sample(value)
-        n = value.size()
-        u = torch.zeros(n)
-        for i in range(0, n.__getitem__(0)):
-            element = value[i]
-            if element >= 0:
-                u[i] = (1 - self.p) + self.p * (1 - torch.exp(-self.rho_plus * element))
-            else:
-                u[i] = (1 - self.p) * (1 - torch.exp(-self.rho_minus * element))
-        return u
 
-    def icdf(self, value):
-        n = value.size()
-        u = torch.zeros(n)
-        x = torch.zeros(n)
-        for i in range(0, n.__getitem__(0)):
-            if u[i] <= self.p:
-                x[i] = -1 / self.rho_minus * (u[i] / (1 - self.p)).log()
-            else:
-                x[i] = -1 / self.rho_plus * ((1 - u[i]) / self.p).log()
-        return x
+        cdf = torch.where(
+            value >= 0.0,
+            (1 - self.p) + self.p * (1 - torch.exp(-self.rho_plus * value)),
+            (1 - self.p) * (1 - torch.exp(self.rho_minus * value))
+        )
+
+        return cdf
 
     def entropy(self):
         return 1.0 - torch.log(self.rate)
-
-    @property
-    def _natural_params(self):
-        print(" I am in natural parameters")
-        return (-self.rate,)
-
-    def _log_normalizer(self, x):
-        print(" I am in log_normalized")
-        return -torch.log(-x)
