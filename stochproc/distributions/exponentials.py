@@ -132,8 +132,8 @@ class DoubleExponential(ExponentialFamily):
 
         x = torch.where(
             u < self.p,
-            self._neg_exp.rsample(shape),
-            self._pos_exp.rsample(shape),
+            self._neg_exp.rsample(sample_shape),
+            self._pos_exp.rsample(sample_shape),
         )
 
         return x
