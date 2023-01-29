@@ -42,7 +42,7 @@ class TestDoubleExponentials(object):
 
         # Test if the Double Exponential is correctly computed. TODO: Replace with log prob instead
         z = np.linspace(-5.0, 5.0, dtype=np.float32)        
-        exp_cdf = np.where(z < 0.0, (1.0 - p) * (1.0 - np.exp(rho_minus * z)), (1.0 - p) + p * (1 - np.exp(-rho_plus * z)))
+        exp_cdf = np.where(z < 0.0, (1.0 - p) * np.exp(rho_minus * z), (1.0 - p) + p * (1 - np.exp(-rho_plus * z)))
 
         actual_cdf = de.cdf(torch.from_numpy(z))
         np.testing.assert_allclose(actual=actual_cdf, desired=exp_cdf, atol=atol)

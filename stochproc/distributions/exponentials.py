@@ -1,7 +1,5 @@
 from pyro.distributions import ExponentialFamily, constraints, Exponential, TransformedDistribution, transforms
 from torch.distributions.utils import broadcast_all
-
-from numbers import Number
 import torch
 
 
@@ -21,7 +19,28 @@ class NegativeExponential(TransformedDistribution):
         zeros, ones = torch.zeros_like(base.rate), torch.ones_like(base.rate)
         super().__init__(base, transforms.AffineTransform(zeros, -ones), validate_args=validate_args)
 
+    @property
+    def mean(self):
+        return -self.base_dist.mean
 
+    @property
+    def variance(self):
+        return self.base_dist.variance
+
+    @property
+    def stddev(self):
+        return self.base_dist.stddev
+
+    def expand(self, batch_shape, _instance=None):
+        new = self._get_checked_instance(NegativeExponential, _instance)
+        batch_shape = torch.Size(batch_shape)
+        
+        new_base_dist = self.base_dist.expand(batch_shape)
+        super(NegativeExponential, new).__init__(new_base_dist, transforms=self.transforms, validate_args=self._validate_args)
+        return new
+
+
+# TODO: Replace with two exponentials...?
 class DoubleExponential(ExponentialFamily):
     r"""
     Creates a Double Exponential distribution parameterized by :attr:`rho_minus, rho_plus, p`.
@@ -40,8 +59,6 @@ class DoubleExponential(ExponentialFamily):
 
     """
     arg_constraints = {
-        "rho_plus": constraints.positive,
-        "rho_minus": constraints.positive,
         "p": constraints.interval(0.0, 1.0),
     }
 
@@ -51,13 +68,13 @@ class DoubleExponential(ExponentialFamily):
 
     @property
     def mean(self):
-        return self.p / self.rho_plus - (1 - self.p) / self.rho_minus
+        return self.p * self._pos_exp.mean + (1.0 - self.p) * self._neg_exp.mean
 
     @property
     def stddev(self):
         # V(J) := E[J^2] - E[J]^2
         return (
-            self.p * 2 * self.rho_plus.pow(-2.0) + (1 - self.p) * 2 * self.rho_minus.pow(-2.0) - self.mean.pow(2.0)
+            self.p * 2 * self._pos_exp.variance + (1 - self.p) * 2 * self._neg_exp.variance - self.mean.pow(2.0)
         ).sqrt()
 
     @property
@@ -69,29 +86,44 @@ class DoubleExponential(ExponentialFamily):
     def phi_fun(self):
         # eq. 30 in Hainaut&Moraux 2016
         # \phi(1, 0) =: c
-        c = self.p * (1 / self.rho_plus).exp() - (1 - self.p) * (1 / self.rho_minus).exp()
-        return c
+        return self.p * self._pos_exp.mean.exp() + (1 - self.p) * self._neg_exp.mean.exp()
+    
+    @property
+    def rho_plus(self) -> torch.Tensor:
+        return self._pos_exp.rate
+
+    @property
+    def rho_minus(self) -> torch.Tensor:
+        return self._neg_exp.base_dist.rate
 
     def __init__(self, rho_plus, rho_minus, p, validate_args=None):
-        (
-            self.rho_plus,
-            self.rho_minus,
-            self.p,
-        ) = broadcast_all(rho_plus, rho_minus, p)
+        """
+        Internal initializer for :class:`DoubleExponential`.
 
-        batch_shape = self.rho_minus.shape
-        super().__init__(batch_shape, validate_args=validate_args)
+        Args:
+            rho_plus (_type_): rate of positive exponential.
+            rho_minus (_type_): rate of negative exponential.
+            p (_type_): probability of choosing negative exponential.            
+        """
+
+        rho_plus, rho_minus, self.p = broadcast_all(rho_plus, rho_minus, p)
+
+        self._pos_exp = Exponential(rho_plus, validate_args=False)
+        self._neg_exp = NegativeExponential(rho_minus, validate_args=False)
+        
+        super().__init__(self._neg_exp.batch_shape, validate_args=validate_args)
         self.c = self.phi_fun
 
     def expand(self, batch_shape, _instance=None):
         new = self._get_checked_instance(DoubleExponential, _instance)
         batch_shape = torch.Size(batch_shape)
+        
         new.p = self.p.expand(batch_shape)
-        new.rho_plus = self.rho_plus.expand(batch_shape)
-        new.rho_minus = self.rho_minus.expand(batch_shape)
+        new._pos_exp = self._pos_exp.expand(batch_shape)
+        new._neg_exp = self._neg_exp.expand(batch_shape)
 
-        super(DoubleExponential, new).__init__(batch_shape, validate_args=False)
-        new._validate_args = self._validate_args
+        super(DoubleExponential, new).__init__(batch_shape, validate_args=self._validate_args)
+
         return new
 
     def rsample(self, sample_shape=torch.Size()):
@@ -99,9 +131,9 @@ class DoubleExponential(ExponentialFamily):
         u = torch.empty(shape, device=self.p.device).uniform_()
 
         x = torch.where(
-            u < self.p, 
-            1.0 / self.rho_minus * (u / (1.0 - self.p)).log(), 
-            -1.0 / self.rho_plus * ((1.0 - u) / self.p).log()
+            u < self.p,
+            self._neg_exp.rsample(shape),
+            self._pos_exp.rsample(shape),
         )
 
         return x
@@ -112,8 +144,8 @@ class DoubleExponential(ExponentialFamily):
 
         log_prob = torch.where(
             value >= 0.0,
-            (self.p * self.rho_plus).log() - self.rho_plus * value,
-            (self.rho_minus * (1 - self.p)).log() + self.rho_minus * value
+            (1.0 - self.p) * self._pos_exp.log_prob(value),
+            self.p * self._neg_exp.log_prob(value)
         )
 
         return log_prob
@@ -122,13 +154,11 @@ class DoubleExponential(ExponentialFamily):
         if self._validate_args:
             self._validate_sample(value)
 
+        one_mp = (1.0 - self.p)
         cdf = torch.where(
             value >= 0.0,
-            (1 - self.p) + self.p * (1 - torch.exp(-self.rho_plus * value)),
-            (1 - self.p) * (1 - torch.exp(self.rho_minus * value))
+            one_mp + self.p * self._pos_exp.cdf(value),
+            one_mp * self._neg_exp.cdf(value),
         )
 
         return cdf
-
-    def entropy(self):
-        return 1.0 - torch.log(self.rate)
