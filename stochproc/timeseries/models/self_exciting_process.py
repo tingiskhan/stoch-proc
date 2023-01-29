@@ -17,7 +17,7 @@ def _initial_kernel(alpha, xi, _, de):
         [t.AffineTransform(xi, std_lambda), t.AbsTransform()],
     )
 
-    return JointDistribution(dist_, Delta(torch.zeros_like(alpha)), Delta(torch.zeros_like(alpha)), de)
+    return JointDistribution(dist_, Delta(torch.zeros_like(std_lambda)))
 
 
 class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
@@ -73,6 +73,6 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
         diffusion = eta * dl_t.abs()
         lambda_t = (lambda_s + deterministic + diffusion).clip(min=0.0)
 
-        combined = torch.stack((lambda_t, dn_t, lambda_s, dl_t), dim=-1)
+        combined = torch.stack((lambda_t, dl_t), dim=-1)
 
         return Delta(combined, event_dim=1)
