@@ -68,7 +68,7 @@ class DoubleExponential(ExponentialFamily):
 
     @property
     def mean(self):
-        return self.p * self._pos_exp.mean + (1.0 - self.p) * self._neg_exp.mean
+        return self.p / self.rho_plus + (1.0 - self.p) / self.rho_minus
 
     @property
     def stddev(self):
@@ -86,7 +86,7 @@ class DoubleExponential(ExponentialFamily):
     def phi_fun(self):
         # eq. 30 in Hainaut&Moraux 2016
         # \phi(1, 0) =: c
-        return self.p * self._pos_exp.mean.exp() + (1 - self.p) * self._neg_exp.mean.exp()
+        return self.p * (1.0 / self.rho_plus).exp() + (1 - self.p) * (1.0 / self.rho_minus).exp()
     
     @property
     def rho_plus(self) -> torch.Tensor:
@@ -94,7 +94,7 @@ class DoubleExponential(ExponentialFamily):
 
     @property
     def rho_minus(self) -> torch.Tensor:
-        return self._neg_exp.base_dist.rate
+        return -self._neg_exp.base_dist.rate
 
     def __init__(self, rho_plus, rho_minus, p, validate_args=None):
         """
