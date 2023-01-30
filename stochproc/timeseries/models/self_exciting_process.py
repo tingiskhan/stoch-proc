@@ -1,4 +1,5 @@
-from pyro.distributions import Delta, Bernoulli, Distribution, TransformedDistribution, transforms as t, Normal
+from functools import partial
+from pyro.distributions import Delta, Poisson, Distribution, TransformedDistribution, transforms as t, Normal
 import torch
 
 from ...distributions import JointDistribution, DoubleExponential
@@ -7,10 +8,24 @@ from ..state import TimeseriesState
 from ...typing import ParameterType
 
 
+def _initial_kernel(alpha, xi, _, de):
+    exp_j2 = de.p * 2.0 * de.rho_plus.pow(-2.0) + (1.0 - de.p) * 2.0 * de.rho_minus.pow(-2.0)
+
+    std_lambda = exp_j2.sqrt() * xi
+    dist_ = TransformedDistribution(
+        Normal(torch.zeros_like(alpha), torch.ones_like(alpha)),
+        [t.AffineTransform(xi, std_lambda), t.AbsTransform()],
+    )
+
+    return JointDistribution(dist_, Delta(torch.zeros_like(std_lambda)))
+
+
 class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
     """
-    Class defining the process for the istantaneous frequency of jumps, where jumps are distributed as a double exponential r.v.
-    See e.g. https://www.researchgate.net/publication/327672329_Hedging_of_options_in_presence_of_jump_clustering
+    Class defining the process for the instantaneous frequency of jumps, where jumps are distributed as a double 
+    exponential r.v. See `this_` paper for example.
+    
+    .. _`this`: https://www.researchgate.net/publication/327672329_Hedging_of_options_in_presence_of_jump_clustering
     """
 
     def __init__(
@@ -35,38 +50,29 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
             rho_plus (ParameterType): _description_
         """
 
-        super().__init__(self.kernel, (alpha, xi, eta), initial_kernel=None, **kwargs)
-        self.de = DoubleExponential(p=p, rho_plus=rho_plus, rho_minus=-rho_minus)
-        self._initial_kernel = self.initial_kernel
-        self._event_shape = torch.Size([4])
+        self.de = DoubleExponential(p=p, rho_plus=rho_plus, rho_minus=rho_minus)
+        init_kernel = partial(_initial_kernel, de=self.de)
 
-    def initial_kernel(self, alpha, xi, eta):
-        exp_j2 = self.de.p * 2.0 / (self.de.rho_plus**2.0) + (1 - self.de.p) * 2.0 / (self.de.rho_minus**2.0)
-
-        std_lambda = exp_j2.sqrt() * xi
-        dist_ = TransformedDistribution(
-            Normal(torch.zeros_like(alpha), torch.ones_like(alpha)),
-            [t.AffineTransform(xi, std_lambda), t.AbsTransform()],
-        )
-
-        return JointDistribution(dist_, Delta(torch.zeros_like(alpha)), Delta(torch.zeros_like(alpha)), self.de)
+        super().__init__(self.kernel, (alpha, xi, eta), initial_kernel=init_kernel, **kwargs)
 
     def kernel(self, x: TimeseriesState, alpha, xi, eta) -> Distribution:
         r"""
-        Joint density for the realizations of (\lambda_t, dN_t, \lambda_s, q).
-        N.B.: Jumps are modeled as a Bernoulli random variable (there could at most one jump for each dt).
+        Joint density for the realizations of :math:`(\lambda_t, dN_t, \lambda_s, q)`.
         """
 
         lambda_s = x.value[..., 0]
 
-        dn_t = Bernoulli(probs=(lambda_s * self.dt).clip(0.0, 1.0)).sample()
+        intensity = (lambda_s * self.dt).nan_to_num(0.0, 0.0, 0.0).clip(min=0.0)
+        dn_t = Poisson(rate=intensity).sample()
+
         de = self.de.expand(lambda_s.shape)
         dl_t = de.sample() * dn_t
 
         deterministic = alpha * (xi - lambda_s) * self.dt
 
         diffusion = eta * dl_t.abs()
-        max_lambda = 1000.0
-        lambda_t = (lambda_s + deterministic + diffusion).clip(0.0, max_lambda)
+        lambda_t = (lambda_s + deterministic + diffusion).clip(min=0.0)
 
-        return JointDistribution(Delta(lambda_t), Delta(dn_t), Delta(lambda_s), Delta(dl_t))
+        combined = torch.stack((lambda_t, dl_t), dim=-1)
+
+        return Delta(combined, event_dim=1)

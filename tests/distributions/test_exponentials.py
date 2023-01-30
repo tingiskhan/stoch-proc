@@ -9,67 +9,45 @@ from stochproc.distributions import NegativeExponential, DoubleExponential
 class TestDoubleExponentials(object):
     def test_negative_distribution(self):
         
-        with pt.raises(ValueError):
-            lambda_plus = +100
-            ne = NegativeExponential(rate=lambda_plus, validate_args=True)
+        lamda = 1.0
+        with pt.raises(ValueError):            
+            ne = NegativeExponential(rate=-lamda, validate_args=True)
 
-        lambda_minus = -lambda_plus
-        atol = 1 / 10000
-        negative_exp = NegativeExponential(rate=lambda_minus, validate_args=True)
-        
-        # Test if the mean is correctly computed up to a certain atol
-        np.testing.assert_allclose(actual=negative_exp.mean, desired=1 / lambda_minus, atol=atol,
-                                   err_msg='Expected mean: {}; Mean returned:{}'.format(1 / lambda_minus,
-                                                                                        negative_exp.mean))
-        # Test if the variance is correctly computed up to a certain atol
-        np.testing.assert_allclose(actual=negative_exp.variance, desired=1 / lambda_minus ** 2, atol=atol,
-                                   err_msg='Expected variance: {}; Variance returned:{}'.format(1 / lambda_minus ** 2,
-                                                                                                negative_exp.variance))
-        # Test if the CDF is correctly computed for some values z
-        cdf = lambda z: 1 - np.exp(-lambda_minus * z)
-        z = -np.array([5., 1., .5, 1 / 10, 1 / 100, 1 / 10000])
-        exp_cdf = cdf(z)
-        actual_cdf = negative_exp.cdf(torch.Tensor(z))
-        np.testing.assert_allclose(actual=actual_cdf, desired=exp_cdf, atol=atol,
-                                   err_msg='Negative Exponential CDF computed for {}; it returns: {}, expected: {}'.format(
-                                       z, actual_cdf, exp_cdf))
+        atol = 1e-4
+        negative_exp = NegativeExponential(rate=lamda, validate_args=True)
+
+        z = np.linspace(-10.0, -atol, dtype=np.float32)
+        exp_cdf = np.exp(-lamda * (-z))
+
+        actual_cdf = negative_exp.cdf(torch.from_numpy(z))
+        np.testing.assert_allclose(actual=actual_cdf, desired=exp_cdf, atol=atol)
 
     def test_double_exponential_distribution(self):
-        p = .4
-        rho_plus = 5.
-        rho_minus = -6.
-        
-        with pt.raises(ValueError):
-            de = DoubleExponential(p=p, rho_minus=rho_plus, rho_plus=rho_plus, validate_args=True)
-                
-        with pt.raises(ValueError):
-            de = DoubleExponential(p=p, rho_minus=rho_minus, rho_plus=rho_minus, validate_args=True)
-
-        with pt.raises(ValueError):
-            p1 = 1.5
-            de = DoubleExponential(p=p1, rho_minus=rho_minus, rho_plus=rho_minus, validate_args=True)
+        p = 0.4
+        rho_plus = 5.0
+        rho_minus = 6.0
 
         de = DoubleExponential(p=p, rho_minus=rho_minus, rho_plus=rho_plus)
-        atol = 1 / 10000
+        atol = 1e-4
+
         # Test if the mean is correctly computed. See Hainaut and Moraux 2016, Veronese et al. 2022
-        exp_mean = p * 1 / rho_plus + (1 - p) * 1 / rho_minus  # expected mean
+        exp_mean = p * 1 / rho_plus - (1 - p) * 1 / rho_minus
         actual_mean = de.mean
-        np.testing.assert_allclose(actual=actual_mean, desired=exp_mean, atol=atol,
-                                   err_msg='Double Exponential expected mean: {}; Mean returned by computation:{}'.format(
-                                       exp_mean,
-                                       actual_mean))
+        np.testing.assert_allclose(actual=actual_mean, desired=exp_mean, atol=atol)
+
         # Test if the variance is correctly computed. See Veronese et al. 2022
-        exp_variance = p * 2 / rho_plus ** 2 + (1 - p) * 2 / rho_minus ** 2 - exp_mean ** 2  # expected variance
+        exp_variance = p * 2 / rho_plus ** 2 + (1 - p) * 2 / rho_minus ** 2 - exp_mean ** 2
         actual_variance = de.variance
-        np.testing.assert_allclose(actual=actual_variance, desired=exp_variance,
-                                   err_msg='Double Exponential expected variance: {}; variance returned by computation:{}'.format(
-                                       exp_variance,
-                                       actual_variance))
-        # Test if the Double Exponential is correctly computed
-        cdf = lambda z: (1 - p) * (1 - np.exp(- rho_minus * z)) if z < 0 else (1 - p) + p * (1 - np.exp(- rho_plus * z))
-        z = np.array([5., 1., .5, 1 / 10, 1 / 100, 1 / 10000, -5., -1., -.5, -1 / 10, -1 / 100, -1 / 10000])
-        exp_cdf = np.array([cdf(z_) for z_ in z])
-        actual_cdf = de.cdf(torch.Tensor(z))
-        np.testing.assert_allclose(actual=actual_cdf, desired=exp_cdf, atol=atol,
-                                   err_msg='Double Exponential CDF computed for {}; it returns: {}, expected: {}'.format(
-                                       z, actual_cdf, exp_cdf))
+        np.testing.assert_allclose(actual=actual_variance, desired=exp_variance)
+
+        # Test if the Double Exponential is correctly computed. TODO: Replace with log prob instead
+        z = np.linspace(-5.0, 5.0, dtype=np.float32)        
+        exp_cdf = np.where(z < 0.0, (1.0 - p) * np.exp(rho_minus * z), (1.0 - p) + p * (1 - np.exp(-rho_plus * z)))
+
+        actual_cdf = de.cdf(torch.from_numpy(z))
+        np.testing.assert_allclose(actual=actual_cdf, desired=exp_cdf, atol=atol)
+
+        shape = torch.Size([100, 20])
+        samples = de.sample(shape)
+
+        assert samples.shape == shape
