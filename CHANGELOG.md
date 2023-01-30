@@ -2,6 +2,9 @@
 
 ## Versions
 
+### v0.2.3
+ - Bug fixes for `DoubleExponential` and `SelfExcitingProcess`.
+
 ### v0.2.1
  - Uses tuple instead of list for parameters
 
