@@ -9,6 +9,8 @@ from .smooth_trend import SmoothLinearTrend
 from .trending_ou import TrendingOU
 from .self_exciting_process import SelfExcitingLatentProcesses
 from .harmonics import HarmonicProcess
+from .cyclical import Cyclical
+
 
 __all__ = [
     "OrnsteinUhlenbeck",
@@ -22,4 +24,5 @@ __all__ = [
     "TrendingOU",
     "SelfExcitingLatentProcesses",
     "HarmonicProcess",
+    "Cyclical",
 ]

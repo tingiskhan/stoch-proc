@@ -1,4 +1,5 @@
 import itertools
+from math import pi
 
 import pytest
 import torch
@@ -21,7 +22,8 @@ def models():
     yield mods.SmoothLinearTrend(mods.OrnsteinUhlenbeck(0.025, 0.0, 0.05))
     yield mods.TrendingOU(0.01, 0.03, 0.2, 1.0)
     yield mods.SelfExcitingLatentProcesses(0.01, 2.0, 0.05, 0.1, 3.0, 2.0, dt=0.05)
-    yield mods.HarmonicProcess(0.25, torch.tensor([0.05, 0.05]))
+    yield mods.HarmonicProcess(3, torch.tensor([0.05, 0.05]))
+    yield mods.Cyclical(0.9, 2.0 * pi / 100, 0.01)
 
 
 class TestCustomModels(object):
