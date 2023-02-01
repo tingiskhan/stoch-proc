@@ -2,6 +2,9 @@
 
 ## Versions
 
+### v0.2.4
+ - Adds `CyclicalProcess` and "fixes" `HarmonicProcess`
+
 ### v0.2.3
  - Bug fixes for `DoubleExponential` and `SelfExcitingProcess`.
 
