@@ -8,8 +8,8 @@ from .seasonal import Seasonal
 from .smooth_trend import SmoothLinearTrend
 from .trending_ou import TrendingOU
 from .self_exciting_process import SelfExcitingLatentProcesses
+from .cyclical import CyclicalProcess
 from .harmonics import HarmonicProcess
-from .cyclical import Cyclical
 
 
 __all__ = [
@@ -24,5 +24,5 @@ __all__ = [
     "TrendingOU",
     "SelfExcitingLatentProcesses",
     "HarmonicProcess",
-    "Cyclical",
+    "CyclicalProcess",
 ]
