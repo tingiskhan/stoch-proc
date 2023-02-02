@@ -1,9 +1,13 @@
 import torch
-from pyro.distributions import Normal
+from pyro.distributions import Normal, Delta
 from torch.distributions.utils import broadcast_all
 
 from ...typing import ParameterType
 from ..linear import LinearModel
+
+
+def _initial_kernel(loc):
+    return Delta(loc)
 
 
 class RandomWalk(LinearModel):
@@ -28,16 +32,13 @@ class RandomWalk(LinearModel):
 
         scale, initial_mean = broadcast_all(scale, initial_mean)
 
-        def initial_kernel(loc, scale):
-            return Normal(loc, scale)
-
         increment_distribution = Normal(torch.tensor(0.0, device=scale.device), torch.tensor(1.0, device=scale.device))
         a = torch.tensor(1.0, device=scale.device, dtype=scale.dtype)
 
         super().__init__(
             (a, scale),
             increment_distribution=increment_distribution,
-            initial_kernel=initial_kernel,
-            initial_parameters=(initial_mean, scale),
+            initial_kernel=_initial_kernel,
+            initial_parameters=(initial_mean,),
             **kwargs
         )
