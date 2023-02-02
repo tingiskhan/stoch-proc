@@ -2,6 +2,9 @@
 
 ## Versions
 
+### v0.2.5
+ - Use `Delta` distribution for some models
+
 ### v0.2.4
  - Adds `CyclicalProcess` and "fixes" `HarmonicProcess`
 
