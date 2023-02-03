@@ -49,5 +49,5 @@ class LocalLinearTrend(LinearModel):
             (a, sigma),
             increment_distribution=increment_dist,
             initial_kernel=_initial_kernel,
-            initial_parameters=(initial_mean, sigma),
+            initial_parameters=(initial_mean,),
         )
