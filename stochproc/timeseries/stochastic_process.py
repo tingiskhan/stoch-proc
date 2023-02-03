@@ -27,7 +27,7 @@ class StructuralStochasticProcess(ABC):
         .. math::
             p(x_0, ..., x_t) = p(x_0) \prod^t_{k=1} p(x_k \mid x_{1:k-1})
 
-    Derived classes should override the ``.build_distribution(...)`` method, which builds the distribution of
+    Derived classes should override the :meth:`build_density` method, which builds the distribution of
     :math:`X_{t+1}` given :math:`\{ X_j \}_{j \leq t}`.
     """
 
@@ -103,8 +103,10 @@ class StructuralStochasticProcess(ABC):
         """
 
         dist = self.initial_distribution
+        if shape:
+            dist = dist.expand(shape)
 
-        return TimeseriesState(0, dist.sample(shape), event_shape=dist.event_shape)
+        return TimeseriesState(0, dist.sample, event_shape=dist.event_shape)
 
     def build_density(self, x: TimeseriesState) -> Distribution:
         r"""
