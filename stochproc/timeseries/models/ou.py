@@ -21,7 +21,7 @@ class OrnsteinUhlenbeck(LinearModel):
     where :math:`\kappa, \sigma \in \mathbb{R}_+^n`, and :math:`\gamma \in \mathbb{R}^n`.
     """
 
-    def __init__(self, kappa: ParameterType, gamma: ParameterType, sigma: ParameterType, dt: float = 1.0, **kwargs):
+    def __init__(self, kappa: ParameterType, gamma: ParameterType, sigma: ParameterType, dt: float = 1.0):
         """
         Internal initializer for :class:`OrnsteinUhlenbeck`.
 
@@ -42,7 +42,6 @@ class OrnsteinUhlenbeck(LinearModel):
             increment_distribution,
             initial_kernel=initial_kernel,
             parameter_transform=self._param_transform,
-            **kwargs
         )
 
     def _param_transform(self, k, g, s):
@@ -51,3 +50,10 @@ class OrnsteinUhlenbeck(LinearModel):
         s = s / (2.0 * k).sqrt() * (1.0 - a.pow(2.0)).sqrt()
 
         return a, b, s
+
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        new = self._get_checked_instance(OrnsteinUhlenbeck)
+        new.__init__(*new_parameters["parameters"], self._dt)
+
+        return new

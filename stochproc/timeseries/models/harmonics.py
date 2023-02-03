@@ -30,3 +30,11 @@ class HarmonicProcess(CyclicalProcess):
 
         rho, lamda, sigma = coerce_tensors(1.0, 2.0 * pi * j / s, sigma)
         super().__init__(rho, lamda, sigma, x_0)
+
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        new = self._get_checked_instance(HarmonicProcess)
+
+        super(HarmonicProcess, new).__init__(*new_parameters["parameters"], *new_parameters["initial_parameters"])
+
+        return new

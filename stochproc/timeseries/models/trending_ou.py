@@ -51,3 +51,12 @@ class TrendingOU(AffineProcess):
         scale = s / (2.0 * k).sqrt() * (1.0 - d.pow(2.0)).sqrt()
 
         return loc, scale
+
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        new = self._get_checked_instance(TrendingOU)
+        
+        params = new_parameters["parameters"]
+        new.__init__(params[0], params[1], params[-1], params[2], self._dt)
+
+        return new

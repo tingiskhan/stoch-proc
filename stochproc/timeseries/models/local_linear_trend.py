@@ -32,7 +32,7 @@ class LocalLinearTrend(LinearModel):
 
         sigma = broadcast_all(sigma)[0]
 
-        if not initial_mean:
+        if initial_mean is None:
             initial_mean = torch.zeros_like(sigma)
         else:
             sigma, initial_mean = broadcast_all(sigma, initial_mean)
@@ -51,3 +51,10 @@ class LocalLinearTrend(LinearModel):
             initial_kernel=_initial_kernel,
             initial_parameters=(initial_mean,),
         )
+
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        new = self._get_checked_instance(LocalLinearTrend)
+        new.__init__(new_parameters["parameters"][-1], new_parameters["initial_parameters"][0])
+
+        return new

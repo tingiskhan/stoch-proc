@@ -105,3 +105,10 @@ class AffineProcess(StructuralStochasticProcess):
         from . import AffineHierarchicalProcess
 
         return AffineHierarchicalProcess(sub_process=sub_process, main_process=self)
+
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        new = self._get_checked_instance(AffineProcess)
+        new.__init__(self.mean_scale_fun, new_parameters["parameters"], self.increment_distribution, self._initial_kernel, new_parameters["initial_parameters"])
+
+        return new

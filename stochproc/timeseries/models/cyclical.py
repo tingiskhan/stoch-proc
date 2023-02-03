@@ -51,3 +51,10 @@ class CyclicalProcess(LinearModel):
             ).expand(torch.Size([2])).to_event(1)
         
         super().__init__((rho, lamda, sigma), distribution, _initial_kernel, initial_parameters=(x_0,), parameter_transform=_parameter_transform)
+
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        new = self.__new__(CyclicalProcess)
+        new.__init__(*new_parameters["parameters"], *new_parameters["initial_parameters"])
+
+        return new

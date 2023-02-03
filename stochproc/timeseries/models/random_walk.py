@@ -20,7 +20,7 @@ class RandomWalk(LinearModel):
     where :math:`x_0` is the initial mean, defaulting to zero.
     """
 
-    def __init__(self, scale: ParameterType, initial_mean: ParameterType = 0.0, **kwargs):
+    def __init__(self, scale: ParameterType, initial_mean: ParameterType = 0.0):
         r"""
         Internal initializer for :class:`RandomWalk`.
 
@@ -40,5 +40,11 @@ class RandomWalk(LinearModel):
             increment_distribution=increment_distribution,
             initial_kernel=_initial_kernel,
             initial_parameters=(initial_mean,),
-            **kwargs
         )
+
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        new = self._get_checked_instance(RandomWalk)
+        new.__init__(new_parameters["parameters"][-1], new_parameters["initial_parameters"][0])
+
+        return new

@@ -50,3 +50,10 @@ class UCSV(AffineProcess):
         )
 
         super().__init__(_f, (sigma_volatility,), increment_dist, _initial_kernel, (initial_state_mean,))
+
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        new = self._get_checked_instance(UCSV)
+        new.__init__(new_parameters["parameters"][0], new_parameters["initial_parameters"][0])
+
+        return new

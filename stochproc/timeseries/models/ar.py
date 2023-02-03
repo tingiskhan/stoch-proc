@@ -62,8 +62,8 @@ class AR(LinearModel):
 
         bottom_shape = self.lags - 1, self.lags
 
-        self._bottom = torch.eye(*bottom_shape, device=beta.device).view(beta.shape[:-1] + bottom_shape)
-        self._b_masker = torch.eye(self.lags, 1, device=alpha.device).squeeze(-1)
+        self._bottom = torch.eye(*bottom_shape, device=beta.device).expand(beta.shape[:-1] + bottom_shape)
+        self._b_masker = torch.eye(self.lags, 1, device=alpha.device).squeeze(-1).expand(beta.shape[:-1] + torch.Size([self.lags]))
 
         super().__init__(
             (beta, alpha, sigma),
@@ -77,6 +77,15 @@ class AR(LinearModel):
             return a, b, s
 
         a = torch.cat((a.unsqueeze(-2), self._bottom), dim=-2)
-        b = self._b_masker * b
+        b = self._b_masker * b.unsqueeze(-1)
 
         return a, b, s.unsqueeze(-1)
+
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        new = self._get_checked_instance(AR)
+
+        params = new_parameters["parameters"]
+        new.__init__(params[1], params[0], params[-1], self.lags)
+
+        return new
