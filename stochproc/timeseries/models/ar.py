@@ -78,8 +78,9 @@ class AR(LinearModel):
 
         a = torch.cat((a.unsqueeze(-2), self._bottom), dim=-2)
         b = self._b_masker * b.unsqueeze(-1)
+        s = self._b_masker * s.unsqueeze(-1)
 
-        return a, b, s.unsqueeze(-1)
+        return a, b, s
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
