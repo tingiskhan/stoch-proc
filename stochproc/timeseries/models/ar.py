@@ -62,7 +62,7 @@ class AR(LinearModel):
 
         bottom_shape = self.lags - 1, self.lags
 
-        self._bottom = torch.eye(*bottom_shape, device=alpha.device)
+        self._bottom = torch.eye(*bottom_shape, device=beta.device).view(beta.shape[:-1] + bottom_shape)
         self._b_masker = torch.eye(self.lags, 1, device=alpha.device).squeeze(-1)
 
         super().__init__(
@@ -76,12 +76,7 @@ class AR(LinearModel):
         if self.lags == 1:
             return a, b, s
 
-        batch_shape = a.shape[:-1]
-
-        mask = torch.ones((*batch_shape, *self._bottom.shape), device=a.device)
-        bottom = self._bottom * mask
-
-        a = torch.cat((a.unsqueeze(-2), bottom), dim=-2)
+        a = torch.cat((a.unsqueeze(-2), self._bottom), dim=-2)
         b = self._b_masker * b
 
         return a, b, s.unsqueeze(-1)
