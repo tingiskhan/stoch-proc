@@ -18,8 +18,9 @@ def _parameter_transform(rho, lamda, s):
     a_bottom = torch.stack([-sin_lam, cos_lam], dim=-1)
 
     a = torch.stack([a_top, a_bottom], dim=-2)
+    new_s = s.unsqueeze(-1).expand(a.shape[:-1])
 
-    return a, torch.zeros_like(s), s
+    return a, torch.zeros_like(new_s), new_s
 
 
 class CyclicalProcess(LinearModel):
