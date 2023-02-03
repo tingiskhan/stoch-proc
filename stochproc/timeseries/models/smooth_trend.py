@@ -44,3 +44,9 @@ class SmoothLinearTrend(AffineHierarchicalProcess):
         )
 
         super().__init__(trend_process, level_process)
+
+    def expand(self, batch_shape):
+        new = self._get_checked_instance(SmoothLinearTrend)
+        super(AffineHierarchicalProcess, new).__init__(**{k: v.expand(batch_shape) for k, v in self.sub_processes.items()})
+
+        return new

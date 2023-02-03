@@ -30,7 +30,7 @@ class TestCustomModels(object):
     @pytest.mark.parametrize("batch_size", BATCH_SHAPES)
     @pytest.mark.parametrize("model", models())
     def test_all_models(self, batch_size, model):
-        states = model.sample_states(SAMPLES, samples=batch_size)
+        states = model.expand(batch_size).sample_states(SAMPLES)
         x = states.get_path()
 
         assert all(s.batch_shape == batch_size for s in states)

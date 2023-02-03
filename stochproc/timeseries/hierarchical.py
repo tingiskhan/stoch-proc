@@ -72,6 +72,12 @@ class AffineHierarchicalProcess(AffineJointStochasticProcess):
 
         return torch.cat(mean, dim=-1), torch.cat(scale, dim=-1)
 
+    def expand(self, batch_shape):
+        new = self._get_checked_instance(AffineHierarchicalProcess)
+        new.__init__(**{k: v.expand(batch_shape) for k, v in self.sub_processes.items()})
+
+        return new
+
 
 # TODO: Code duplication...
 class LowerCholeskyHierarchicalProcess(LowerCholeskyJointStochasticProcess):
