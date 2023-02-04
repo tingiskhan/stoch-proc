@@ -15,7 +15,9 @@ def models():
     yield mods.RandomWalk(0.05)
     yield mods.LocalLinearTrend(torch.tensor([0.01, 0.05]))
     yield mods.AR(0.0, 1.0, 0.05)
-    yield mods.AR(0.0, torch.tensor([0.25, 0.05, 0.01, 0.01, -0.02]), 0.05, lags=5)
+
+    ar = mods.AR(0.0, torch.tensor([0.25, 0.05, 0.01, 0.01, -0.02]), 0.05, lags=5)
+    yield ar
     yield mods.UCSV(0.025)
     yield mods.Seasonal(12, 0.05)
     yield mods.SmoothLinearTrend(mods.RandomWalk(0.05))
@@ -24,6 +26,7 @@ def models():
     yield mods.SelfExcitingLatentProcesses(0.01, 2.0, 0.05, 0.1, 3.0, 2.0, dt=0.05)
     yield mods.HarmonicProcess(3, 0.05)
     yield mods.CyclicalProcess(0.98, 2.0 * pi / 1_000, 0.25)
+    yield mods.SmoothLinearTrend(ar, scaling=torch.tensor([1.0, 0.0, 0.0, 0.0, 0.0]))
 
 
 class TestCustomModels(object):
