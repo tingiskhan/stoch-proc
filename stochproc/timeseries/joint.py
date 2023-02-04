@@ -163,8 +163,10 @@ class AffineJointStochasticProcess(_JointMixin, AffineProcess):
         for proc_name, proc in self.sub_processes.items():
             m, s = proc.mean_scale(x[proc_name])
 
-            mean += (m.unsqueeze(-1) if proc.n_dim == 0 else m,)
-            scale += (s.unsqueeze(-1) if proc.n_dim == 0 else s,)
+            do_unsqueeze = proc.n_dim == 0
+
+            mean += (m.unsqueeze(-1) if do_unsqueeze else m,)
+            scale += (s.unsqueeze(-1) if do_unsqueeze else s,)
 
         return torch.cat(mean, dim=-1), torch.cat(scale, dim=-1)
 
