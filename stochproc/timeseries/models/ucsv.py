@@ -45,7 +45,7 @@ class UCSV(AffineProcess):
                 loc=torch.tensor(0.0, device=sigma_volatility.device),
                 scale=torch.tensor(1.0, device=sigma_volatility.device),
             )
-            .expand(sigma_volatility.shape + torch.Size([2]))
+            .expand(torch.Size([2]))
             .to_event(1)
         )
 

@@ -50,7 +50,7 @@ class AR(LinearModel):
         """
 
         alpha, sigma = broadcast_all(alpha, sigma)
-        beta = broadcast_all(beta)[0]
+        beta, = broadcast_all(beta)
 
         if (lags > 1) and (beta.shape[-1] != lags):
             raise Exception(f"Mismatch between shapes: {alpha.value.shape[-1]} != {lags}")

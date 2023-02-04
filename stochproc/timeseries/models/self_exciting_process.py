@@ -13,10 +13,7 @@ def _initial_kernel(alpha, xi, _, p, rho_plus, rho_minus):
     exp_j2 = de.p * 2.0 * de.rho_plus.pow(-2.0) + (1.0 - de.p) * 2.0 * de.rho_minus.pow(-2.0)
 
     std_lambda = exp_j2.sqrt() * xi
-    dist_ = TransformedDistribution(
-        Normal(torch.zeros_like(alpha), torch.ones_like(alpha)),
-        [t.AffineTransform(xi, std_lambda), t.AbsTransform()],
-    )
+    dist_ = TransformedDistribution(Normal(xi, std_lambda), t.AbsTransform())
 
     return JointDistribution(dist_, Delta(torch.zeros_like(std_lambda)))
 
