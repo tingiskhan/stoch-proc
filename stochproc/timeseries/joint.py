@@ -37,7 +37,7 @@ class _JointMixin(object):
         )
         self._initial_kernel = partial(_initial_kernel, sub_processes=self.sub_processes)
         self._event_shape = self.initial_distribution.event_shape
-                
+
         self.parameters = ()
         self.initial_parameters = ()
 
@@ -62,12 +62,12 @@ class _JointMixin(object):
 
     @contextmanager
     def override_parameters(self, parameters: Dict[str, Sequence[ParameterType]]):
-        try:        
+        try:
             t = (self.sub_processes[k].override_parameters(v) for k, v in parameters.items())
             with ExitStack() as stack:
                 for cm in t:
                     stack.enter_context(cm)
-                    
+
                 yield self
         finally:
             pass

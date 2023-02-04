@@ -37,14 +37,14 @@ class JointDistribution(Distribution):
 
         if any(len(d.event_shape) > 1 for d in distributions):
             raise NotImplementedError("Currently cannot handle matrix valued distributions!")
-        
+
         event_shape = torch.Size([sum(d.event_shape.numel() for d in distributions)])
 
         batch_shapes = [(d.batch_shape.numel(), d.batch_shape) for d in distributions]
         single_batch_shape = sorted(batch_shapes, key=lambda u: u[0])[-1][1]
         distributions = [d.expand(single_batch_shape) for d in distributions]
 
-        super().__init__(event_shape=event_shape, batch_shape=single_batch_shape, **kwargs)        
+        super().__init__(event_shape=event_shape, batch_shape=single_batch_shape, **kwargs)
 
         self.distributions = distributions
         self.indices = indices if indices is not None else self.infer_indices(*distributions)

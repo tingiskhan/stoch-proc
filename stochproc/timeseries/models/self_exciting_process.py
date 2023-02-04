@@ -20,9 +20,9 @@ def _initial_kernel(alpha, xi, _, p, rho_plus, rho_minus):
 
 class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
     """
-    Class defining the process for the instantaneous frequency of jumps, where jumps are distributed as a double 
+    Class defining the process for the instantaneous frequency of jumps, where jumps are distributed as a double
     exponential r.v. See `this_` paper for example.
-    
+
     .. _`this`: https://www.researchgate.net/publication/327672329_Hedging_of_options_in_presence_of_jump_clustering
     """
 

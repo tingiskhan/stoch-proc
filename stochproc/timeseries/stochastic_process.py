@@ -367,7 +367,7 @@ class StructuralStochasticProcess(ABC):
             yield self
         finally:
             self.parameters = old_parameters
-    
+
     def _get_checked_instance(self: T, cls, _instance=None) -> T:
         """
         Basically copies the method of same name in :class:`torch.distributions.Distribution` .
@@ -377,9 +377,10 @@ class StructuralStochasticProcess(ABC):
         """
 
         if _instance is None and type(self).__init__ != cls.__init__:
-            raise NotImplementedError("Subclass {} of {} that defines a custom __init__ method "
-                                      "must also define a custom .expand() method.".
-                                      format(self.__class__.__name__, cls.__name__))
+            raise NotImplementedError(
+                "Subclass {} of {} that defines a custom __init__ method "
+                "must also define a custom .expand() method.".format(self.__class__.__name__, cls.__name__)
+            )
 
         return self.__new__(type(self)) if _instance is None else _instance
 
@@ -397,7 +398,7 @@ class StructuralStochasticProcess(ABC):
         new_parameters = OrderedDict([])
         for key, parameters in self.yield_parameters().items():
             new_parameters[key] = tuple(f(p) for p in parameters)
-        
+
         return new_parameters
 
     def _expand_parameters(self, batch_shape: torch.Size):
@@ -412,4 +413,6 @@ class StructuralStochasticProcess(ABC):
         """
 
         new_parameters = self._expand_parameters(batch_shape)
-        return StructuralStochasticProcess(self._kernel, new_parameters["parameters"], self._initial_kernel, new_parameters["initial_parameters"])
+        return StructuralStochasticProcess(
+            self._kernel, new_parameters["parameters"], self._initial_kernel, new_parameters["initial_parameters"]
+        )

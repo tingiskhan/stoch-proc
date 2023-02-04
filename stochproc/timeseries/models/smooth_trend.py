@@ -45,7 +45,7 @@ class SmoothLinearTrend(AffineHierarchicalProcess):
             mean_scale = _mean_scale_0d
         else:
             l_0, eps = broadcast_all(l_0, eps)
-            scaling, = broadcast_all(scaling)
+            (scaling,) = broadcast_all(scaling)
             scaling = scaling.expand(l_0.shape + scaling.shape)
 
             if scaling.shape[-1:] != trend_process.event_shape:
@@ -62,6 +62,8 @@ class SmoothLinearTrend(AffineHierarchicalProcess):
 
     def expand(self, batch_shape):
         new = self._get_checked_instance(SmoothLinearTrend)
-        super(AffineHierarchicalProcess, new).__init__(**{k: v.expand(batch_shape) for k, v in self.sub_processes.items()})
+        super(AffineHierarchicalProcess, new).__init__(
+            **{k: v.expand(batch_shape) for k, v in self.sub_processes.items()}
+        )
 
         return new

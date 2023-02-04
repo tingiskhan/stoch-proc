@@ -90,4 +90,10 @@ class LinearModel(AffineProcess):
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        return LinearModel(new_parameters["parameters"], self.increment_distribution, self._initial_kernel, new_parameters["initial_parameters"], self._parameter_transform)
+        return LinearModel(
+            new_parameters["parameters"],
+            self.increment_distribution,
+            self._initial_kernel,
+            new_parameters["initial_parameters"],
+            self._parameter_transform,
+        )

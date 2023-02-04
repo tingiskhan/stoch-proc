@@ -41,7 +41,7 @@ class LowerCholeskyAffineProcess(AffineProcess):
     # NB: We skip broadcasting here
     def mean_scale(self, x):
         return self.mean_scale_fun(x, *self.parameters)
-    
+
     def add_sub_process(self, sub_process):
         from .hierarchical import LowerCholeskyHierarchicalProcess
 

@@ -11,7 +11,7 @@ class HarmonicProcess(CyclicalProcess):
         .. math::
             \gamma_{t + 1} = \gamma \cos{ \lambda } + \gamma^*\sin{ \lambda } + \sigma \nu_{t + 1}, \newline
             \gamma^*_{t + 1} = -\gamma \sin { \lambda } + \gamma^* \cos{ \lambda } + \sigma^* \nu^*_{t + 1}.
-        
+
     See `statsmodels`_.
 
     .. _`statsmodels`: https://www.statsmodels.org/stable/generated/statsmodels.tsa.statespace.structural.UnobservedComponents.html#statsmodels.tsa.statespace.structural.UnobservedComponents

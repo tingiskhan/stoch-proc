@@ -108,4 +108,10 @@ class AffineProcess(StructuralStochasticProcess):
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        return AffineProcess(self.mean_scale_fun, new_parameters["parameters"], self.increment_distribution, self._initial_kernel, new_parameters["initial_parameters"])
+        return AffineProcess(
+            self.mean_scale_fun,
+            new_parameters["parameters"],
+            self.increment_distribution,
+            self._initial_kernel,
+            new_parameters["initial_parameters"],
+        )

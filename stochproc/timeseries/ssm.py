@@ -158,4 +158,10 @@ class LinearStateSpaceModel(StateSpaceModel, LinearModel):
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
 
-        return LinearStateSpaceModel(self.hidden.expand(batch_shape), new_parameters, self.event_shape, self.observe_every_step, self._parameter_transform)
+        return LinearStateSpaceModel(
+            self.hidden.expand(batch_shape),
+            new_parameters,
+            self.event_shape,
+            self.observe_every_step,
+            self._parameter_transform,
+        )
