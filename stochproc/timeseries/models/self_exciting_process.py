@@ -75,7 +75,4 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        new = self._get_checked_instance(SelfExcitingLatentProcesses)
-        new.__init__(*new_parameters["parameters"], dt=self.dt)
-
-        return new
+        return SelfExcitingLatentProcesses(*new_parameters["parameters"], dt=self.dt)

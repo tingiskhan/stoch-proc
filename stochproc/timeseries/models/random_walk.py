@@ -44,7 +44,4 @@ class RandomWalk(LinearModel):
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        new = self._get_checked_instance(RandomWalk)
-        new.__init__(new_parameters["parameters"][-1], new_parameters["initial_parameters"][0])
-
-        return new
+        return RandomWalk(new_parameters["parameters"][-1], new_parameters["initial_parameters"][0])

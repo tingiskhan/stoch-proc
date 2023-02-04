@@ -54,7 +54,4 @@ class CyclicalProcess(LinearModel):
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        new = self.__new__(CyclicalProcess)
-        new.__init__(*new_parameters["parameters"], *new_parameters["initial_parameters"])
-
-        return new
+        return CyclicalProcess(*new_parameters["parameters"], *new_parameters["initial_parameters"])

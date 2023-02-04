@@ -50,7 +50,4 @@ class Verhulst(AffineEulerMaruyama):
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        new = self._get_checked_instance(Verhulst)
-        new.__init__(*new_parameters["parameters"], self.dt)
-
-        return new
+        return Verhulst(*new_parameters["parameters"], self.dt)

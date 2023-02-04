@@ -84,9 +84,6 @@ class AR(LinearModel):
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        new = self._get_checked_instance(AR)
-
         params = new_parameters["parameters"]
-        new.__init__(params[1], params[0], params[-1], self.lags)
-
-        return new
+        
+        return AR(params[1], params[0], params[-1], self.lags)

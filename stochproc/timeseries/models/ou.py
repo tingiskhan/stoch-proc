@@ -53,7 +53,4 @@ class OrnsteinUhlenbeck(LinearModel):
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        new = self._get_checked_instance(OrnsteinUhlenbeck)
-        new.__init__(*new_parameters["parameters"], self._dt)
-
-        return new
+        return OrnsteinUhlenbeck(*new_parameters["parameters"], self._dt)

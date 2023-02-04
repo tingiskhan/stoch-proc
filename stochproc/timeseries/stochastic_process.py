@@ -412,7 +412,4 @@ class StructuralStochasticProcess(ABC):
         """
 
         new_parameters = self._expand_parameters(batch_shape)
-        new = self._get_checked_instance(StructuralStochasticProcess)
-        new.__init__(self._kernel, new_parameters["parameters"], self._initial_kernel, new_parameters["initial_parameters"])
-        
-        return new
+        return StructuralStochasticProcess(self._kernel, new_parameters["parameters"], self._initial_kernel, new_parameters["initial_parameters"])

@@ -116,10 +116,7 @@ class JointStochasticProcess(_JointMixin, StructuralStochasticProcess):
         return JointDistribution(*(sub_proc.build_density(x[k]) for k, sub_proc in self.sub_processes.items()))
 
     def expand(self, batch_shape):
-        new = self._get_checked_instance(JointStochasticProcess)
-        new.__init__(**{k: v.expand(batch_shape) for k, v in self.sub_processes.items()})
-
-        return new
+        return JointStochasticProcess(**{k: v.expand(batch_shape) for k, v in self.sub_processes.items()})
 
 
 class AffineJointStochasticProcess(_JointMixin, AffineProcess):
@@ -172,10 +169,7 @@ class AffineJointStochasticProcess(_JointMixin, AffineProcess):
         return torch.cat(mean, dim=-1), torch.cat(scale, dim=-1)
 
     def expand(self, batch_shape):
-        new = self._get_checked_instance(AffineJointStochasticProcess)
-        new.__init__(**{k: v.expand(batch_shape) for k, v in self.sub_processes.items()})
-
-        return new
+        return AffineJointStochasticProcess(**{k: v.expand(batch_shape) for k, v in self.sub_processes.items()})
 
 
 def _multiplier(
