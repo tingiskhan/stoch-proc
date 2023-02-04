@@ -34,9 +34,11 @@ class NegativeExponential(TransformedDistribution):
     def expand(self, batch_shape, _instance=None):
         new = self._get_checked_instance(NegativeExponential, _instance)
         batch_shape = torch.Size(batch_shape)
-        
+
         new_base_dist = self.base_dist.expand(batch_shape)
-        super(NegativeExponential, new).__init__(new_base_dist, transforms=self.transforms, validate_args=self._validate_args)
+        super(NegativeExponential, new).__init__(
+            new_base_dist, transforms=self.transforms, validate_args=self._validate_args
+        )
         return new
 
 
@@ -87,7 +89,7 @@ class DoubleExponential(ExponentialFamily):
         # eq. 30 in Hainaut&Moraux 2016
         # \phi(1, 0) =: c
         return self.p * (1.0 / self.rho_plus).exp() + (1 - self.p) * (1.0 / self.rho_minus).exp()
-    
+
     @property
     def rho_plus(self) -> torch.Tensor:
         return self._pos_exp.rate
@@ -103,21 +105,21 @@ class DoubleExponential(ExponentialFamily):
         Args:
             rho_plus (_type_): rate of positive exponential.
             rho_minus (_type_): rate of negative exponential.
-            p (_type_): probability of choosing negative exponential.            
+            p (_type_): probability of choosing negative exponential.
         """
 
         rho_plus, rho_minus, self.p = broadcast_all(rho_plus, rho_minus, p)
 
         self._pos_exp = Exponential(rho_plus, validate_args=False)
         self._neg_exp = NegativeExponential(rho_minus, validate_args=False)
-        
+
         super().__init__(self._neg_exp.batch_shape, validate_args=validate_args)
         self.c = self.phi_fun
 
     def expand(self, batch_shape, _instance=None):
         new = self._get_checked_instance(DoubleExponential, _instance)
         batch_shape = torch.Size(batch_shape)
-        
+
         new.p = self.p.expand(batch_shape)
         new._pos_exp = self._pos_exp.expand(batch_shape)
         new._neg_exp = self._neg_exp.expand(batch_shape)
@@ -143,18 +145,16 @@ class DoubleExponential(ExponentialFamily):
             self._validate_sample(value)
 
         log_prob = torch.where(
-            value >= 0.0,
-            (1.0 - self.p) * self._pos_exp.log_prob(value),
-            self.p * self._neg_exp.log_prob(value)
+            value >= 0.0, (1.0 - self.p) * self._pos_exp.log_prob(value), self.p * self._neg_exp.log_prob(value)
         )
 
         return log_prob
-    
+
     def cdf(self, value):
         if self._validate_args:
             self._validate_sample(value)
 
-        one_mp = (1.0 - self.p)
+        one_mp = 1.0 - self.p
         cdf = torch.where(
             value >= 0.0,
             one_mp + self.p * self._pos_exp.cdf(value),

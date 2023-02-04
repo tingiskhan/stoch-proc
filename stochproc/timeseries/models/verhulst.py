@@ -47,3 +47,7 @@ class Verhulst(AffineEulerMaruyama):
         )
 
         super().__init__(_f, (kappa, gamma, sigma), increment_distribution, dt, _initial_kernel)
+
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        return Verhulst(*new_parameters["parameters"], self.dt)

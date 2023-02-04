@@ -1,20 +1,20 @@
 import torch
-from pyro.distributions import Normal
+from pyro.distributions import Normal, Delta
 from torch.distributions.utils import broadcast_all
 
 from ...typing import ParameterType
 from ..affine import AffineProcess
 
 
-def f(x, sigma_volatility):
+def _f(x, sigma_volatility):
     x1 = x.value[..., 1].exp()
     x2 = sigma_volatility
 
     return x.value, torch.stack(torch.broadcast_tensors(x1, x2), dim=-1)
 
 
-def initial_kernel(loc, sigma_volatility):
-    return Normal(loc=loc, scale=sigma_volatility.unsqueeze(-1)).to_event(1)
+def _initial_kernel(loc):
+    return Delta(loc, event_dim=1)
 
 
 class UCSV(AffineProcess):
@@ -45,8 +45,12 @@ class UCSV(AffineProcess):
                 loc=torch.tensor(0.0, device=sigma_volatility.device),
                 scale=torch.tensor(1.0, device=sigma_volatility.device),
             )
-            .expand(sigma_volatility.shape + torch.Size([2]))
+            .expand(torch.Size([2]))
             .to_event(1)
         )
 
-        super().__init__(f, (sigma_volatility,), increment_dist, initial_kernel, (initial_state_mean, sigma_volatility))
+        super().__init__(_f, (sigma_volatility,), increment_dist, _initial_kernel, (initial_state_mean,))
+
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        return UCSV(new_parameters["parameters"][0], new_parameters["initial_parameters"][0])

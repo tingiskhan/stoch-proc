@@ -1,5 +1,3 @@
-from functools import partial
-
 import torch
 from torch.distributions.utils import broadcast_all
 
@@ -29,3 +27,7 @@ class Seasonal(AR):
 
         alpha = torch.ones(sigma.shape + torch.Size([period]), device=sigma.device)
         super().__init__(torch.zeros_like(sigma), alpha, sigma, lags=period)
+
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        return Seasonal(self.lags, new_parameters["parameters"][-1])

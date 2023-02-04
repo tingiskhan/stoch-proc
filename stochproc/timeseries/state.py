@@ -1,4 +1,5 @@
 from typing import Callable, Union
+from collections import OrderedDict
 
 import torch
 
@@ -82,7 +83,7 @@ class TimeseriesState(dict):
         return TimeseriesState(time_index=self.time_index + time_increment, values=values, event_shape=self.event_shape)
 
     def __repr__(self):
-        return f"TimeseriesState at t={self.time_index} containing: {self.value.__repr__()}"
+        return f"{self.__class__.__name__} at t={self.time_index} of shape {self.event_shape}"
 
 
 class JointState(TimeseriesState):
@@ -102,7 +103,7 @@ class JointState(TimeseriesState):
         """
 
         time_index = tuple(sub_states.values())[0].time_index
-        event_dim = torch.Size([sum(ss.event_shape[0] if any(ss.event_shape) else 1 for ss in sub_states.values())])
+        event_dim = torch.Size([sum(ss.event_shape.numel() for ss in sub_states.values())])
         super().__init__(time_index=time_index, event_shape=event_dim, values=None)
 
         self._sub_states_order = tuple(sub_states.keys())
@@ -124,13 +125,12 @@ class JointState(TimeseriesState):
 
     def propagate_from(self, values: LazyTensor, time_increment=1.0):
         # NB: This is a hard assumption that the values are in the correct order...
-        result = dict()
-
         last_ind = 0
 
         if callable(values):
             values = values()
 
+        result = OrderedDict([])
         for sub_state_name in self._sub_states_order:
             sub_state: TimeseriesState = self[sub_state_name]
 
@@ -140,7 +140,12 @@ class JointState(TimeseriesState):
             result[sub_state_name] = sub_state.propagate_from(sub_values, time_increment=time_increment)
             last_ind += dimension
 
-        return JointState(**result)
+        new = self.__new__(type(self))
+        super(JointState, new).__init__(self.time_index + time_increment, None, self.event_shape)
+        new._sub_states_order = self._sub_states_order
+        new.update(result)
+
+        return new
 
 
 class StateSpaceModelState(JointState):

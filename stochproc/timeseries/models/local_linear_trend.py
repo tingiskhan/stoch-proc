@@ -1,13 +1,13 @@
 import torch
-from pyro.distributions import Normal
+from pyro.distributions import Normal, Delta
 from torch.distributions.utils import broadcast_all
 
 from ...typing import ParameterType
 from ..linear import LinearModel
 
 
-def initial_kernel(x_0, sigma):
-    return Normal(x_0, sigma).to_event(1)
+def _initial_kernel(x_0):
+    return Delta(x_0, event_dim=1)
 
 
 class LocalLinearTrend(LinearModel):
@@ -32,7 +32,7 @@ class LocalLinearTrend(LinearModel):
 
         sigma = broadcast_all(sigma)[0]
 
-        if not initial_mean:
+        if initial_mean is None:
             initial_mean = torch.zeros_like(sigma)
         else:
             sigma, initial_mean = broadcast_all(sigma, initial_mean)
@@ -48,6 +48,10 @@ class LocalLinearTrend(LinearModel):
         super().__init__(
             (a, sigma),
             increment_distribution=increment_dist,
-            initial_kernel=initial_kernel,
-            initial_parameters=(initial_mean, sigma),
+            initial_kernel=_initial_kernel,
+            initial_parameters=(initial_mean,),
         )
+
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        return LocalLinearTrend(new_parameters["parameters"][-1], new_parameters["initial_parameters"][0])

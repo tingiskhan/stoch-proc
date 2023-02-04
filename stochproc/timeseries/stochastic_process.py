@@ -1,4 +1,5 @@
 from abc import ABC
+from collections import OrderedDict
 from contextlib import contextmanager
 from copy import deepcopy
 from typing import Callable, Sequence, Tuple, TypeVar, Dict
@@ -26,7 +27,7 @@ class StructuralStochasticProcess(ABC):
         .. math::
             p(x_0, ..., x_t) = p(x_0) \prod^t_{k=1} p(x_k \mid x_{1:k-1})
 
-    Derived classes should override the ``.build_distribution(...)`` method, which builds the distribution of
+    Derived classes should override the :meth:`build_density` method, which builds the distribution of
     :math:`X_{t+1}` given :math:`\{ X_j \}_{j \leq t}`.
     """
 
@@ -366,3 +367,52 @@ class StructuralStochasticProcess(ABC):
             yield self
         finally:
             self.parameters = old_parameters
+
+    def _get_checked_instance(self: T, cls, _instance=None) -> T:
+        """
+        Basically copies the method of same name in :class:`torch.distributions.Distribution` .
+
+        Returns:
+            StructuralStochasticProcess: new instance.
+        """
+
+        if _instance is None and type(self).__init__ != cls.__init__:
+            raise NotImplementedError(
+                "Subclass {} of {} that defines a custom __init__ method "
+                "must also define a custom .expand() method.".format(self.__class__.__name__, cls.__name__)
+            )
+
+        return self.__new__(type(self)) if _instance is None else _instance
+
+    def _apply_parameters(self, f: Callable[[torch.Tensor], torch.Tensor]) -> Dict[str, Sequence[ParameterType]]:
+        """
+        Applies `f` to each tensor and returns a dictionary.
+
+        Args:
+            batch_shape (torch.Size): batch shape to use.
+
+        Returns:
+            Dict[str, Tuple[ParameterType, ...]]: dictionary index by `parameters` and `initial_parameters`.
+        """
+
+        new_parameters = OrderedDict([])
+        for key, parameters in self.yield_parameters().items():
+            new_parameters[key] = tuple(f(p) for p in parameters)
+
+        return new_parameters
+
+    def _expand_parameters(self, batch_shape: torch.Size):
+        return self._apply_parameters(lambda u: u.expand(batch_shape + u.shape))
+
+    def expand(self: T, batch_shape: torch.Size) -> T:
+        """
+        Expands parameters of self by `batch_size`.
+
+        Args:
+            batch_shape (torch.Size): batch shape to use.
+        """
+
+        new_parameters = self._expand_parameters(batch_shape)
+        return StructuralStochasticProcess(
+            self._kernel, new_parameters["parameters"], self._initial_kernel, new_parameters["initial_parameters"]
+        )

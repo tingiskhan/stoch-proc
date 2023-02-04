@@ -35,10 +35,10 @@ class JointDistribution(Distribution):
             kwargs: Key-worded arguments passed to base class.
         """
 
-        _indices = indices or self.infer_indices(*distributions)
-        event_shape = torch.Size(
-            [sum(1 if not isinstance(inds, slice) else inds.stop - inds.start for inds in _indices)]
-        )
+        if any(len(d.event_shape) > 1 for d in distributions):
+            raise NotImplementedError("Currently cannot handle matrix valued distributions!")
+
+        event_shape = torch.Size([sum(d.event_shape.numel() for d in distributions)])
 
         batch_shapes = [(d.batch_shape.numel(), d.batch_shape) for d in distributions]
         single_batch_shape = sorted(batch_shapes, key=lambda u: u[0])[-1][1]
@@ -46,14 +46,11 @@ class JointDistribution(Distribution):
 
         super().__init__(event_shape=event_shape, batch_shape=single_batch_shape, **kwargs)
 
-        if any(len(d.event_shape) > 1 for d in distributions):
-            raise NotImplementedError("Currently cannot handle matrix valued distributions!")
-
         self.distributions = distributions
-        self.indices = _indices
+        self.indices = indices if indices is not None else self.infer_indices(*distributions)
 
     def expand(self, batch_shape, _instance=None):
-        return JointDistribution(*(d.expand(batch_shape) for d in self.distributions))
+        return JointDistribution(*(d.expand(batch_shape) for d in self.distributions), indices=self.indices)
 
     @property
     def support(self) -> Optional[Any]:
@@ -110,20 +107,17 @@ class JointDistribution(Distribution):
 
         res = tuple()
 
-        length = 0
-        for i, d in enumerate(distributions):
-            multi_dimensional = len(d.event_shape) > 0
+        left = 0
+        for sub_dist in distributions:
+            numel = sub_dist.event_shape.numel()
 
-            if multi_dimensional:
-                size = d.event_shape[-1]
-                slice_ = slice(length, size + length)
-
-                length += slice_.stop
+            if numel > 1:
+                indexes = slice(left, left + numel)
             else:
-                slice_ = length
-                length += 1
+                indexes = left
 
-            res += (slice_,)
+            res += (indexes,)
+            left += numel
 
         return res
 

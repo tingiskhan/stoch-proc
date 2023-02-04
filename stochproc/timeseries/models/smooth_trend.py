@@ -1,5 +1,5 @@
 import torch
-from pyro.distributions import Normal
+from pyro.distributions import Normal, Delta
 from torch.distributions.utils import broadcast_all
 
 from ...typing import ParameterType
@@ -7,12 +7,16 @@ from ..affine import AffineProcess
 from ..hierarchical import AffineHierarchicalProcess
 
 
-def _mean_scale(x, s, lam):
+def _mean_scale_0d(x, s, lam):
     return x.value + lam * x["sub"].value, s
 
 
-def initial_kernel(l_0, eps):
-    return Normal(l_0, eps)
+def _mean_scale_1d(x, s, lam):
+    return x.value + (lam.unsqueeze(-2) @ x["sub"].value.unsqueeze(-1)).reshape(x.value.shape), s
+
+
+def initial_kernel(l_0):
+    return Delta(l_0)
 
 
 class SmoothLinearTrend(AffineHierarchicalProcess):
@@ -36,11 +40,30 @@ class SmoothLinearTrend(AffineHierarchicalProcess):
             scaling: factor to apply to sub process.
         """
 
-        l_0, scaling, eps = broadcast_all(l_0, scaling, eps)
+        if trend_process.n_dim == 0:
+            l_0, eps, scaling = broadcast_all(l_0, eps, scaling)
+            mean_scale = _mean_scale_0d
+        else:
+            l_0, eps = broadcast_all(l_0, eps)
+            (scaling,) = broadcast_all(scaling)
+            scaling = scaling.expand(l_0.shape + scaling.shape)
+
+            if scaling.shape[-1:] != trend_process.event_shape:
+                raise Exception("Shapes not congruent!")
+
+            mean_scale = _mean_scale_1d
 
         inc_dist = Normal(torch.tensor(0.0, device=l_0.device), torch.tensor(1.0, device=l_0.device))
         level_process = AffineProcess(
-            _mean_scale, (eps, scaling), inc_dist, initial_kernel=initial_kernel, initial_parameters=(l_0, eps)
+            mean_scale, (eps, scaling), inc_dist, initial_kernel=initial_kernel, initial_parameters=(l_0,)
         )
 
         super().__init__(trend_process, level_process)
+
+    def expand(self, batch_shape):
+        new = self._get_checked_instance(SmoothLinearTrend)
+        super(AffineHierarchicalProcess, new).__init__(
+            **{k: v.expand(batch_shape) for k, v in self.sub_processes.items()}
+        )
+
+        return new

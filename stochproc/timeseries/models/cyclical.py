@@ -18,8 +18,9 @@ def _parameter_transform(rho, lamda, s):
     a_bottom = torch.stack([-sin_lam, cos_lam], dim=-1)
 
     a = torch.stack([a_top, a_bottom], dim=-2)
+    new_s = s.unsqueeze(-1).expand(a.shape[:-1])
 
-    return a, torch.zeros_like(s), s
+    return a, torch.zeros_like(new_s), new_s
 
 
 class CyclicalProcess(LinearModel):
@@ -45,8 +46,20 @@ class CyclicalProcess(LinearModel):
         if x_0 is None:
             x_0 = torch.zeros(2, device=lamda.device)
 
-        distribution = Normal(
-            torch.tensor(0.0, device=rho.device), torch.tensor(1.0, device=rho.device)
-            ).expand(torch.Size([2])).to_event(1)
-        
-        super().__init__((rho, lamda, sigma), distribution, _initial_kernel, initial_parameters=(x_0,), parameter_transform=_parameter_transform)
+        distribution = (
+            Normal(torch.tensor(0.0, device=rho.device), torch.tensor(1.0, device=rho.device))
+            .expand(torch.Size([2]))
+            .to_event(1)
+        )
+
+        super().__init__(
+            (rho, lamda, sigma),
+            distribution,
+            _initial_kernel,
+            initial_parameters=(x_0,),
+            parameter_transform=_parameter_transform,
+        )
+
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        return CyclicalProcess(*new_parameters["parameters"], *new_parameters["initial_parameters"])

@@ -8,23 +8,21 @@ from ..state import TimeseriesState
 from ...typing import ParameterType
 
 
-def _initial_kernel(alpha, xi, _, de):
+def _initial_kernel(alpha, xi, _, p, rho_plus, rho_minus):
+    de = DoubleExponential(p=p, rho_plus=rho_plus, rho_minus=rho_minus)
     exp_j2 = de.p * 2.0 * de.rho_plus.pow(-2.0) + (1.0 - de.p) * 2.0 * de.rho_minus.pow(-2.0)
 
     std_lambda = exp_j2.sqrt() * xi
-    dist_ = TransformedDistribution(
-        Normal(torch.zeros_like(alpha), torch.ones_like(alpha)),
-        [t.AffineTransform(xi, std_lambda), t.AbsTransform()],
-    )
+    dist_ = TransformedDistribution(Normal(xi, std_lambda), t.AbsTransform())
 
     return JointDistribution(dist_, Delta(torch.zeros_like(std_lambda)))
 
 
 class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
     """
-    Class defining the process for the instantaneous frequency of jumps, where jumps are distributed as a double 
+    Class defining the process for the instantaneous frequency of jumps, where jumps are distributed as a double
     exponential r.v. See `this_` paper for example.
-    
+
     .. _`this`: https://www.researchgate.net/publication/327672329_Hedging_of_options_in_presence_of_jump_clustering
     """
 
@@ -50,12 +48,10 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
             rho_plus (ParameterType): _description_
         """
 
-        self.de = DoubleExponential(p=p, rho_plus=rho_plus, rho_minus=rho_minus)
-        init_kernel = partial(_initial_kernel, de=self.de)
+        init_kernel = partial(_initial_kernel)
+        super().__init__(self.kernel, (alpha, xi, eta, p, rho_plus, rho_minus), initial_kernel=init_kernel, **kwargs)
 
-        super().__init__(self.kernel, (alpha, xi, eta), initial_kernel=init_kernel, **kwargs)
-
-    def kernel(self, x: TimeseriesState, alpha, xi, eta) -> Distribution:
+    def kernel(self, x: TimeseriesState, alpha, xi, eta, p, rho_plus, rho_minus) -> Distribution:
         r"""
         Joint density for the realizations of :math:`(\lambda_t, dN_t, \lambda_s, q)`.
         """
@@ -65,7 +61,7 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
         intensity = (lambda_s * self.dt).nan_to_num(0.0, 0.0, 0.0).clip(min=0.0)
         dn_t = Poisson(rate=intensity).sample()
 
-        de = self.de.expand(lambda_s.shape)
+        de = DoubleExponential(p=p, rho_plus=rho_plus, rho_minus=rho_minus).expand(lambda_s.shape)
         dl_t = de.sample() * dn_t
 
         deterministic = alpha * (xi - lambda_s) * self.dt
@@ -76,3 +72,7 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
         combined = torch.stack((lambda_t, dl_t), dim=-1)
 
         return Delta(combined, event_dim=1)
+
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        return SelfExcitingLatentProcesses(*new_parameters["parameters"], dt=self.dt)

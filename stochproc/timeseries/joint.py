@@ -37,7 +37,7 @@ class _JointMixin(object):
         )
         self._initial_kernel = partial(_initial_kernel, sub_processes=self.sub_processes)
         self._event_shape = self.initial_distribution.event_shape
-                
+
         self.parameters = ()
         self.initial_parameters = ()
 
@@ -62,12 +62,12 @@ class _JointMixin(object):
 
     @contextmanager
     def override_parameters(self, parameters: Dict[str, Sequence[ParameterType]]):
-        try:        
+        try:
             t = (self.sub_processes[k].override_parameters(v) for k, v in parameters.items())
             with ExitStack() as stack:
                 for cm in t:
                     stack.enter_context(cm)
-                    
+
                 yield self
         finally:
             pass
@@ -115,6 +115,9 @@ class JointStochasticProcess(_JointMixin, StructuralStochasticProcess):
     def _joint_kernel(self, x: TimeseriesState) -> Distribution:
         return JointDistribution(*(sub_proc.build_density(x[k]) for k, sub_proc in self.sub_processes.items()))
 
+    def expand(self, batch_shape):
+        return JointStochasticProcess(**{k: v.expand(batch_shape) for k, v in self.sub_processes.items()})
+
 
 class AffineJointStochasticProcess(_JointMixin, AffineProcess):
     r"""
@@ -160,10 +163,15 @@ class AffineJointStochasticProcess(_JointMixin, AffineProcess):
         for proc_name, proc in self.sub_processes.items():
             m, s = proc.mean_scale(x[proc_name])
 
-            mean += (m.unsqueeze(-1) if proc.n_dim == 0 else m,)
-            scale += (s.unsqueeze(-1) if proc.n_dim == 0 else s,)
+            do_unsqueeze = proc.n_dim == 0
+
+            mean += (m.unsqueeze(-1) if do_unsqueeze else m,)
+            scale += (s.unsqueeze(-1) if do_unsqueeze else s,)
 
         return torch.cat(mean, dim=-1), torch.cat(scale, dim=-1)
+
+    def expand(self, batch_shape):
+        return AffineJointStochasticProcess(**{k: v.expand(batch_shape) for k, v in self.sub_processes.items()})
 
 
 def _multiplier(

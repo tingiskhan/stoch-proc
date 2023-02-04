@@ -50,7 +50,7 @@ class AR(LinearModel):
         """
 
         alpha, sigma = broadcast_all(alpha, sigma)
-        beta = broadcast_all(beta)[0]
+        (beta,) = broadcast_all(beta)
 
         if (lags > 1) and (beta.shape[-1] != lags):
             raise Exception(f"Mismatch between shapes: {alpha.value.shape[-1]} != {lags}")
@@ -62,8 +62,10 @@ class AR(LinearModel):
 
         bottom_shape = self.lags - 1, self.lags
 
-        self._bottom = torch.eye(*bottom_shape, device=alpha.device)
-        self._b_masker = torch.eye(self.lags, 1, device=alpha.device).squeeze(-1)
+        self._bottom = torch.eye(*bottom_shape, device=beta.device).expand(beta.shape[:-1] + bottom_shape)
+        self._b_masker = (
+            torch.eye(self.lags, 1, device=alpha.device).squeeze(-1).expand(beta.shape[:-1] + torch.Size([self.lags]))
+        )
 
         super().__init__(
             (beta, alpha, sigma),
@@ -76,12 +78,14 @@ class AR(LinearModel):
         if self.lags == 1:
             return a, b, s
 
-        batch_shape = a.shape[:-1]
+        a = torch.cat((a.unsqueeze(-2), self._bottom), dim=-2)
+        b = self._b_masker * b.unsqueeze(-1)
+        s = self._b_masker * s.unsqueeze(-1)
 
-        mask = torch.ones((*batch_shape, *self._bottom.shape), device=a.device)
-        bottom = self._bottom * mask
+        return a, b, s
 
-        a = torch.cat((a.unsqueeze(-2), bottom), dim=-2)
-        b = self._b_masker * b
+    def expand(self, batch_shape):
+        new_parameters = self._expand_parameters(batch_shape)
+        params = new_parameters["parameters"]
 
-        return a, b, s.unsqueeze(-1)
+        return AR(params[1], params[0], params[-1], self.lags)
