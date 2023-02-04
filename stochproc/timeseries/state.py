@@ -83,7 +83,7 @@ class TimeseriesState(dict):
         return TimeseriesState(time_index=self.time_index + time_increment, values=values, event_shape=self.event_shape)
 
     def __repr__(self):
-        return f"TimeseriesState at t={self.time_index} containing: {self.value.__repr__()}"
+        return f"{self.__class__.__name__} at t={self.time_index} of shape {self.event_shape}"
 
 
 class JointState(TimeseriesState):
