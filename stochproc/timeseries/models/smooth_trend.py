@@ -7,8 +7,12 @@ from ..affine import AffineProcess
 from ..hierarchical import AffineHierarchicalProcess
 
 
-def _mean_scale(x, s, lam):
+def _mean_scale_0d(x, s, lam):
     return x.value + lam * x["sub"].value, s
+
+
+def _mean_scale_1d(x, s, lam):
+    return x.value + (lam.unsqueeze(-2) @ x["sub"].value.unsqueeze(-1)).reshape(x.value.shape), s
 
 
 def initial_kernel(l_0):
@@ -36,11 +40,17 @@ class SmoothLinearTrend(AffineHierarchicalProcess):
             scaling: factor to apply to sub process.
         """
 
-        l_0, scaling, eps = broadcast_all(l_0, scaling, eps)
+        l_0, eps = broadcast_all(l_0, eps)
+        scaling, = broadcast_all(scaling)
+
+        if scaling.shape != trend_process.event_shape:
+            raise Exception("Shapes not congruent!")
+        
+        mean_scale = _mean_scale_1d if trend_process.n_dim > 0 else _mean_scale_0d
 
         inc_dist = Normal(torch.tensor(0.0, device=l_0.device), torch.tensor(1.0, device=l_0.device))
         level_process = AffineProcess(
-            _mean_scale, (eps, scaling), inc_dist, initial_kernel=initial_kernel, initial_parameters=(l_0,)
+            mean_scale, (eps, scaling), inc_dist, initial_kernel=initial_kernel, initial_parameters=(l_0,)
         )
 
         super().__init__(trend_process, level_process)
