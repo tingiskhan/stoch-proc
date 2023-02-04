@@ -40,13 +40,18 @@ class SmoothLinearTrend(AffineHierarchicalProcess):
             scaling: factor to apply to sub process.
         """
 
-        l_0, eps = broadcast_all(l_0, eps)
-        scaling, = broadcast_all(scaling)
+        if trend_process.n_dim == 0:
+            l_0, eps, scaling = broadcast_all(l_0, eps, scaling)
+            mean_scale = _mean_scale_0d
+        else:
+            l_0, eps = broadcast_all(l_0, eps)
+            scaling, = broadcast_all(scaling)
+            scaling = scaling.expand(l_0.shape + scaling.shape)
 
-        if scaling.shape != trend_process.event_shape:
-            raise Exception("Shapes not congruent!")
-        
-        mean_scale = _mean_scale_1d if trend_process.n_dim > 0 else _mean_scale_0d
+            if scaling.shape[-1:] != trend_process.event_shape:
+                raise Exception("Shapes not congruent!")
+
+            mean_scale = _mean_scale_1d
 
         inc_dist = Normal(torch.tensor(0.0, device=l_0.device), torch.tensor(1.0, device=l_0.device))
         level_process = AffineProcess(
