@@ -383,7 +383,7 @@ class StructuralStochasticProcess(ABC):
 
         return self.__new__(type(self)) if _instance is None else _instance
 
-    def apply_parameters(self, f: Callable[[torch.Tensor], torch.Tensor]) -> Dict[str, Sequence[ParameterType]]:
+    def _apply_parameters(self, f: Callable[[torch.Tensor], torch.Tensor]) -> Dict[str, Sequence[ParameterType]]:
         """
         Applies `f` to each tensor and returns a dictionary.
 
@@ -401,7 +401,7 @@ class StructuralStochasticProcess(ABC):
         return new_parameters
 
     def _expand_parameters(self, batch_shape: torch.Size):
-        return self.apply_parameters(lambda u: u.expand(batch_shape + u.shape))
+        return self._apply_parameters(lambda u: u.expand(batch_shape + u.shape))
 
     def expand(self: T, batch_shape: torch.Size) -> T:
         """
