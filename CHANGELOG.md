@@ -3,7 +3,9 @@
 ## Versions
 
 ### v0.2.5
- - Use `Delta` distribution for some models
+ - Use `Delta` distribution for some models.
+ - Improved handling of joint state by skipping creating from scratch all the time.
+ - Adds `expand` method for creating batched sampling.
 
 ### v0.2.4
  - Adds `CyclicalProcess` and "fixes" `HarmonicProcess`
