@@ -15,7 +15,7 @@ def _initial_kernel(init_probabilities):
 
 
 class HiddenMarkovModel(StructuralStochasticProcess):
-    r"""
+    """
     Implements a discrete `Hidden Markov Model`_.
 
     .. _`Hidden Markov Model`: https://en.wikipedia.org/wiki/Hidden_Markov_model
