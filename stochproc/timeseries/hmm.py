@@ -33,7 +33,7 @@ class HiddenMarkovModel(StructuralStochasticProcess):
         Args:
             transition_matrix (ParameterType): transition probabilities.
             initial_probabilities (ParameterType): initial probabilities.
-            parameter_transform (ParameterType): function for transforming parameters.
+            parameter_transform (Callable[[Sequence[torch.Tensor]], Sequence[torch.Tensor]]): function for transforming parameters.
         """
 
         if transition_matrix.shape[-1] != transition_matrix.shape[-2]:
