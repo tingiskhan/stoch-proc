@@ -19,6 +19,8 @@ from .state import TimeseriesState, JointState
 from .stochastic_process import StructuralStochasticProcess
 from .hierarchical import AffineHierarchicalProcess
 from .chol_affine import LowerCholeskyAffineProcess
+from .hmm import HiddenMarkovModel
+
 
 # TODO: Remove TimeseriesState and BatchedState
 __all__ = [
@@ -42,4 +44,5 @@ __all__ = [
     "LowerCholeskyJointStochasticProcess",
     "joint_process",
     "LinearStateSpaceModel",
+    "HiddenMarkovModel",
 ]

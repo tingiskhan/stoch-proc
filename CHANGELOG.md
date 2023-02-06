@@ -2,6 +2,9 @@
 
 ## Versions
 
+### v0.2.6
+ - Adds the `HiddenMarkovModel`.
+
 ### v0.2.5
  - Use `Delta` distribution for some models.
  - Improved handling of joint state by skipping creating from scratch all the time.
