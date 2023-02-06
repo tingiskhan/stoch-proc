@@ -8,7 +8,7 @@ from .stochastic_process import StructuralStochasticProcess
 
 def _parameter_transform(*parameters):
     return parameters[0]
-    
+
 
 def _find_initial_probabilities(probs: torch.Tensor) -> torch.Tensor:
     ones = torch.ones(probs.shape[:-1], device=probs.device).unsqueeze(-2)
@@ -39,8 +39,7 @@ class HiddenMarkovModel(StructuralStochasticProcess):
         Internal initializer for :class:`HiddenMarkovModel`.
 
         Args:
-            transition_matrix (ParameterType): transition probabilities.
-            initial_probabilities (ParameterType): initial probabilities.
+            parameters (Sequence[ParameterType]): transition probabilities.
             parameter_transform (Callable[[Sequence[torch.Tensor]], Sequence[torch.Tensor]]): function for transforming parameters. Defaults to returning the first parameter as is.
         """
 
@@ -54,10 +53,8 @@ class HiddenMarkovModel(StructuralStochasticProcess):
 
         self._parameter_transform = parameter_transform
 
-        super().__init__(
-            self._hmm_kernel, parameters, self._initial_hmm_kernel, initial_parameters=()
-        )
-        
+        super().__init__(self._hmm_kernel, parameters, self._initial_hmm_kernel, initial_parameters=())
+
     @property
     def initial_probabilities(self) -> torch.Tensor:
         """
