@@ -142,7 +142,7 @@ class LinearStateSpaceModel(StateSpaceModel, LinearModel):
             increment_distribution = increment_distribution.expand(event_shape).to_event(1)
 
         LinearModel.__init__(
-            self, coerced_parameters, increment_distribution, None, None, parameter_transform=parameter_transform
+            self, coerced_parameters, increment_distribution, None, None
         )
         StateSpaceModel.__init__(self, hidden, self._kernel, coerced_parameters, observe_every_step=observe_every_step)
 

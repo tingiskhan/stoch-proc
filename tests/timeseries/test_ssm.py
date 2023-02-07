@@ -54,7 +54,7 @@ class TestSSM(object):
     @pytest.mark.parametrize("sample_every", SAMPLE_EVERY)
     def test_linear_ssm(self, batch_shape, sample_initial, sample_every):
         rw = ts.models.RandomWalk(0.05)
-        ssm = ts.LinearStateSpaceModel(rw, (torch.tensor([1.0, 0.01]).unsqueeze(-1), 1.0), torch.Size([2]), observe_every_step=sample_every)
+        ssm = ts.LinearStateSpaceModel(rw, (torch.tensor([1.0, 0.01]).unsqueeze(-1), 0.0, 1.0), torch.Size([2]), observe_every_step=sample_every)
 
         x_0 = rw.initial_sample(batch_shape) if sample_initial else None
 
