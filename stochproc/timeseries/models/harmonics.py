@@ -35,6 +35,6 @@ class HarmonicProcess(CyclicalProcess):
         new_parameters = self._expand_parameters(batch_shape)
         new = self._get_checked_instance(HarmonicProcess)
 
-        super(HarmonicProcess, new).__init__(*new_parameters["parameters"], *new_parameters["initial_parameters"])
+        super(CyclicalProcess, new).__init__(new_parameters["parameters"], self.increment_distribution, self._initial_kernel, new_parameters["initial_parameters"])
 
         return new

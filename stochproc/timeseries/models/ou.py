@@ -38,10 +38,9 @@ class OrnsteinUhlenbeck(LinearModel):
         self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
 
         super().__init__(
-            (kappa, gamma, sigma),
+            self._param_transform(kappa, gamma, sigma),
             increment_distribution,
             initial_kernel=initial_kernel,
-            parameter_transform=self._param_transform,
         )
 
     def _param_transform(self, k, g, s):
@@ -53,4 +52,9 @@ class OrnsteinUhlenbeck(LinearModel):
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        return OrnsteinUhlenbeck(*new_parameters["parameters"], self._dt)
+        new = self._get_checked_instance(OrnsteinUhlenbeck)
+
+        super(OrnsteinUhlenbeck, new).__init__(new_parameters["parameters"], self.increment_distribution, self._initial_kernel, new_parameters["initial_parameters"])
+        new._dt = self._dt
+
+        return new

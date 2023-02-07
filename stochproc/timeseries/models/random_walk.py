@@ -36,7 +36,7 @@ class RandomWalk(LinearModel):
         a = torch.tensor(1.0, device=scale.device, dtype=scale.dtype)
 
         super().__init__(
-            (a, scale),
+            (a, torch.zeros_like(scale), scale),
             increment_distribution=increment_distribution,
             initial_kernel=_initial_kernel,
             initial_parameters=(initial_mean,),
@@ -44,4 +44,7 @@ class RandomWalk(LinearModel):
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        return RandomWalk(new_parameters["parameters"][-1], new_parameters["initial_parameters"][0])
+        new = self._get_checked_instance(RandomWalk)
+        super(RandomWalk, new).__init__(new_parameters["parameters"], self.increment_distribution, self._initial_kernel, new_parameters["initial_parameters"])
+
+        return new

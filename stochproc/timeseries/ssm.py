@@ -2,8 +2,8 @@ import pyro
 import torch
 from pyro.distributions import Distribution, Normal
 
-from stochproc.timeseries.linear import LinearModel, default_transform
-from stochproc.timeseries.utils import coerce_tensors
+from .linear import LinearModel
+from .utils import coerce_tensors
 
 from .result import StateSpacePath
 from .state import StateSpaceModelState, TimeseriesState
@@ -122,7 +122,6 @@ class LinearStateSpaceModel(StateSpaceModel, LinearModel):
         parameters,
         event_shape: torch.Size,
         observe_every_step=1,
-        parameter_transform=default_transform,
     ):
         """
         Internal initializer for :class:`LinearStateSpaceModel`.
@@ -163,5 +162,4 @@ class LinearStateSpaceModel(StateSpaceModel, LinearModel):
             new_parameters,
             self.event_shape,
             self.observe_every_step,
-            self._parameter_transform,
         )
