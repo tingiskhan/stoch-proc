@@ -41,6 +41,7 @@ class OrnsteinUhlenbeck(LinearModel):
             self._param_transform(kappa, gamma, sigma),
             increment_distribution,
             initial_kernel=initial_kernel,
+            initial_parameters=(kappa, gamma, sigma),
         )
 
     def _param_transform(self, k, g, s):
