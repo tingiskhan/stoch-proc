@@ -144,7 +144,7 @@ class LinearStateSpaceModel(StateSpaceModel, LinearModel):
         LinearModel.__init__(
             self, coerced_parameters, increment_distribution, None, None
         )
-        StateSpaceModel.__init__(self, hidden, self._kernel, coerced_parameters, observe_every_step=observe_every_step)
+        StateSpaceModel.__init__(self, hidden, self._kernel, self.parameters, observe_every_step=observe_every_step)
 
         self._event_shape = event_shape
 

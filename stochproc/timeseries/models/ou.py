@@ -6,11 +6,10 @@ from ...typing import ParameterType
 from ..linear import LinearModel
 
 
-def initial_kernel(kappa, gamma, sigma):
+def _initial_kernel(kappa, gamma, sigma):
     return Normal(loc=gamma, scale=sigma / (2 * kappa).sqrt())
 
 
-# TODO: Should perhaps inherit from StochasticDifferentialEquation?
 class OrnsteinUhlenbeck(LinearModel):
     r"""
     Implements the solved Ornstein-Uhlenbeck process, i.e. the solution to the SDE
@@ -40,7 +39,7 @@ class OrnsteinUhlenbeck(LinearModel):
         super().__init__(
             self._param_transform(kappa, gamma, sigma),
             increment_distribution,
-            initial_kernel=initial_kernel,
+            initial_kernel=_initial_kernel,
             initial_parameters=(kappa, gamma, sigma),
         )
 
