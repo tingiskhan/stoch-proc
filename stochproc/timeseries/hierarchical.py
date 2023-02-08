@@ -1,7 +1,10 @@
 import torch
 
+from stochproc.timeseries.stochastic_process import StructuralStochasticProcess
+
 from .affine import AffineProcess
-from .joint import AffineJointStochasticProcess, LowerCholeskyJointStochasticProcess, _multiplier
+from .joint import AffineJointStochasticProcess, JointStochasticProcess, LowerCholeskyJointStochasticProcess, _multiplier
+from ..distributions import JointDistribution
 
 
 class AffineHierarchicalProcess(AffineJointStochasticProcess):
@@ -116,3 +119,30 @@ class LowerCholeskyHierarchicalProcess(LowerCholeskyJointStochasticProcess):
         )
 
         return torch.cat(mean, dim=-1), torch.cat(scale, dim=-2)
+
+
+class HierarchicalProcess(JointStochasticProcess):
+    """
+    See :class:`AffineHierarchicalProcess`.
+    """
+
+    def __init__(self, sub_process: StructuralStochasticProcess, main_process: StructuralStochasticProcess):
+        """
+        Internal initializer for :class:`HierarchicalProcess`.
+
+        Args:
+            sub_process (StructuralStochasticProcess): child/sub process.
+            main_process (StructuralStochasticProcess): main process.
+        """
+
+        super().__init__(sub=sub_process, main=main_process)
+    
+    # TODO: COnsider saving indices and re-using
+    def _joint_kernel(self, x):
+        sub_dist = self.sub_processes["sub"].build_density(x["sub"])
+
+        main_state = x["main"]
+        main_state["sub"] = x["sub"]
+        main_dist = self.sub_processes["main"].build_density(main_state)
+
+        return JointDistribution(sub_dist, main_dist)

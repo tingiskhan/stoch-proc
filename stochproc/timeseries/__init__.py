@@ -17,7 +17,7 @@ from .linear import LinearModel
 from .ssm import StateSpaceModel, LinearStateSpaceModel
 from .state import TimeseriesState, JointState
 from .stochastic_process import StructuralStochasticProcess
-from .hierarchical import AffineHierarchicalProcess
+from .hierarchical import AffineHierarchicalProcess, HierarchicalProcess
 from .chol_affine import LowerCholeskyAffineProcess
 from .hmm import HiddenMarkovModel
 
@@ -45,4 +45,5 @@ __all__ = [
     "joint_process",
     "LinearStateSpaceModel",
     "HiddenMarkovModel",
+    "HierarchicalProcess",
 ]
