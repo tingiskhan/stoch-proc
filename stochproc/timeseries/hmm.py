@@ -1,4 +1,4 @@
-from pyro.distributions import Multinomial
+from pyro.distributions import Categorical
 import torch
 
 from ..typing import ParameterType
@@ -52,10 +52,10 @@ class HiddenMarkovModel(StructuralStochasticProcess):
         return HiddenMarkovModel(*new_parameters["parameters"])
 
     def _initial_hmm_kernel(self, initial_probabilities):
-        return Multinomial(probs=initial_probabilities)
+        return Categorical(probs=initial_probabilities)
 
     def _hmm_kernel(self, x, probs: torch.Tensor):
-        state = x.value.argmax(dim=-1).reshape(x.value.shape[:-1] + torch.Size([1, 1]))
+        state = x.value.reshape(x.value.shape + torch.Size([1, 1]))
 
         p = probs.broadcast_to(state.shape[:-2] + probs.shape[-2:]).take_along_dim(state, dim=-2).squeeze(-2)
-        return Multinomial(probs=p)
+        return Categorical(probs=p)
