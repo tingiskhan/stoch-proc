@@ -17,6 +17,17 @@ def _find_initial_probabilities(probs: torch.Tensor) -> torch.Tensor:
     return (inverse @ transpose)[..., -1]
 
 
+def _initial_kernel(probs):
+    return Categorical(probs=probs)
+
+
+def _transition_kernel(x, probs):
+    state = x.value.reshape(x.value.shape + torch.Size([1, 1]))
+
+    p = probs.broadcast_to(state.shape[:-2] + probs.shape[-2:]).take_along_dim(state, dim=-2).squeeze(-2)
+    return Categorical(probs=p)
+
+
 class HiddenMarkovModel(StructuralStochasticProcess):
     """
     Implements a discrete `Hidden Markov Model`_. More resources from `Oxford`.
@@ -45,21 +56,15 @@ class HiddenMarkovModel(StructuralStochasticProcess):
         initial_probabilities = _find_initial_probabilities(transition_matrix)
 
         super().__init__(
-            self._hmm_kernel,
+            _transition_kernel,
             (transition_matrix,),
-            self._initial_hmm_kernel,
+            _initial_kernel,
             initial_parameters=(initial_probabilities,),
         )
 
     def expand(self, batch_shape):
-        new_parameters = self._expand_parameters(batch_shape)
-        return HiddenMarkovModel(*new_parameters["parameters"])
+        new_parameters = self._expand_parameters(batch_shape)        
+        new = self._get_checked_instance(HiddenMarkovModel)
+        super(HiddenMarkovModel, new).__init__(_transition_kernel, new_parameters["parameters"], _initial_kernel, new_parameters["initial_parameters"])
 
-    def _initial_hmm_kernel(self, initial_probabilities):
-        return Categorical(probs=initial_probabilities)
-
-    def _hmm_kernel(self, x, probs: torch.Tensor):
-        state = x.value.reshape(x.value.shape + torch.Size([1, 1]))
-
-        p = probs.broadcast_to(state.shape[:-2] + probs.shape[-2:]).take_along_dim(state, dim=-2).squeeze(-2)
-        return Categorical(probs=p)
+        return new
