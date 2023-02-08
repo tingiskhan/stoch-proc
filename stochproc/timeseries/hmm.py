@@ -1,13 +1,9 @@
-from typing import Callable, Sequence
 from pyro.distributions import Multinomial
 import torch
 
 from ..typing import ParameterType
 from .stochastic_process import StructuralStochasticProcess
 
-
-def _parameter_transform(*parameters):
-    return parameters[0]
 
 
 def _find_initial_probabilities(probs: torch.Tensor) -> torch.Tensor:
@@ -32,8 +28,7 @@ class HiddenMarkovModel(StructuralStochasticProcess):
 
     def __init__(
         self,
-        parameters: Sequence[ParameterType],
-        parameter_transform: Callable[[Sequence[torch.Tensor]], Sequence[torch.Tensor]] = _parameter_transform,
+        transition_matrix: ParameterType,
     ):
         """
         Internal initializer for :class:`HiddenMarkovModel`.
@@ -43,35 +38,24 @@ class HiddenMarkovModel(StructuralStochasticProcess):
             parameter_transform (Callable[[Sequence[torch.Tensor]], Sequence[torch.Tensor]]): function for transforming parameters. Defaults to returning the first parameter as is.
         """
 
-        transition_matrix = _parameter_transform(*parameters)
-
         if transition_matrix.shape[-1] != transition_matrix.shape[-2]:
             raise Exception("Transition matrix is not rectangular!")
 
         if (transition_matrix.sum(dim=-1) != 1.0).all():
             raise Exception("Not a proper transition matrix!")
 
-        self._parameter_transform = parameter_transform
+        initial_probabilities = _find_initial_probabilities(transition_matrix)
 
-        super().__init__(self._hmm_kernel, parameters, self._initial_hmm_kernel, initial_parameters=())
-
-    @property
-    def initial_probabilities(self) -> torch.Tensor:
-        """
-        Returns the initial probabilities.
-        """
-
-        return _find_initial_probabilities(self._parameter_transform(*self.parameters))
+        super().__init__(self._hmm_kernel, (transition_matrix,), self._initial_hmm_kernel, initial_parameters=(initial_probabilities,))
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        return HiddenMarkovModel(new_parameters["parameters"])
+        return HiddenMarkovModel(*new_parameters["parameters"])
 
-    def _initial_hmm_kernel(self, *_):
-        return Multinomial(probs=self.initial_probabilities)
+    def _initial_hmm_kernel(self, initial_probabilities):
+        return Multinomial(probs=initial_probabilities)
 
-    def _hmm_kernel(self, x, *parameters: torch.Tensor):
-        probs = self._parameter_transform(*parameters)
+    def _hmm_kernel(self, x, probs: torch.Tensor):
         state = x.value.argmax(dim=-1)
 
         p = probs.take_along_dim(state.reshape(state.shape + torch.Size([1, 1])), dim=-2).squeeze(-2)
