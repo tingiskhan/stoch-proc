@@ -29,13 +29,15 @@ class LinearModel(AffineProcess):
             parameters: see :class:`AffineProcess`.
             increment_distribution: see :class:`AffineProcess`.
             initial_kernel: see :class:`AffineProcess`.
-            initial_parameters: see :class:`AffineProcess`.            
+            initial_parameters: see :class:`AffineProcess`.
         """
 
         assert 2 <= len(parameters) <= 3, "Must pass two or three parameters!"
 
         if len(parameters) == 2:
-            warn("You only passed two parameters, inferring that the offset parameter should be 0! Suppress this warning by passing three parameters")
+            warn(
+                "You only passed two parameters, inferring that the offset parameter should be 0! Suppress this warning by passing three parameters"
+            )
             parameters = (parameters[0], torch.tensor(0.0, device=parameters[0].device), parameters[-1])
 
         super().__init__(

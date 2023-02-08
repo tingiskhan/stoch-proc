@@ -5,7 +5,6 @@ from ..typing import ParameterType
 from .stochastic_process import StructuralStochasticProcess
 
 
-
 def _find_initial_probabilities(probs: torch.Tensor) -> torch.Tensor:
     ones = torch.ones(probs.shape[:-1], device=probs.device).unsqueeze(-2)
     eye = torch.eye(probs.shape[-1], device=probs.device)
@@ -45,7 +44,12 @@ class HiddenMarkovModel(StructuralStochasticProcess):
 
         initial_probabilities = _find_initial_probabilities(transition_matrix)
 
-        super().__init__(self._hmm_kernel, (transition_matrix,), self._initial_hmm_kernel, initial_parameters=(initial_probabilities,))
+        super().__init__(
+            self._hmm_kernel,
+            (transition_matrix,),
+            self._initial_hmm_kernel,
+            initial_parameters=(initial_probabilities,),
+        )
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)

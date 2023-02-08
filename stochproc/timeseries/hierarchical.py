@@ -94,7 +94,7 @@ class HierarchicalProcess(JointStochasticProcess):
         """
 
         super().__init__(sub=sub_process, main=main_process)
-    
+
     # TODO: COnsider saving indices and re-using
     def _joint_kernel(self, x):
         sub_dist = self.sub_processes["sub"].build_density(x["sub"])

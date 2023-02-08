@@ -65,5 +65,10 @@ class CyclicalProcess(LinearModel):
         new_parameters = self._expand_parameters(batch_shape)
         new = self._get_checked_instance(CyclicalProcess)
 
-        super(CyclicalProcess, new).__init__(new_parameters["parameters"], self.increment_distribution, self._initial_kernel, new_parameters["initial_parameters"])
+        super(CyclicalProcess, new).__init__(
+            new_parameters["parameters"],
+            self.increment_distribution,
+            self._initial_kernel,
+            new_parameters["initial_parameters"],
+        )
         return new

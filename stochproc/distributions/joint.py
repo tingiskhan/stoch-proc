@@ -48,7 +48,7 @@ class JointDistribution(Distribution):
 
         event_shape = torch.Size([sum(d.event_shape.numel() for d in distributions)])
         single_batch_shape = max(d.batch_shape for d in distributions)
-        
+
         super().__init__(event_shape=event_shape, batch_shape=single_batch_shape, **kwargs)
 
         self.distributions = [d.expand(single_batch_shape) for d in distributions]
@@ -60,7 +60,7 @@ class JointDistribution(Distribution):
     def expand(self, batch_shape, _instance=None):
         new = self._get_checked_instance(JointDistribution)
         super(JointDistribution, new).__init__(batch_shape, self.event_shape, self._validate_args)
-        
+
         new.distributions = [d.expand(batch_shape) for d in self.distributions]
         new.indices = self.indices
         new.has_rsample = self.has_rsample
@@ -143,15 +143,11 @@ class JointDistribution(Distribution):
 
     # TODO: Fix s.t. we use wrapper for unsqueezer
     def rsample(self, sample_shape=torch.Size()):
-        res = tuple(
-            unsq(d.rsample(sample_shape)) for d, unsq in zip(self.distributions, self._unsqueezers)
-        )
+        res = tuple(unsq(d.rsample(sample_shape)) for d, unsq in zip(self.distributions, self._unsqueezers))
 
         return torch.cat(res, dim=-1)
 
     def sample(self, sample_shape=torch.Size()):
-        res = tuple(
-            unsq(d.sample(sample_shape)) for d, unsq in zip(self.distributions, self._unsqueezers)
-        )
+        res = tuple(unsq(d.sample(sample_shape)) for d, unsq in zip(self.distributions, self._unsqueezers))
 
         return torch.cat(res, dim=-1)

@@ -125,7 +125,7 @@ class AffineJointStochasticProcess(_JointMixin, AffineProcess):
              p(x^1_{t+1}, \dots, x^n_{t+1} \mid x^1_t, \dots, x^n_t) = \prod^n_{i=1} p( x^i_{t+1} \mid x^i_t ),
 
     where every sub process :math:`X^i` is of affine nature.
-    """    
+    """
 
     def __init__(self, **processes: AffineProcess):
         """
@@ -152,7 +152,7 @@ class AffineJointStochasticProcess(_JointMixin, AffineProcess):
         )
 
         _JointMixin.__init__(self, **processes)
-        
+
         self._unsqueeze_mapper = {
             proc_name: partial(self._unsqueeze_wrapper, do_unsqueeze=proc.n_dim == 0)
             for proc_name, proc in self.sub_processes.items()

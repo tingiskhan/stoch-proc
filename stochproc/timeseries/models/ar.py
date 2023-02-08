@@ -10,7 +10,7 @@ from ..linear import LinearModel
 
 
 # TODO: Add beta for those where abs(beta) < 1.0
-def _initial_kernel(a, b, s, lags):    
+def _initial_kernel(a, b, s, lags):
     alpha = b
     beta = a
     sigma = s
@@ -19,7 +19,7 @@ def _initial_kernel(a, b, s, lags):
         alpha = alpha[..., 0]
         beta = beta[..., 0, 0]
         sigma = sigma[..., 0]
-    
+
     loc = alpha
     scale = sigma / (1.0 - beta.pow(2.0)).sqrt()
 
@@ -81,9 +81,11 @@ class AR(LinearModel):
         if self.lags > 1:
             bottom_shape = self.lags - 1, self.lags
             bottom = torch.eye(*bottom_shape, device=beta.device).expand(beta.shape[:-1] + bottom_shape)
-            
+
             b_masker = (
-                torch.eye(self.lags, 1, device=alpha.device).squeeze(-1).expand(beta.shape[:-1] + torch.Size([self.lags]))
+                torch.eye(self.lags, 1, device=alpha.device)
+                .squeeze(-1)
+                .expand(beta.shape[:-1] + torch.Size([self.lags]))
             )
 
             a = torch.cat((a.unsqueeze(-2), bottom), dim=-2)
@@ -100,7 +102,12 @@ class AR(LinearModel):
         new_parameters = self._expand_parameters(batch_shape)
         new = self._get_checked_instance(AR)
 
-        super(AR, new).__init__(new_parameters["parameters"], self.increment_distribution, self._initial_kernel, new_parameters["initial_parameters"])
+        super(AR, new).__init__(
+            new_parameters["parameters"],
+            self.increment_distribution,
+            self._initial_kernel,
+            new_parameters["initial_parameters"],
+        )
         new.lags = self.lags
 
         return new
