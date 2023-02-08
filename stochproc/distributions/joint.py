@@ -58,7 +58,15 @@ class JointDistribution(Distribution):
         self._unsqueezers = [partial(_unsqueezer, do_unsqueeze=d.event_shape.numel() == 1) for d in self.distributions]
 
     def expand(self, batch_shape, _instance=None):
-        return JointDistribution(*(d.expand(batch_shape) for d in self.distributions), indices=self.indices)
+        new = self._get_checked_instance(JointDistribution)
+        super(JointDistribution, new).__init__(batch_shape, self.event_shape, self._validate_args)
+        
+        new.distributions = [d.expand(batch_shape) for d in self.distributions]
+        new.indices = self.indices
+        new.has_rsample = self.has_rsample
+        new._unsqueezers = self._unsqueezers
+
+        return new
 
     @property
     def support(self) -> Optional[Any]:
