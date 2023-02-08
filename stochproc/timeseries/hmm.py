@@ -55,7 +55,8 @@ class HiddenMarkovModel(StructuralStochasticProcess):
         return Multinomial(probs=initial_probabilities)
 
     def _hmm_kernel(self, x, probs: torch.Tensor):
-        state = x.value.argmax(dim=-1)
+        state = x.value.argmax(dim=-1).reshape(x.value.shape[:-1] + torch.Size([1, 1]))
 
-        p = probs.take_along_dim(state.reshape(state.shape + torch.Size([1, 1])), dim=-2).squeeze(-2)
+        # TODO :Fix this, must reshape probs to state shape
+        p = probs.broadcast_to(state.shape[:-2] + probs.shape[-2:]).take_along_dim(state, dim=-2).squeeze(-2)
         return Multinomial(probs=p)
