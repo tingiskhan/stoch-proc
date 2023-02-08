@@ -3,7 +3,7 @@ import torch
 from stochproc.timeseries.stochastic_process import StructuralStochasticProcess
 
 from .affine import AffineProcess
-from .joint import AffineJointStochasticProcess, JointStochasticProcess, LowerCholeskyJointStochasticProcess, _multiplier
+from .joint import AffineJointStochasticProcess, JointStochasticProcess
 from ..distributions import JointDistribution
 
 
@@ -77,48 +77,6 @@ class AffineHierarchicalProcess(AffineJointStochasticProcess):
 
     def expand(self, batch_shape):
         return AffineHierarchicalProcess(**{k: v.expand(batch_shape) for k, v in self.sub_processes.items()})
-
-
-# TODO: Code duplication...
-class LowerCholeskyHierarchicalProcess(LowerCholeskyJointStochasticProcess):
-    r"""
-    Similar to :class:`AffineHierarchicalProcess` but instead uses
-    :class:`pyro.distributions.transforms.LowerCholeskyAffine`.
-    """
-
-    def __init__(self, sub_process: AffineProcess, main_process: AffineProcess):
-        """
-        Internal initializer for :class:`LowerCholeskyHierarchicalProcess`.
-
-        Args:
-            sub_process: child/sub process.
-            main_process: main process.
-        """
-
-        super().__init__(sub=sub_process, main=main_process)
-
-    def mean_scale(self, x):
-        sub_mean, sub_scale = self.sub_processes["sub"].mean_scale(x["sub"])
-
-        main_state = x["main"]
-        main_state["sub"] = x["sub"]
-        main_mean, main_scale = self.sub_processes["main"].mean_scale(main_state)
-
-        sub_numel = x["sub"].event_shape.numel()
-
-        mean = (
-            sub_mean.unsqueeze(-1) if sub_numel == 1 else sub_mean,
-            main_mean,
-        )
-
-        eye = torch.eye(self.event_shape.numel(), device=x.value.device)
-
-        scale = (
-            _multiplier(sub_scale, eye[:sub_numel], self.sub_processes["sub"], x.batch_shape),
-            _multiplier(main_scale, eye[sub_numel:], self.sub_processes["main"], x.batch_shape),
-        )
-
-        return torch.cat(mean, dim=-1), torch.cat(scale, dim=-2)
 
 
 class HierarchicalProcess(JointStochasticProcess):

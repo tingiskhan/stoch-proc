@@ -10,7 +10,6 @@ from .diffusion import (
 from .joint import (
     AffineJointStochasticProcess,
     JointStochasticProcess,
-    LowerCholeskyJointStochasticProcess,
     joint_process,
 )
 from .linear import LinearModel
@@ -18,7 +17,6 @@ from .ssm import StateSpaceModel, LinearStateSpaceModel
 from .state import TimeseriesState, JointState
 from .stochastic_process import StructuralStochasticProcess
 from .hierarchical import AffineHierarchicalProcess, HierarchicalProcess
-from .chol_affine import LowerCholeskyAffineProcess
 from .hmm import HiddenMarkovModel
 
 
@@ -39,9 +37,7 @@ __all__ = [
     "models",
     "LinearModel",
     "AffineHierarchicalProcess",
-    "LowerCholeskyAffineProcess",
     "JointStochasticProcess",
-    "LowerCholeskyJointStochasticProcess",
     "joint_process",
     "LinearStateSpaceModel",
     "HiddenMarkovModel",
