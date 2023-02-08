@@ -34,8 +34,7 @@ class HiddenMarkovModel(StructuralStochasticProcess):
         Internal initializer for :class:`HiddenMarkovModel`.
 
         Args:
-            parameters (Sequence[ParameterType]): transition probabilities.
-            parameter_transform (Callable[[Sequence[torch.Tensor]], Sequence[torch.Tensor]]): function for transforming parameters. Defaults to returning the first parameter as is.
+            parameters (ParameterType): transition probabilities.
         """
 
         if transition_matrix.shape[-1] != transition_matrix.shape[-2]:
