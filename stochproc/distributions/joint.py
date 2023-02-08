@@ -48,6 +48,7 @@ class JointDistribution(Distribution):
 
         self.distributions = distributions
         self.indices = indices if indices is not None else self.infer_indices(*distributions)
+        self.has_rsample = all(d.has_rsample for d in distributions)
 
     def expand(self, batch_shape, _instance=None):
         return JointDistribution(*(d.expand(batch_shape) for d in self.distributions), indices=self.indices)
