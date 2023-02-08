@@ -2,7 +2,7 @@ from abc import ABC
 from collections import OrderedDict
 from contextlib import contextmanager
 from copy import deepcopy
-from typing import Callable, Sequence, Tuple, TypeVar, Dict
+from typing import Callable, Dict, Sequence, Tuple, TypeVar
 
 import pyro
 import torch

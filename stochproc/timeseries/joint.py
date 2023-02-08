@@ -1,16 +1,16 @@
 from collections import OrderedDict
+from contextlib import ExitStack, contextmanager
 from functools import partial
+from typing import Dict, Sequence
+
 import torch
 from pyro.distributions import Distribution
-from typing import Dict, Sequence
-from contextlib import ExitStack, contextmanager
-
 
 from ..distributions import JointDistribution
+from ..typing import ParameterType
 from .affine import AffineProcess
 from .state import JointState, TimeseriesState
 from .stochastic_process import StructuralStochasticProcess
-from ..typing import ParameterType
 
 
 def _initial_kernel(sub_processes, *_):

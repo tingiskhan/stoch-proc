@@ -1,11 +1,14 @@
 from functools import partial
-from pyro.distributions import Delta, Poisson, Distribution, TransformedDistribution, transforms as t, Normal
-import torch
 
-from ...distributions import JointDistribution, DoubleExponential
+import torch
+from pyro.distributions import (Delta, Distribution, Normal, Poisson,
+                                TransformedDistribution)
+from pyro.distributions import transforms as t
+
+from ...distributions import DoubleExponential, JointDistribution
+from ...typing import ParameterType
 from ..diffusion import StochasticDifferentialEquation
 from ..state import TimeseriesState
-from ...typing import ParameterType
 
 
 def _initial_kernel(alpha, xi, _, p, rho_plus, rho_minus):

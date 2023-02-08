@@ -1,5 +1,5 @@
-from pyro.distributions import Categorical
 import torch
+from pyro.distributions import Categorical
 
 from ..typing import ParameterType
 from .stochastic_process import StructuralStochasticProcess

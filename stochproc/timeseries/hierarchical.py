@@ -2,9 +2,9 @@ import torch
 
 from stochproc.timeseries.stochastic_process import StructuralStochasticProcess
 
+from ..distributions import JointDistribution
 from .affine import AffineProcess
 from .joint import AffineJointStochasticProcess, JointStochasticProcess
-from ..distributions import JointDistribution
 
 
 class AffineHierarchicalProcess(AffineJointStochasticProcess):

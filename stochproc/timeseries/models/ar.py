@@ -1,7 +1,8 @@
 from functools import partial
 
 import torch
-from pyro.distributions import Delta, Distribution, Normal, TransformedDistribution
+from pyro.distributions import (Delta, Distribution, Normal,
+                                TransformedDistribution)
 from pyro.distributions.transforms import AffineTransform
 from torch.distributions.utils import broadcast_all
 

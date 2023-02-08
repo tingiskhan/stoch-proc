@@ -3,11 +3,10 @@ import torch
 from pyro.distributions import Distribution, Normal
 
 from .linear import LinearModel
-from .utils import coerce_tensors
-
 from .result import StateSpacePath
 from .state import StateSpaceModelState, TimeseriesState
 from .stochastic_process import StructuralStochasticProcess
+from .utils import coerce_tensors
 
 _NAN = float("nan")
 

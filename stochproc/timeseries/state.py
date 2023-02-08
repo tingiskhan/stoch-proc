@@ -1,5 +1,5 @@
-from typing import Callable, Union
 from collections import OrderedDict
+from typing import Callable, Union
 
 import torch
 

@@ -1,8 +1,8 @@
 from math import pi
 
-from .cyclical import CyclicalProcess
-from ..utils import coerce_tensors
 from ...typing import ParameterType
+from ..utils import coerce_tensors
+from .cyclical import CyclicalProcess
 
 
 class HarmonicProcess(CyclicalProcess):
