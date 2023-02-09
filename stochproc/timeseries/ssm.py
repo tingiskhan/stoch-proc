@@ -104,7 +104,7 @@ class StateSpaceModel(StructuralStochasticProcess):
         return latent
 
     def expand(self, batch_shape):
-        new_parameters = self._expand_parameters(batch_shape)
+        new_parameters = self._expand_parameters(batch_shape)["parameters"]
 
         return StateSpaceModel(self.hidden.expand(batch_shape), self._kernel, new_parameters, self.observe_every_step)
 
@@ -152,7 +152,7 @@ class LinearStateSpaceModel(StateSpaceModel, LinearModel):
         raise NotImplementedError(f"Cannot register a sub process to '{self.__class__}'!")
 
     def expand(self, batch_shape):
-        new_parameters = self._expand_parameters(batch_shape)
+        new_parameters = self._expand_parameters(batch_shape)["parameters"]
 
         return LinearStateSpaceModel(
             self.hidden.expand(batch_shape),
