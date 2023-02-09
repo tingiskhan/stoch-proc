@@ -1,7 +1,5 @@
 import torch
-from pyro.distributions import (Exponential, ExponentialFamily,
-                                TransformedDistribution, constraints,
-                                transforms)
+from pyro.distributions import Exponential, ExponentialFamily, TransformedDistribution, constraints, transforms
 from torch.distributions.utils import broadcast_all
 
 

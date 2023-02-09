@@ -1,12 +1,15 @@
 from . import models
 from .affine import AffineProcess
-from .diffusion import (AffineEulerMaruyama,
-                        DiscretizedStochasticDifferentialEquation, Euler,
-                        RungeKutta, StochasticDifferentialEquation)
+from .diffusion import (
+    AffineEulerMaruyama,
+    DiscretizedStochasticDifferentialEquation,
+    Euler,
+    RungeKutta,
+    StochasticDifferentialEquation,
+)
 from .hierarchical import AffineHierarchicalProcess, HierarchicalProcess
 from .hmm import HiddenMarkovModel
-from .joint import (AffineJointStochasticProcess, JointStochasticProcess,
-                    joint_process)
+from .joint import AffineJointStochasticProcess, JointStochasticProcess, joint_process
 from .linear import LinearModel
 from .ssm import LinearStateSpaceModel, StateSpaceModel
 from .state import JointState, TimeseriesState
