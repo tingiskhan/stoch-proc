@@ -4,7 +4,7 @@ from torch.distributions.utils import broadcast_all
 
 from ...typing import ParameterType
 from ..affine import AffineProcess
-from .ou import initial_kernel
+from .ou import _initial_kernel
 
 
 class TrendingOU(AffineProcess):
@@ -40,7 +40,7 @@ class TrendingOU(AffineProcess):
             self._mean_scale,
             (kappa, gamma, v_0, sigma),
             increment_distribution,
-            initial_kernel,
+            _initial_kernel,
             initial_parameters=(kappa, v_0, sigma),
         )
         self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt

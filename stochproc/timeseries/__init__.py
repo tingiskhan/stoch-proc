@@ -2,25 +2,18 @@ from . import models
 from .affine import AffineProcess
 from .diffusion import (
     AffineEulerMaruyama,
-    Euler,
     DiscretizedStochasticDifferentialEquation,
+    Euler,
     RungeKutta,
     StochasticDifferentialEquation,
 )
-from .joint import (
-    AffineJointStochasticProcess,
-    JointStochasticProcess,
-    LowerCholeskyJointStochasticProcess,
-    joint_process,
-)
-from .linear import LinearModel
-from .ssm import StateSpaceModel, LinearStateSpaceModel
-from .state import TimeseriesState, JointState
-from .stochastic_process import StructuralStochasticProcess
-from .hierarchical import AffineHierarchicalProcess
-from .chol_affine import LowerCholeskyAffineProcess
+from .hierarchical import AffineHierarchicalProcess, HierarchicalProcess
 from .hmm import HiddenMarkovModel
-
+from .joint import AffineJointStochasticProcess, JointStochasticProcess, joint_process
+from .linear import LinearModel
+from .ssm import LinearStateSpaceModel, StateSpaceModel
+from .state import JointState, TimeseriesState
+from .stochastic_process import StructuralStochasticProcess
 
 # TODO: Remove TimeseriesState and BatchedState
 __all__ = [
@@ -39,10 +32,9 @@ __all__ = [
     "models",
     "LinearModel",
     "AffineHierarchicalProcess",
-    "LowerCholeskyAffineProcess",
     "JointStochasticProcess",
-    "LowerCholeskyJointStochasticProcess",
     "joint_process",
     "LinearStateSpaceModel",
     "HiddenMarkovModel",
+    "HierarchicalProcess",
 ]

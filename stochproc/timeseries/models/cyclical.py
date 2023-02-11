@@ -52,14 +52,23 @@ class CyclicalProcess(LinearModel):
             .to_event(1)
         )
 
+        params = _parameter_transform(rho, lamda, sigma)
+
         super().__init__(
-            (rho, lamda, sigma),
+            params,
             distribution,
             _initial_kernel,
             initial_parameters=(x_0,),
-            parameter_transform=_parameter_transform,
         )
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        return CyclicalProcess(*new_parameters["parameters"], *new_parameters["initial_parameters"])
+        new = self._get_checked_instance(CyclicalProcess)
+
+        super(CyclicalProcess, new).__init__(
+            new_parameters["parameters"],
+            self.increment_distribution,
+            self._initial_kernel,
+            new_parameters["initial_parameters"],
+        )
+        return new

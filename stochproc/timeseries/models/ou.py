@@ -6,11 +6,10 @@ from ...typing import ParameterType
 from ..linear import LinearModel
 
 
-def initial_kernel(kappa, gamma, sigma):
+def _initial_kernel(kappa, gamma, sigma):
     return Normal(loc=gamma, scale=sigma / (2 * kappa).sqrt())
 
 
-# TODO: Should perhaps inherit from StochasticDifferentialEquation?
 class OrnsteinUhlenbeck(LinearModel):
     r"""
     Implements the solved Ornstein-Uhlenbeck process, i.e. the solution to the SDE
@@ -37,20 +36,28 @@ class OrnsteinUhlenbeck(LinearModel):
         increment_distribution = Normal(torch.tensor(0.0, device=kappa.device), torch.tensor(1.0, device=kappa.device))
         self._dt = torch.tensor(dt) if not isinstance(dt, torch.Tensor) else dt
 
+        # Parameter transform
+        a = (-kappa * self._dt).exp()
+        b = gamma * (1.0 - a)
+        s = sigma / (2.0 * kappa).sqrt() * (1.0 - a.pow(2.0)).sqrt()
+
         super().__init__(
-            (kappa, gamma, sigma),
+            (a, b, s),
             increment_distribution,
-            initial_kernel=initial_kernel,
-            parameter_transform=self._param_transform,
+            initial_kernel=_initial_kernel,
+            initial_parameters=(kappa, gamma, sigma),
         )
-
-    def _param_transform(self, k, g, s):
-        a = (-k * self._dt).exp()
-        b = g * (1.0 - a)
-        s = s / (2.0 * k).sqrt() * (1.0 - a.pow(2.0)).sqrt()
-
-        return a, b, s
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        return OrnsteinUhlenbeck(*new_parameters["parameters"], self._dt)
+        new = self._get_checked_instance(OrnsteinUhlenbeck)
+
+        super(OrnsteinUhlenbeck, new).__init__(
+            new_parameters["parameters"],
+            self.increment_distribution,
+            self._initial_kernel,
+            new_parameters["initial_parameters"],
+        )
+        new._dt = self._dt
+
+        return new

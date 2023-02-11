@@ -10,12 +10,28 @@ from ..linear import LinearModel
 
 
 # TODO: Add beta for those where abs(beta) < 1.0
-def _initial_kernel(alpha, beta, sigma, lags):
-    base = _build_trans_dist(torch.zeros_like(beta), torch.ones_like(beta), lags)
+def _initial_kernel(a, b, s, lags):
+    alpha = b
+    beta = a
+    sigma = s
 
-    return TransformedDistribution(
-        base, AffineTransform(beta.unsqueeze(-1) if lags > 1 else beta, sigma.unsqueeze(-1) if lags > 1 else sigma)
-    )
+    if lags > 1:
+        alpha = alpha[..., 0]
+        beta = beta[..., 0, 0]
+        sigma = sigma[..., 0]
+
+    loc = alpha
+    scale = sigma / (1.0 - beta.pow(2.0)).sqrt()
+
+    scale = torch.where(beta.abs() < 1.0, scale, sigma)
+    base = _build_trans_dist(torch.zeros_like(loc), torch.ones_like(scale), lags)
+
+    if lags > 1:
+        loc.unsqueeze_(-1)
+        scale.unsqueeze_(-1)
+
+    # NB: As we utilize delta for lags, we can use same loc/scale
+    return TransformedDistribution(base, AffineTransform(loc, scale))
 
 
 def _build_trans_dist(loc, scale, lags) -> Distribution:
@@ -60,32 +76,38 @@ class AR(LinearModel):
             loc=torch.tensor(0.0, device=alpha.device), scale=torch.tensor(1.0, device=alpha.device), lags=self.lags
         )
 
-        bottom_shape = self.lags - 1, self.lags
+        # Create parameters
+        a, b, s = beta, alpha, sigma
+        if self.lags > 1:
+            bottom_shape = self.lags - 1, self.lags
+            bottom = torch.eye(*bottom_shape, device=beta.device).expand(beta.shape[:-1] + bottom_shape)
 
-        self._bottom = torch.eye(*bottom_shape, device=beta.device).expand(beta.shape[:-1] + bottom_shape)
-        self._b_masker = (
-            torch.eye(self.lags, 1, device=alpha.device).squeeze(-1).expand(beta.shape[:-1] + torch.Size([self.lags]))
-        )
+            b_masker = (
+                torch.eye(self.lags, 1, device=alpha.device)
+                .squeeze(-1)
+                .expand(beta.shape[:-1] + torch.Size([self.lags]))
+            )
+
+            a = torch.cat((a.unsqueeze(-2), bottom), dim=-2)
+            b = b_masker * b.unsqueeze(-1)
+            s = b_masker * s.unsqueeze(-1)
 
         super().__init__(
-            (beta, alpha, sigma),
+            (a, b, s),
             increment_distribution=inc_dist,
             initial_kernel=partial(_initial_kernel, lags=self.lags),
-            parameter_transform=self._param_transform,
         )
-
-    def _param_transform(self, a, b, s):
-        if self.lags == 1:
-            return a, b, s
-
-        a = torch.cat((a.unsqueeze(-2), self._bottom), dim=-2)
-        b = self._b_masker * b.unsqueeze(-1)
-        s = self._b_masker * s.unsqueeze(-1)
-
-        return a, b, s
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        params = new_parameters["parameters"]
+        new = self._get_checked_instance(AR)
 
-        return AR(params[1], params[0], params[-1], self.lags)
+        super(AR, new).__init__(
+            new_parameters["parameters"],
+            self.increment_distribution,
+            self._initial_kernel,
+            new_parameters["initial_parameters"],
+        )
+        new.lags = self.lags
+
+        return new

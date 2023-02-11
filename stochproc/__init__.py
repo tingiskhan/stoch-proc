@@ -1,4 +1,3 @@
-__version__ = "0.2.6"
+__version__ = "0.3.0"
 
-from . import distributions
-from . import timeseries
+from . import distributions, timeseries

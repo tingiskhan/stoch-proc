@@ -1,13 +1,8 @@
-from typing import Callable, Sequence
-from pyro.distributions import Multinomial
 import torch
+from pyro.distributions import Categorical
 
 from ..typing import ParameterType
 from .stochastic_process import StructuralStochasticProcess
-
-
-def _parameter_transform(*parameters):
-    return parameters[0]
 
 
 def _find_initial_probabilities(probs: torch.Tensor) -> torch.Tensor:
@@ -22,6 +17,17 @@ def _find_initial_probabilities(probs: torch.Tensor) -> torch.Tensor:
     return (inverse @ transpose)[..., -1]
 
 
+def _initial_kernel(probs):
+    return Categorical(probs=probs)
+
+
+def _transition_kernel(x, probs):
+    state = x.value.reshape(x.value.shape + torch.Size([1, 1]))
+
+    p = probs.broadcast_to(state.shape[:-2] + probs.shape[-2:]).take_along_dim(state, dim=-2).squeeze(-2)
+    return Categorical(probs=p)
+
+
 class HiddenMarkovModel(StructuralStochasticProcess):
     """
     Implements a discrete `Hidden Markov Model`_. More resources from `Oxford`.
@@ -32,18 +38,14 @@ class HiddenMarkovModel(StructuralStochasticProcess):
 
     def __init__(
         self,
-        parameters: Sequence[ParameterType],
-        parameter_transform: Callable[[Sequence[torch.Tensor]], Sequence[torch.Tensor]] = _parameter_transform,
+        transition_matrix: ParameterType,
     ):
         """
         Internal initializer for :class:`HiddenMarkovModel`.
 
         Args:
-            parameters (Sequence[ParameterType]): transition probabilities.
-            parameter_transform (Callable[[Sequence[torch.Tensor]], Sequence[torch.Tensor]]): function for transforming parameters. Defaults to returning the first parameter as is.
+            parameters (ParameterType): transition probabilities.
         """
-
-        transition_matrix = _parameter_transform(*parameters)
 
         if transition_matrix.shape[-1] != transition_matrix.shape[-2]:
             raise Exception("Transition matrix is not rectangular!")
@@ -51,28 +53,20 @@ class HiddenMarkovModel(StructuralStochasticProcess):
         if (transition_matrix.sum(dim=-1) != 1.0).all():
             raise Exception("Not a proper transition matrix!")
 
-        self._parameter_transform = parameter_transform
+        initial_probabilities = _find_initial_probabilities(transition_matrix)
 
-        super().__init__(self._hmm_kernel, parameters, self._initial_hmm_kernel, initial_parameters=())
-
-    @property
-    def initial_probabilities(self) -> torch.Tensor:
-        """
-        Returns the initial probabilities.
-        """
-
-        return _find_initial_probabilities(self._parameter_transform(*self.parameters))
+        super().__init__(
+            _transition_kernel,
+            (transition_matrix,),
+            _initial_kernel,
+            initial_parameters=(initial_probabilities,),
+        )
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        return HiddenMarkovModel(new_parameters["parameters"])
+        new = self._get_checked_instance(HiddenMarkovModel)
+        super(HiddenMarkovModel, new).__init__(
+            _transition_kernel, new_parameters["parameters"], _initial_kernel, new_parameters["initial_parameters"]
+        )
 
-    def _initial_hmm_kernel(self, *_):
-        return Multinomial(probs=self.initial_probabilities)
-
-    def _hmm_kernel(self, x, *parameters: torch.Tensor):
-        probs = self._parameter_transform(*parameters)
-        state = x.value.argmax(dim=-1)
-
-        p = probs.take_along_dim(state.reshape(state.shape + torch.Size([1, 1])), dim=-2).squeeze(-2)
-        return Multinomial(probs=p)
+        return new

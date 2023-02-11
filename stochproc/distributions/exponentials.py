@@ -1,6 +1,6 @@
-from pyro.distributions import ExponentialFamily, constraints, Exponential, TransformedDistribution, transforms
-from torch.distributions.utils import broadcast_all
 import torch
+from pyro.distributions import Exponential, ExponentialFamily, TransformedDistribution, constraints, transforms
+from torch.distributions.utils import broadcast_all
 
 
 class NegativeExponential(TransformedDistribution):

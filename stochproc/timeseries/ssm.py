@@ -2,12 +2,11 @@ import pyro
 import torch
 from pyro.distributions import Distribution, Normal
 
-from stochproc.timeseries.linear import LinearModel, default_transform
-from stochproc.timeseries.utils import coerce_tensors
-
+from .linear import LinearModel
 from .result import StateSpacePath
 from .state import StateSpaceModelState, TimeseriesState
 from .stochastic_process import StructuralStochasticProcess
+from .utils import coerce_tensors
 
 _NAN = float("nan")
 
@@ -105,7 +104,7 @@ class StateSpaceModel(StructuralStochasticProcess):
         return latent
 
     def expand(self, batch_shape):
-        new_parameters = self._expand_parameters(batch_shape)
+        new_parameters = self._expand_parameters(batch_shape)["parameters"]
 
         return StateSpaceModel(self.hidden.expand(batch_shape), self._kernel, new_parameters, self.observe_every_step)
 
@@ -122,7 +121,6 @@ class LinearStateSpaceModel(StateSpaceModel, LinearModel):
         parameters,
         event_shape: torch.Size,
         observe_every_step=1,
-        parameter_transform=default_transform,
     ):
         """
         Internal initializer for :class:`LinearStateSpaceModel`.
@@ -142,10 +140,8 @@ class LinearStateSpaceModel(StateSpaceModel, LinearModel):
         if event_shape:
             increment_distribution = increment_distribution.expand(event_shape).to_event(1)
 
-        LinearModel.__init__(
-            self, coerced_parameters, increment_distribution, None, None, parameter_transform=parameter_transform
-        )
-        StateSpaceModel.__init__(self, hidden, self._kernel, coerced_parameters, observe_every_step=observe_every_step)
+        LinearModel.__init__(self, coerced_parameters, increment_distribution, None, None)
+        StateSpaceModel.__init__(self, hidden, self._kernel, self.parameters, observe_every_step=observe_every_step)
 
         self._event_shape = event_shape
 
@@ -156,12 +152,11 @@ class LinearStateSpaceModel(StateSpaceModel, LinearModel):
         raise NotImplementedError(f"Cannot register a sub process to '{self.__class__}'!")
 
     def expand(self, batch_shape):
-        new_parameters = self._expand_parameters(batch_shape)
+        new_parameters = self._expand_parameters(batch_shape)["parameters"]
 
         return LinearStateSpaceModel(
             self.hidden.expand(batch_shape),
             new_parameters,
             self.event_shape,
             self.observe_every_step,
-            self._parameter_transform,
         )

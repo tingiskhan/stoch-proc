@@ -2,7 +2,7 @@ from abc import ABC
 from collections import OrderedDict
 from contextlib import contextmanager
 from copy import deepcopy
-from typing import Callable, Sequence, Tuple, TypeVar, Dict
+from typing import Callable, Dict, Sequence, Tuple, TypeVar
 
 import pyro
 import torch
@@ -53,7 +53,9 @@ class StructuralStochasticProcess(ABC):
 
         # TODO: Consider using a custom container instead
         self.parameters = coerce_tensors(*parameters)
-        self.initial_parameters = coerce_tensors(*initial_parameters) if initial_parameters else self.parameters
+        self.initial_parameters = (
+            coerce_tensors(*initial_parameters) if initial_parameters is not None else self.parameters
+        )
 
         self._event_shape = None if initial_kernel is None else self.initial_distribution.event_shape
 

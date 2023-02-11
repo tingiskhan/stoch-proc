@@ -30,4 +30,14 @@ class Seasonal(AR):
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        return Seasonal(self.lags, new_parameters["parameters"][-1])
+        new = self._get_checked_instance(Seasonal)
+
+        super(AR, new).__init__(
+            new_parameters["parameters"],
+            self.increment_distribution,
+            self._initial_kernel,
+            new_parameters["initial_parameters"],
+        )
+        new.lags = self.lags
+
+        return new

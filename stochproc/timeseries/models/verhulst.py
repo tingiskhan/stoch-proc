@@ -7,7 +7,7 @@ from torch.distributions.utils import broadcast_all
 
 from ...typing import ParameterType
 from ..diffusion import AffineEulerMaruyama
-from .ou import initial_kernel as ou_builder
+from .ou import _initial_kernel as ou_builder
 
 
 def _f(x, k, g, s):

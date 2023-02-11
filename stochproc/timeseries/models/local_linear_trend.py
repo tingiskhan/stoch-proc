@@ -1,5 +1,5 @@
 import torch
-from pyro.distributions import Normal, Delta
+from pyro.distributions import Delta, Normal
 from torch.distributions.utils import broadcast_all
 
 from ...typing import ParameterType
@@ -46,7 +46,7 @@ class LocalLinearTrend(LinearModel):
         a = torch.tensor([[1.0, 0.0], [1.0, 1.0]], device=sigma.device)
 
         super().__init__(
-            (a, sigma),
+            (a, torch.zeros_like(sigma), sigma),
             increment_distribution=increment_dist,
             initial_kernel=_initial_kernel,
             initial_parameters=(initial_mean,),
@@ -54,4 +54,12 @@ class LocalLinearTrend(LinearModel):
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        return LocalLinearTrend(new_parameters["parameters"][-1], new_parameters["initial_parameters"][0])
+        new = self._get_checked_instance(LocalLinearTrend)
+
+        super(LocalLinearTrend, new).__init__(
+            new_parameters["parameters"],
+            self.increment_distribution,
+            self._initial_kernel,
+            new_parameters["initial_parameters"],
+        )
+        return new

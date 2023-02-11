@@ -1,5 +1,5 @@
 import torch
-from pyro.distributions import Normal, Delta
+from pyro.distributions import Delta, Normal
 from torch.distributions.utils import broadcast_all
 
 from ...typing import ParameterType

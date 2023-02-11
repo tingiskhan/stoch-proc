@@ -102,9 +102,12 @@ class AffineProcess(StructuralStochasticProcess):
             Returns an instance of :class:`stochproc.timeseries.AffineHierarchalProcess`.
         """
 
-        from . import AffineHierarchicalProcess
+        from . import AffineHierarchicalProcess, HierarchicalProcess
 
-        return AffineHierarchicalProcess(sub_process=sub_process, main_process=self)
+        if isinstance(sub_process, AffineProcess):
+            return AffineHierarchicalProcess(sub_process=sub_process, main_process=self)
+
+        return HierarchicalProcess(sub_process=sub_process, main_process=self)
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)

@@ -1,18 +1,16 @@
 from collections import OrderedDict
-import contextlib
-from functools import partial
-import torch
-from pyro.distributions import TransformedDistribution, transforms as t, Distribution
-from typing import Dict, Sequence
 from contextlib import ExitStack, contextmanager
+from functools import partial
+from typing import Dict, Sequence
 
+import torch
+from pyro.distributions import Distribution
 
 from ..distributions import JointDistribution
+from ..typing import ParameterType
 from .affine import AffineProcess
-from .chol_affine import LowerCholeskyAffineProcess
 from .state import JointState, TimeseriesState
 from .stochastic_process import StructuralStochasticProcess
-from ..typing import ParameterType
 
 
 def _initial_kernel(sub_processes, *_):
@@ -111,7 +109,6 @@ class JointStochasticProcess(_JointMixin, StructuralStochasticProcess):
 
         _JointMixin.__init__(self, **processes)
 
-    # TODO: Fix parameters...
     def _joint_kernel(self, x: TimeseriesState) -> Distribution:
         return JointDistribution(*(sub_proc.build_density(x[k]) for k, sub_proc in self.sub_processes.items()))
 
@@ -156,6 +153,11 @@ class AffineJointStochasticProcess(_JointMixin, AffineProcess):
 
         _JointMixin.__init__(self, **processes)
 
+        self._unsqueeze_mapper = {
+            proc_name: partial(self._unsqueeze_wrapper, do_unsqueeze=proc.n_dim == 0)
+            for proc_name, proc in self.sub_processes.items()
+        }
+
     def mean_scale(self, x: TimeseriesState):
         mean = tuple()
         scale = tuple()
@@ -163,67 +165,22 @@ class AffineJointStochasticProcess(_JointMixin, AffineProcess):
         for proc_name, proc in self.sub_processes.items():
             m, s = proc.mean_scale(x[proc_name])
 
-            do_unsqueeze = proc.n_dim == 0
+            unsqueezer = self._unsqueeze_mapper[proc_name]
 
-            mean += (m.unsqueeze(-1) if do_unsqueeze else m,)
-            scale += (s.unsqueeze(-1) if do_unsqueeze else s,)
+            mean += (unsqueezer(m),)
+            scale += (unsqueezer(s),)
 
         return torch.cat(mean, dim=-1), torch.cat(scale, dim=-1)
 
     def expand(self, batch_shape):
         return AffineJointStochasticProcess(**{k: v.expand(batch_shape) for k, v in self.sub_processes.items()})
 
+    @staticmethod
+    def _unsqueeze_wrapper(u: torch.Tensor, do_unsqueeze: bool):
+        if not do_unsqueeze:
+            return u
 
-def _multiplier(
-    s: torch.Tensor, eye: torch.Tensor, proc: StructuralStochasticProcess, batch_shape: torch.Size
-) -> torch.Tensor:
-    """
-    Helper method for performing multiplying operation.
-
-    Args:
-        s: scale to use.
-        proc: process to use.
-    """
-
-    if isinstance(proc, LowerCholeskyAffineProcess):
-        res = s @ eye
-    else:
-        res = eye * (s.unsqueeze(-1) if proc.event_shape.numel() > 1 else s.view(*s.shape, 1, 1))
-
-    return torch.broadcast_to(res, batch_shape + eye.shape)
-
-
-class LowerCholeskyJointStochasticProcess(AffineJointStochasticProcess):
-    r"""
-    Similar to :class:`AffineJointStochasticProcess` but instead uses the
-    :class:`pyro.distributions.transforms.LowerCholeskyAffine` of
-    :class:`pyro.distributions.transforms.AffineTransform`.
-    """
-
-    def mean_scale(self, x: TimeseriesState):
-        mean = tuple()
-        scale = tuple()
-
-        eye = torch.eye(self.event_shape.numel(), device=x.value.device)
-
-        left = 0
-        for proc_name, proc in self.sub_processes.items():
-            m, s = proc.mean_scale(x[proc_name])
-
-            mean += (m.unsqueeze(-1) if proc.n_dim == 0 else m,)
-
-            numel = proc.event_shape.numel()
-            eye_slice = eye[left : left + numel]
-
-            scale += (_multiplier(s, eye_slice, proc, x.batch_shape),)
-            left += numel
-
-        return torch.cat(mean, dim=-1), torch.cat(scale, dim=-2)
-
-    def _mean_scale_kernel(self, x, *_):
-        loc, scale = self.mean_scale(x)
-
-        return TransformedDistribution(self.increment_distribution, t.LowerCholeskyAffine(loc, scale))
+        return u.unsqueeze(-1)
 
 
 def joint_process(**processes: StructuralStochasticProcess) -> StructuralStochasticProcess:
@@ -237,11 +194,7 @@ def joint_process(**processes: StructuralStochasticProcess) -> StructuralStochas
         Returns a suitable joint stochastic process.
     """
 
-    chol_procs = (LowerCholeskyAffineProcess, LowerCholeskyJointStochasticProcess)
     all_affine = all(isinstance(p, AffineProcess) for p in processes.values())
-
-    if any(isinstance(p, chol_procs) for p in processes.values()) and all_affine:
-        return LowerCholeskyJointStochasticProcess(**processes)
 
     if all_affine:
         return AffineJointStochasticProcess(**processes)

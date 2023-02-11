@@ -1,15 +1,15 @@
 from functools import partial
-from pyro.distributions import Delta, Poisson, Distribution, TransformedDistribution, transforms as t, Normal
 import torch
+from pyro.distributions import Delta, Distribution, Normal, Poisson, TransformedDistribution
+from pyro.distributions import transforms as t
 
-from ...distributions import JointDistribution, DoubleExponential
+from ...distributions import DoubleExponential, JointDistribution
+from ...typing import ParameterType
 from ..diffusion import StochasticDifferentialEquation
 from ..state import TimeseriesState
-from ...typing import ParameterType
 
 
-def _initial_kernel(alpha, xi, _, p, rho_plus, rho_minus):
-    de = DoubleExponential(p=p, rho_plus=rho_plus, rho_minus=rho_minus)
+def _initial_kernel(alpha, xi, _, de):
     exp_j2 = de.p * 2.0 * de.rho_plus.pow(-2.0) + (1.0 - de.p) * 2.0 * de.rho_minus.pow(-2.0)
 
     std_lambda = exp_j2.sqrt() * xi
@@ -48,10 +48,11 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
             rho_plus (ParameterType): _description_
         """
 
-        init_kernel = partial(_initial_kernel)
-        super().__init__(self.kernel, (alpha, xi, eta, p, rho_plus, rho_minus), initial_kernel=init_kernel, **kwargs)
+        self.de = DoubleExponential(rho_plus, rho_minus, p)
+        init_kernel = partial(_initial_kernel, de=self.de)
+        super().__init__(self.kernel, (alpha, xi, eta), initial_kernel=init_kernel, **kwargs)
 
-    def kernel(self, x: TimeseriesState, alpha, xi, eta, p, rho_plus, rho_minus) -> Distribution:
+    def kernel(self, x: TimeseriesState, alpha, xi, eta) -> Distribution:
         r"""
         Joint density for the realizations of :math:`(\lambda_t, dN_t, \lambda_s, q)`.
         """
@@ -61,8 +62,7 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
         intensity = (lambda_s * self.dt).nan_to_num(0.0, 0.0, 0.0).clip(min=0.0)
         dn_t = Poisson(rate=intensity).sample()
 
-        de = DoubleExponential(p=p, rho_plus=rho_plus, rho_minus=rho_minus).expand(lambda_s.shape)
-        dl_t = de.sample() * dn_t
+        dl_t = self.de.sample() * dn_t
 
         deterministic = alpha * (xi - lambda_s) * self.dt
 
@@ -75,4 +75,12 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
 
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
-        return SelfExcitingLatentProcesses(*new_parameters["parameters"], dt=self.dt)
+        new = self._get_checked_instance(SelfExcitingLatentProcesses)
+        new.de = self.de.expand(batch_shape)
+        init_kernel = partial(_initial_kernel, de=new.de)
+
+        super(SelfExcitingLatentProcesses, new).__init__(
+            new.kernel, new_parameters["parameters"], dt=self.dt, initial_kernel=init_kernel
+        )
+
+        return new

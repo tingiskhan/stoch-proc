@@ -1,22 +1,8 @@
+from warnings import warn
+
 import torch
-from typing import Sequence, Tuple, Callable
 
 from .affine import AffineProcess
-
-
-# TODO: Skip if-else and do this on instantiation instead
-def default_transform(*args):
-    if len(args) == 2:
-        a, s = args
-        return a, torch.zeros_like(s), s
-
-    if len(args) == 3:
-        return args
-
-    raise Exception("You sent more parameters than expected, please provide a custom transform for your parameters!")
-
-
-ParameterTransformer = Callable[[Sequence[torch.Tensor]], Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
 
 
 class LinearModel(AffineProcess):
@@ -37,7 +23,6 @@ class LinearModel(AffineProcess):
         increment_distribution,
         initial_kernel,
         initial_parameters=None,
-        parameter_transform: ParameterTransformer = default_transform,
     ):
         """
         Internal initializer for :class:`LinearModel`.
@@ -47,44 +32,35 @@ class LinearModel(AffineProcess):
             increment_distribution: see :class:`AffineProcess`.
             initial_kernel: see :class:`AffineProcess`.
             initial_parameters: see :class:`AffineProcess`.
-            parameter_transform: function for transforming parameters into expected. Defaults to assuming that the
-                order of the parameters are ``a, b, s``.
         """
 
+        assert 2 <= len(parameters) <= 3, "Must pass two or three parameters!"
+
+        if len(parameters) == 2:
+            warn(
+                "You only passed two parameters, inferring that the offset parameter should be 0! Suppress this warning by passing three parameters"
+            )
+            parameters = (parameters[0], torch.tensor(0.0, device=parameters[0].device), parameters[-1])
+
         super().__init__(
-            self._mean_scale,
+            self._mean_scale_0d if increment_distribution.event_shape.numel() == 1 else self._mean_scale_md,
             parameters=parameters,
             increment_distribution=increment_distribution,
             initial_kernel=initial_kernel,
             initial_parameters=initial_parameters,
         )
 
-        self._parameter_transform = parameter_transform
+    def _mean_scale_0d(self, x, a, b, s):
+        return b + a * x.value, s
 
-        assert (
-            len(self._parameter_transform(*self.parameters)) == 3
-        ), "Your parameter transform does not return a triple!"
+    def _mean_scale_md(self, x, a, b, s):
+        values = x.value.unsqueeze(-1)
 
-    def transformed_parameters(self) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        r"""
-        Returns the triple :math:`\{ \alpha, \beta, \sigma \}`.
-        """
+        # This is a non-SOLID "hack" to accomodate for event shapes differing between model and state
+        if not x.event_shape:
+            values = values.unsqueeze(-1)
 
-        return tuple(self._parameter_transform(*self.parameters))
-
-    def _mean_scale(self, x, *args):
-        a, b, s = self._parameter_transform(*args)
-
-        if self.n_dim > 0:
-            values = x.value.unsqueeze(-1)
-
-            # This is a non-SOLID "hack" to accomodate for event shapes differing between model and state
-            if not x.event_shape:
-                values = values.unsqueeze(-1)
-
-            res = (b.unsqueeze(-1) + a @ values).squeeze(-1)
-        else:
-            res = b + a * x.value
+        res = (b.unsqueeze(-1) + a @ values).squeeze(-1)
 
         return res, s
 
@@ -95,5 +71,4 @@ class LinearModel(AffineProcess):
             self.increment_distribution,
             self._initial_kernel,
             new_parameters["initial_parameters"],
-            self._parameter_transform,
         )

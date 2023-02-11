@@ -1,7 +1,15 @@
+from functools import partial
 from typing import Any, Optional, Sequence, Tuple, Union
 
 import torch
 from torch.distributions import Distribution
+
+
+def _unsqueezer(x: torch.Tensor, do_unsqueeze: bool) -> torch.Tensor:
+    if not do_unsqueeze:
+        return x
+
+    return x.unsqueeze(-1)
 
 
 class JointDistribution(Distribution):
@@ -39,18 +47,26 @@ class JointDistribution(Distribution):
             raise NotImplementedError("Currently cannot handle matrix valued distributions!")
 
         event_shape = torch.Size([sum(d.event_shape.numel() for d in distributions)])
-
-        batch_shapes = [(d.batch_shape.numel(), d.batch_shape) for d in distributions]
-        single_batch_shape = sorted(batch_shapes, key=lambda u: u[0])[-1][1]
-        distributions = [d.expand(single_batch_shape) for d in distributions]
+        single_batch_shape = max(d.batch_shape for d in distributions)
 
         super().__init__(event_shape=event_shape, batch_shape=single_batch_shape, **kwargs)
 
-        self.distributions = distributions
-        self.indices = indices if indices is not None else self.infer_indices(*distributions)
+        self.distributions = [d.expand(single_batch_shape) for d in distributions]
+        self.indices = indices if indices is not None else self.infer_indices(*self.distributions)
+        self.has_rsample = all(d.has_rsample for d in self.distributions)
+
+        self._unsqueezers = [partial(_unsqueezer, do_unsqueeze=d.event_shape.numel() == 1) for d in self.distributions]
 
     def expand(self, batch_shape, _instance=None):
-        return JointDistribution(*(d.expand(batch_shape) for d in self.distributions), indices=self.indices)
+        new = self._get_checked_instance(JointDistribution)
+        super(JointDistribution, new).__init__(batch_shape, self.event_shape, self._validate_args)
+
+        new.distributions = [d.expand(batch_shape) for d in self.distributions]
+        new.indices = self.indices
+        new.has_rsample = self.has_rsample
+        new._unsqueezers = self._unsqueezers
+
+        return new
 
     @property
     def support(self) -> Optional[Any]:
@@ -125,10 +141,13 @@ class JointDistribution(Distribution):
         # TODO: Add check for wrong dimensions
         return sum(d.log_prob(value[..., m]) for d, m in zip(self.distributions, self.indices))
 
+    # TODO: Fix s.t. we use wrapper for unsqueezer
     def rsample(self, sample_shape=torch.Size()):
-        res = tuple(
-            d.rsample(sample_shape) if len(d.event_shape) > 0 else d.rsample(sample_shape).unsqueeze(-1)
-            for d in self.distributions
-        )
+        res = tuple(unsq(d.rsample(sample_shape)) for d, unsq in zip(self.distributions, self._unsqueezers))
+
+        return torch.cat(res, dim=-1)
+
+    def sample(self, sample_shape=torch.Size()):
+        res = tuple(unsq(d.sample(sample_shape)) for d, unsq in zip(self.distributions, self._unsqueezers))
 
         return torch.cat(res, dim=-1)
