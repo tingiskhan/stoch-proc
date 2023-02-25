@@ -1,6 +1,6 @@
 from functools import partial
 import torch
-from pyro.distributions import Delta, Distribution, Normal, Poisson, TransformedDistribution
+from pyro.distributions import Delta, Distribution, Normal, Poisson, TransformedDistribution, Bernoulli
 from pyro.distributions import transforms as t
 
 from ...distributions import DoubleExponential, JointDistribution
@@ -34,6 +34,7 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
         p: ParameterType,
         rho_minus: ParameterType,
         rho_plus: ParameterType,
+        use_bernoulli: bool = True,
         **kwargs
     ):
         """
@@ -46,10 +47,13 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
             p (ParameterType): _description_
             rho_minus (ParameterType): _description_
             rho_plus (ParameterType): _description_
+            use_bernoulli (bool, optional): whether to use a Bernouilli distribution instead of Poisson.
         """
 
         self.de = DoubleExponential(rho_plus, rho_minus, p)
         init_kernel = partial(_initial_kernel, de=self.de)
+        self._use_bernoulli = use_bernoulli
+
         super().__init__(self.kernel, (alpha, xi, eta), initial_kernel=init_kernel, **kwargs)
 
     def kernel(self, x: TimeseriesState, alpha, xi, eta) -> Distribution:
@@ -58,9 +62,12 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
         """
 
         lambda_s = x.value[..., 0]
-
         intensity = (lambda_s * self.dt).nan_to_num(0.0, 0.0, 0.0).clip(min=0.0)
-        dn_t = Poisson(rate=intensity).sample()
+
+        if self._use_bernoulli:
+            dn_t = Bernoulli(probs=intensity.clip(max=1.0)).sample()
+        else:
+            dn_t = Poisson(rate=intensity).sample()
 
         dl_t = self.de.sample() * dn_t
 
@@ -82,5 +89,7 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
         super(SelfExcitingLatentProcesses, new).__init__(
             new.kernel, new_parameters["parameters"], dt=self.dt, initial_kernel=init_kernel
         )
+
+        new._use_bernoulli = self._use_bernoulli
 
         return new

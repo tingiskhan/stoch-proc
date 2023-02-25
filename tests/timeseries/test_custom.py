@@ -24,6 +24,7 @@ def models():
     yield mods.SmoothLinearTrend(mods.OrnsteinUhlenbeck(0.025, 0.0, 0.05))
     yield mods.TrendingOU(0.01, 0.03, 0.2, 1.0)
     yield mods.SelfExcitingLatentProcesses(0.01, 2.0, 0.05, 0.1, 3.0, 2.0, dt=0.05)
+    yield mods.SelfExcitingLatentProcesses(0.01, 2.0, 0.05, 0.1, 3.0, 2.0, dt=0.05, use_bernoulli=False)
     yield mods.HarmonicProcess(3, 0.05)
     
     cyclical = mods.CyclicalProcess(0.98, 2.0 * pi / 1_000, 0.25)
