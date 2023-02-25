@@ -2,6 +2,9 @@
 
 ## Versions
 
+### v0.3.1
+ - Adds option to Bernoulli or Poisson for `SelfExcitingProcess`.
+
 ### v0.3.0
  - Major improvements regarding how parameters are handled by assuming they are static. Any changes to parameters must be handled exogenously. This removes the "reverse" dependency to `pyfilter`
 
