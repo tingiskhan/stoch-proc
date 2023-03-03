@@ -58,7 +58,7 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
 
     def kernel(self, x: TimeseriesState, alpha, xi, eta) -> Distribution:
         r"""
-        Joint density for the realizations of :math:`(\lambda_t, dN_t, \lambda_s, q)`.
+        Joint density for the realizations of :math:`(\lambda_t, q * dN_t, \lambda_s)`.
         """
 
         lambda_s = x.value[..., 0]
@@ -76,7 +76,7 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
         diffusion = eta * dl_t.abs()
         lambda_t = (lambda_s + deterministic + diffusion).clip(min=0.0)
 
-        combined = torch.stack((lambda_t, dl_t), dim=-1)
+        combined = torch.stack((lambda_t, dl_t, lambda_s), dim=-1)
 
         return Delta(combined, event_dim=1)
 

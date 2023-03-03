@@ -133,7 +133,7 @@ class DoubleExponential(ExponentialFamily):
         u = torch.empty(shape, device=self.p.device).uniform_()
 
         x = torch.where(
-            u < self.p,
+            u < 1 - self.p,
             self._neg_exp.rsample(sample_shape),
             self._pos_exp.rsample(sample_shape),
         )
