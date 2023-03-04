@@ -9,13 +9,14 @@ from ..diffusion import StochasticDifferentialEquation
 from ..state import TimeseriesState
 
 
-def _initial_kernel(alpha, xi, _, de):
+def _initial_kernel(alpha, xi, eta, de):
     exp_j2 = de.p * 2.0 * de.rho_plus.pow(-2.0) + (1.0 - de.p) * 2.0 * de.rho_minus.pow(-2.0)
 
-    std_lambda = exp_j2.sqrt() * xi
+    std_lambda = exp_j2.sqrt() * eta
     dist_ = TransformedDistribution(Normal(xi, std_lambda), t.AbsTransform())
 
-    return JointDistribution(dist_, Delta(torch.zeros_like(std_lambda)))
+    zeros = torch.zeros_like(std_lambda)
+    return JointDistribution(dist_, Delta(torch.stack((zeros, zeros), dim=-1), event_dim=1))
 
 
 class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
@@ -50,26 +51,27 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
             use_bernoulli (bool, optional): whether to use a Bernouilli distribution instead of Poisson.
         """
 
-        self.de = DoubleExponential(rho_plus, rho_minus, p)
-        init_kernel = partial(_initial_kernel, de=self.de)
+        self.double_exponential = DoubleExponential(rho_plus, rho_minus, p)
+        init_kernel = partial(_initial_kernel, de=self.double_exponential)
         self._use_bernoulli = use_bernoulli
 
         super().__init__(self.kernel, (alpha, xi, eta), initial_kernel=init_kernel, **kwargs)
 
     def kernel(self, x: TimeseriesState, alpha, xi, eta) -> Distribution:
         r"""
-        Joint density for the realizations of :math:`(\lambda_t, q * dN_t, \lambda_s)`.
+        Joint density for the realizations of :math:`(\lambda_t, dN_t, \lambda_s, q)`.
         """
 
         lambda_s = x.value[..., 0]
-        intensity = (lambda_s * self.dt).nan_to_num(0.0, 0.0, 0.0).clip(min=0.0)
+        intensity = (lambda_s * self.dt).nan_to_num(0.0)
 
         if self._use_bernoulli:
-            dn_t = Bernoulli(probs=intensity.clip(max=1.0)).sample()
+            counting_dist = Bernoulli(probs=intensity.clip(min=0.0, max=1.0))
         else:
-            dn_t = Poisson(rate=intensity).sample()
+            counting_dist = Poisson(rate=intensity.clip(min=0.0))
 
-        dl_t = self.de.sample() * dn_t
+        dn_t = counting_dist.sample()
+        dl_t = self.double_exponential.sample() * dn_t
 
         deterministic = alpha * (xi - lambda_s) * self.dt
 
@@ -83,8 +85,8 @@ class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
     def expand(self, batch_shape):
         new_parameters = self._expand_parameters(batch_shape)
         new = self._get_checked_instance(SelfExcitingLatentProcesses)
-        new.de = self.de.expand(batch_shape)
-        init_kernel = partial(_initial_kernel, de=new.de)
+        new.double_exponential = self.double_exponential.expand(batch_shape)
+        init_kernel = partial(_initial_kernel, de=new.double_exponential)
 
         super(SelfExcitingLatentProcesses, new).__init__(
             new.kernel, new_parameters["parameters"], dt=self.dt, initial_kernel=init_kernel
