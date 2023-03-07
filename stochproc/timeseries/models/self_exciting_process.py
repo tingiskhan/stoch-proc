@@ -16,7 +16,8 @@ def _initial_kernel(alpha, xi, eta, de):
     dist_ = TransformedDistribution(Normal(xi, std_lambda), t.AbsTransform())
 
     zeros = torch.zeros_like(std_lambda)
-    return JointDistribution(dist_, Delta(torch.stack((zeros, zeros), dim=-1), event_dim=1))
+    lambda_t = dist_.sample()
+    return Delta(torch.stack((lambda_t, zeros, lambda_t), dim=-1), event_dim=1)
 
 
 class SelfExcitingLatentProcesses(StochasticDifferentialEquation):
