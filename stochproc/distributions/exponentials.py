@@ -162,3 +162,10 @@ class DoubleExponential(ExponentialFamily):
         )
 
         return cdf
+
+    def icdf(self, value):
+        return torch.where(
+            value < 1.0 - self.p,
+            self._neg_exp.icdf(value / (1.0 - self.p)),
+            self._pos_exp.icdf((1.0 - value) / self.p)
+        )
