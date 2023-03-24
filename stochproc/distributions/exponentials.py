@@ -133,7 +133,7 @@ class DoubleExponential(ExponentialFamily):
         u = torch.empty(shape, device=self.p.device).uniform_()
 
         x = torch.where(
-            u < self.p,
+            u < 1.0 - self.p,
             self._neg_exp.rsample(sample_shape),
             self._pos_exp.rsample(sample_shape),
         )
@@ -162,3 +162,8 @@ class DoubleExponential(ExponentialFamily):
         )
 
         return cdf
+
+    def icdf(self, value):
+        return torch.where(
+            value < 1.0 - self.p, self._neg_exp.icdf(value / (1.0 - self.p)), self._pos_exp.icdf((1.0 - value) / self.p)
+        )
