@@ -13,6 +13,7 @@ def _initial_kernel(alpha, xi, eta, de):
     exp_j2 = de.p * 2.0 * de.rho_plus.pow(-2.0) + (1.0 - de.p) * 2.0 * de.rho_minus.pow(-2.0)
 
     std_lambda = exp_j2.sqrt() * eta
+    # dist_ = TransformedDistribution(Normal(xi, std_lambda), t.AbsTransform())
     dist_ = TransformedDistribution(Normal(xi, std_lambda), t.AbsTransform())
 
     zeros = torch.zeros_like(std_lambda)
