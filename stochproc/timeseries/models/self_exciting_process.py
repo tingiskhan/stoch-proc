@@ -1,6 +1,7 @@
 from functools import partial
 import torch
-from pyro.distributions import Delta, Distribution, Normal, Poisson, TransformedDistribution, Bernoulli, AffineTransform
+from pyro.distributions import Delta, Distribution, Normal, Poisson, Bernoulli
+from torch.distributions import AffineTransform, TransformedDistribution,AbsTransform
 from pyro.distributions import transforms as t
 
 from ...distributions import DoubleExponential, JointDistribution
