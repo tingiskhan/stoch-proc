@@ -1,6 +1,6 @@
 from functools import partial
 import torch
-from pyro.distributions import Delta, Distribution, Normal, Poisson, TransformedDistribution, Bernoulli
+from pyro.distributions import Delta, Distribution, Normal, Poisson, TransformedDistribution, Bernoulli, AffineTransform
 from pyro.distributions import transforms as t
 
 from ...distributions import DoubleExponential, JointDistribution
@@ -14,7 +14,8 @@ def _initial_kernel(alpha, xi, eta, de):
 
     std_lambda = exp_j2.sqrt() * eta.sqrt()
     # dist_ = TransformedDistribution(Normal(xi, std_lambda), t.AbsTransform())
-    dist_ = TransformedDistribution(Normal(xi, std_lambda), t.AbsTransform())
+    dist_ = TransformedDistribution(AffineTransform(xi, eta / (2 * alpha).sqrt()), t.AbsTransform())
+    # TransformedDistribution(dist, [AffineTransform(xi, eta / (2 * alpha).sqrt()), AbsTransform()])
 
     zeros = torch.zeros_like(std_lambda)
     lambda_t = dist_.sample()
